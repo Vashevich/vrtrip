@@ -43,11 +43,13 @@ button,input,textarea{font:inherit}
 .mark{font:700 27px/1 var(--f-display);letter-spacing:.01em;display:flex;align-items:baseline;gap:2px}
 .mark span{color:var(--accent)}
 .lede{margin:0;color:var(--muted);max-width:38ch;text-wrap:pretty}
-.byline{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg)}
-.rp{flex:none;width:34px;height:34px;border-radius:7px;background:var(--fg);color:var(--bg);display:grid;place-items:center;font:700 13px/1 var(--f-display);letter-spacing:-.02em}
-.byline-t{display:flex;flex-direction:column;gap:1px;min-width:0}
-.byline-t b{font-weight:600;font-size:14px}
-.byline-t small{font:500 10.5px/1.2 var(--f-display);letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.credit{display:flex;align-items:center;gap:10px;margin:0;font-size:12.5px;line-height:1.35;color:var(--muted)}
+.credit img{width:30px;height:30px;flex:none}
+.credit b{color:var(--fg);font-weight:600}
+.swatches{display:flex;gap:4px;align-items:center;flex-wrap:wrap}
+.sw.add{background:var(--raise);color:var(--fg);display:grid;place-items:center;font-size:17px;line-height:1;border-style:dashed}
+.dlg-colors{display:flex;flex-wrap:wrap;gap:6px}
+.dlg-colors .sw{width:30px;height:30px}
 
 .sec{display:flex;flex-direction:column;gap:12px;padding-top:18px;border-top:1px solid var(--line)}
 .sec.off .field,.sec.off .dims{opacity:.45}
@@ -192,10 +194,6 @@ h2{display:flex;align-items:center;gap:10px;margin:0;font:600 16px/1.2 var(--f-b
   <header class="brand">
     <div class="mark">VR<span>trip</span></div>
     <p class="lede">Архитектурные модели OBJ в Meta Quest&nbsp;3 и в браузере: прогулка от первого лица, макет на столе, сквозной режим, разметка и комментарии.</p>
-    <div class="byline">
-      <div class="rp" aria-hidden="true">RP</div>
-      <div class="byline-t"><b>Сергей Дмитриев</b><small>Rock Parametric</small></div>
-    </div>
   </header>
 
   <section class="sec" id="sec-load">
@@ -298,11 +296,13 @@ h2{display:flex;align-items:center;gap:10px;margin:0;font:600 16px/1.2 var(--f-b
     <p class="note">Инструменты — на панели над моделью, в шлеме — на левой руке. Всё сохраняется в этом браузере отдельно для каждой модели.</p>
     <ul id="notes" class="notes"></ul>
     <div class="row-btns">
+      <button type="button" class="btn small primary" id="n-obj">Скачать OBJ с разметкой</button>
       <button type="button" class="btn small" id="n-export">Скачать заметки</button>
       <label class="btn small" for="n-import">Загрузить заметки</label>
       <input type="file" id="n-import" accept=".json,application/json" class="sr">
       <button type="button" class="btn small" id="n-clear">Очистить</button>
     </div>
+    <p class="note">Чтобы показать отметки другому человеку, скачайте OBJ с разметкой и отправьте архив. Он перетащит его в VRtrip и увидит модель со всеми метками, размерами и линиями. Тот же OBJ открывается в Rhino: разметка лежит в объектах VRtrip_*.</p>
   </section>
 
   <details class="help">
@@ -331,7 +331,7 @@ h2{display:flex;align-items:center;gap:10px;margin:0;font:600 16px/1.2 var(--f-b
   </details>
 
   <p class="foot">Модели и заметки хранятся только в этом браузере и остаются после перезагрузки. Для плавной работы в шлеме держите модель в пределах 1–2 млн треугольников.</p>
-  <p class="foot">VRtrip · © 2026 Сергей Дмитриев, Rock Parametric</p>
+  <p class="credit"><img src="data:image/png;base64,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" alt="Rock Parametric"><span><b>Сергей Дмитриев</b> · Rock Parametric<br>VRtrip © 2026</span></p>
   <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 </aside>
 
@@ -344,10 +344,9 @@ h2{display:flex;align-items:center;gap:10px;margin:0;font:600 16px/1.2 var(--f-b
     <button type="button" class="tb" data-tool="pen" title="Карандаш (4)"><svg viewBox="0 0 24 24"><path d="M4 20l4-1 11-11-3-3L5 16z"/><path d="M14 6l3 3"/></svg><span>Карандаш</span></button>
     <button type="button" class="tb" data-tool="erase" title="Ластик (5)"><svg viewBox="0 0 24 24"><path d="M8 20h12"/><path d="M4 15.5l9.5-9.5 6 6-7.5 7.5H8z"/></svg><span>Ластик</span></button>
     <span class="tb-sep"></span>
-    <button type="button" class="sw" data-color="0" style="--sw:#f2efe8" aria-label="Белый"></button>
-    <button type="button" class="sw" data-color="1" style="--sw:#d8a33f" aria-label="Янтарный"></button>
-    <button type="button" class="sw" data-color="2" style="--sw:#e0604a" aria-label="Красный"></button>
-    <button type="button" class="sw" data-color="3" style="--sw:#3f86c9" aria-label="Синий"></button>
+    <span class="swatches" id="swatches"></span>
+    <button type="button" class="sw add" id="sw-add" title="Добавить свой цвет" aria-label="Добавить свой цвет">+</button>
+    <input type="color" id="sw-input" class="sr" value="#7a5cff" aria-label="Выбор цвета">
     <span class="tb-sep"></span>
     <button type="button" class="tb" id="tb-undo" title="Отменить (Ctrl+Z)"><svg viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg><span>Отменить</span></button>
     <button type="button" class="tb" id="tb-shot" title="Сохранить снимок экрана"><svg viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.2"/></svg><span>Снимок</span></button>
@@ -369,6 +368,7 @@ h2{display:flex;align-items:center;gap:10px;margin:0;font:600 16px/1.2 var(--f-b
       <button type="button" data-val="question">Вопрос</button>
       <button type="button" data-val="idea">Идея</button>
     </div>
+    <div class="dlg-colors" id="dlg-colors" role="group" aria-label="Цвет облачка"></div>
     <textarea id="dlg-text" rows="3" placeholder="Комментарий: что здесь не так, что изменить" aria-label="Текст комментария"></textarea>
     <div class="dlg-actions">
       <button type="button" class="btn" id="dlg-cancel">Отмена</button>
@@ -398,7 +398,8 @@ const UP = new V3(0, 1, 0), DOWN = new V3(0, -1, 0);
 const UNITS = { mm: 0.001, cm: 0.01, m: 1, in: 0.0254, ft: 0.3048 };
 const TABLE_STEPS = [20, 50, 100, 200, 500, 1000];
 const EYE = 1.65, STEP = 0.45, RADIUS = 0.3, GRAV = 9.8;
-const COLORS = ['#f2efe8', '#d8a33f', '#e0604a', '#3f86c9'];
+const BASE_COLORS = ['#f2efe8', '#d8a33f', '#e0604a', '#3f86c9'];
+const STAR_LOGO = 'data:image/png;base64,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';
 const KINDS = { issue: { label: 'Замечание', color: '#e0604a' }, question: { label: 'Вопрос', color: '#d8a33f' }, idea: { label: 'Идея', color: '#4fae7f' } };
 const TOOLS = [['nav', 'Ходьба'], ['pin', 'Метка'], ['measure', 'Рулетка'], ['pen', 'Карандаш'], ['erase', 'Ластик']];   // «Куб» временно скрыт: код инструмента сохранён
 const AUTHOR = 'Сергей Дмитриев · Rock Parametric';
@@ -455,6 +456,8 @@ const lsGet = k => { try { return localStorage.getItem(k); } catch { return null
 const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch {} };
 
 const prefs = { gravity: lsGet('vrtrip-gravity') !== '0', collide: lsGet('vrtrip-collide') !== '0', env: lsGet('vrtrip-env') || 'sky' };
+let customColors = (() => { try { const a = JSON.parse(lsGet('vrtrip-colors') || '[]'); return Array.isArray(a) ? a.filter(c => /^#[0-9a-f]{6}$/i.test(c)).slice(-8) : []; } catch { return []; } })();
+const allColors = () => [...BASE_COLORS, ...customColors];
 function savePrefs() { lsSet('vrtrip-gravity', prefs.gravity ? '1' : '0'); lsSet('vrtrip-collide', prefs.collide ? '1' : '0'); lsSet('vrtrip-env', prefs.env); }
 
 /* ================= renderer & scene ================= */
@@ -637,13 +640,16 @@ async function buildModel(rec) {
     hasMtl = false;
     const m = text.match(/^[ \t]*mtllib[ \t]+(.+?)[ \t]*$/m);
     if (m) {
-      const mf = find(m[1]);
-      if (mf) {
-        const creator = new MTLLoader(manager).parse(await mf.blob.text(), '');
+      const names = find(m[1]) ? [m[1]] : m[1].split(/\s+/);          // one mtllib line may list several files
+      const texts = [];
+      for (const nm of names) { const mf = find(nm); if (mf) texts.push(await mf.blob.text()); else missing.push(base(nm)); }
+      if (texts.length) {
+        const creator = new MTLLoader(manager).parse(texts.join('\n'), '');
         creator.preload(); loader.setMaterials(creator); hasMtl = true;
-      } else missing.push(base(m[1]));
+      }
     }
     obj = loader.parse(text);
+    for (const ch of [...obj.children]) if (/^VRtrip_/i.test(ch.name)) obj.remove(ch);     // markup baked by our own OBJ export
   }
   busy('Оптимизирую для шлема…'); await pause();
   const meshes = optimize(obj);
@@ -712,14 +718,23 @@ async function addFromFiles(fileList) {
     const files = await filesToList(fileList);
     const objs = files.filter(f => /\.obj$/i.test(f.name));
     if (!objs.length) throw new Error('Среди файлов нет .obj. Выберите OBJ (вместе с MTL и текстурами) или ZIP-архив с ними.');
-    const shared = files.filter(f => !/\.obj$/i.test(f.name));
-    let added = 0, warned = false;
+    const shared = files.filter(f => !/\.obj$/i.test(f.name) && f.name.toLowerCase() !== 'vrtrip.json');
+    const pkgF = files.find(f => f.name.toLowerCase() === 'vrtrip.json');
+    let pkg = null; if (pkgF) { try { pkg = JSON.parse(await pkgF.blob.text()); } catch {} }
+    let added = 0, warned = false, restored = 0;
     for (const o of objs) {
       const rec = { id: uid(), name: o.name.replace(/\.obj$/i, ''), objName: o.name, files: [o, ...shared], settings: null };
+      if (pkg?.app === 'VRtrip' && (objs.length === 1 || pkg.objName === o.name)) {
+        if (pkg.settings) rec.settings = { units: pkg.settings.units || 'm', zUp: !!pkg.settings.zUp, clay: !!pkg.settings.clay, autoUnits: false, table: null };
+        rec.notes = Array.isArray(pkg.notes) ? pkg.notes.map(n => ({ ...n })) : [];
+        if (pkg.model) rec.name = pkg.model;
+        restored += rec.notes.length;
+      }
       try { await buildModel(rec); } catch (e) { toast(`${o.name}: ${e.message}`, 'bad'); console.error(e); continue; }
       await addModel(rec); added++; if (rec.hadMissing) warned = true;
     }
-    if (added && !warned) toast(added > 1 ? `Добавлено моделей: ${added}` : `Модель «${objs[0].name.replace(/\.obj$/i, '')}» загружена`, 'ok');
+    if (added && restored) toast(`Модель открыта вместе с разметкой: ${restored} шт.`, 'ok');
+    else if (added && !warned) toast(added > 1 ? `Добавлено моделей: ${added}` : `Модель «${objs[0].name.replace(/\.obj$/i, '')}» загружена`, 'ok');
   } catch (e) { toast(e.message, 'bad'); console.error(e); }
   finally { busy(false); }
 }
@@ -906,28 +921,34 @@ function applyEnv() {
 /* ================= labels ================= */
 const labels = new Set();
 const LABEL_FONT = '"IBM Plex Sans", system-ui, sans-serif';
-function paintLabel(sprite, text, dot) {
+function inkFor(hex) {
+  const v = parseInt(String(hex).slice(1), 16); const r = (v >> 16 & 255) / 255, g = (v >> 8 & 255) / 255, b = (v & 255) / 255;
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.55 ? '#15181b' : '#ffffff';
+}
+function paintLabel(sprite, text, dot, bg = sprite.userData.bg) {
   const t = text.length > 52 ? text.slice(0, 51) + '…' : text;
   const c = sprite.userData.canvas || document.createElement('canvas');
   const x = c.getContext('2d'); const fs = 40;
   x.font = `600 ${fs}px ${LABEL_FONT}`;
-  const pad = 22, dotW = dot ? 34 : 0;
-  const w = Math.ceil(x.measureText(t).width + pad * 2 + dotW), h = 66;
+  const pad = 22, dotW = dot ? 34 : 0, tail = bg ? 16 : 0;
+  const w = Math.ceil(x.measureText(t).width + pad * 2 + dotW), bh = 66, h = bh + tail;
   c.width = w; c.height = h;
   x.font = `600 ${fs}px ${LABEL_FONT}`;
-  x.fillStyle = 'rgba(20,23,26,0.9)';
-  if (x.roundRect) { x.beginPath(); x.roundRect(0, 0, w, h, 14); x.fill(); } else x.fillRect(0, 0, w, h);
-  if (dot) { x.fillStyle = dot; x.beginPath(); x.arc(pad + 10, h / 2, 10, 0, Math.PI * 2); x.fill(); }
-  x.fillStyle = '#efeae0'; x.textBaseline = 'middle'; x.fillText(t, pad + dotW, h / 2 + 2);
+  x.fillStyle = bg || 'rgba(20,23,26,0.9)';
+  if (x.roundRect) { x.beginPath(); x.roundRect(0, 0, w, bh, 18); x.fill(); } else x.fillRect(0, 0, w, bh);
+  if (tail) { x.beginPath(); x.moveTo(w / 2 - 14, bh - 1); x.lineTo(w / 2, h); x.lineTo(w / 2 + 14, bh - 1); x.closePath(); x.fill(); }
+  if (dot) { x.fillStyle = dot; x.beginPath(); x.arc(pad + 10, bh / 2, 10, 0, Math.PI * 2); x.fill(); }
+  x.fillStyle = bg ? inkFor(bg) : '#efeae0'; x.textBaseline = 'middle'; x.fillText(t, pad + dotW, bh / 2 + 2);
+  sprite.userData.bg = bg; sprite.userData.hk = h / bh;
   sprite.userData.canvas = c; sprite.userData.aspect = w / h;
   if (sprite.material.map) sprite.material.map.dispose();
   const tex = new THREE.CanvasTexture(c); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 4;
   sprite.material.map = tex; sprite.material.needsUpdate = true;
 }
-function makeLabel(text, dot, { depthTest = true, anchorBottom = false } = {}) {
+function makeLabel(text, dot, { depthTest = true, anchorBottom = false, bg = null } = {}) {
   const s = new THREE.Sprite(new THREE.SpriteMaterial({ transparent: true, depthTest, depthWrite: false }));
   if (anchorBottom) s.center.set(0.5, 0);
-  s.renderOrder = 12; paintLabel(s, text, dot); labels.add(s); return s;
+  s.renderOrder = 12; paintLabel(s, text, dot, bg); labels.add(s); return s;
 }
 const _cam = new V3(), _lp = new V3();
 function updateLabels() {
@@ -937,11 +958,12 @@ function updateLabels() {
     if (!s.parent) continue;
     s.getWorldPosition(_lp);
     const d = _cam.distanceTo(_lp);
-    const h = THREE.MathUtils.clamp(d * 0.034, 0.035, 3) * inv;
+    const h = THREE.MathUtils.clamp(d * 0.034, 0.035, 3) * inv * (s.userData.hk || 1);
     s.scale.set(h * s.userData.aspect, h, 1);
   }
 }
 function disposeObj(o) {
+  billboards.delete(o);
   o.traverse(x => {
     if (x.isSprite) { labels.delete(x); x.material.map?.dispose(); x.material.dispose(); return; }
     if (x.geometry && !x.userData.sharedGeo) x.geometry.dispose();
@@ -955,7 +977,29 @@ const EDGE_MAT = new THREE.LineBasicMaterial({ color: 0x1d1f21 });
 const PIN_GEO = new THREE.SphereGeometry(0.085, 18, 12);
 const PICK_GEO = new THREE.SphereGeometry(0.28, 8, 6);
 const PICK_MAT = new THREE.MeshBasicMaterial({ visible: false });
-const PIN_MATS = Object.fromEntries(Object.entries(KINDS).map(([k, v]) => [k, new THREE.MeshStandardMaterial({ color: v.color, roughness: 0.4, emissive: v.color, emissiveIntensity: 0.35 })]));
+const pinColor = n => n.color || KINDS[n.kind]?.color || '#e0604a';
+/* Sketch strokes are stored flat: centre c, 2D points in their own plane, plus the plane basis (used for OBJ export).
+   On screen the whole sketch turns to face the viewer, like the dimension labels do. */
+const billboards = new Set();
+function strokeTo2D(pts, n) {
+  const c = pts.reduce((a, p) => a.add(p), new V3()).divideScalar(pts.length);
+  const nn = n.clone().normalize();
+  let u = UP.clone().addScaledVector(nn, -UP.dot(nn));
+  if (u.lengthSq() < 1e-4) { const v = new V3(0, 0, -1); u = v.addScaledVector(nn, -v.dot(nn)); }
+  u.normalize(); const r = new V3().crossVectors(u, nn).normalize();
+  const p2 = pts.map(p => { const d = p.clone().sub(c); return [r3(d.dot(r)), r3(d.dot(u))]; });
+  return { c: arr(c), p2, basis: { r: arr(r), u: arr(u), n: arr(nn) } };
+}
+function migrateNote(n) {
+  if (n.type === 'line' && n.pts && n.n && !n.p2) { Object.assign(n, strokeTo2D(n.pts.map(vec), vec(n.n))); delete n.pts; delete n.n; }
+  return n;
+}
+const _hq = new THREE.Quaternion(), _cq = new THREE.Quaternion();
+function updateBillboards() {
+  if (!billboards.size) return;
+  camera.getWorldQuaternion(_cq);
+  for (const g of billboards) { if (!g.parent) continue; g.parent.getWorldQuaternion(_hq); g.quaternion.copy(_hq.invert().multiply(_cq)); }
+}
 const MEASURE_COLOR = '#ffd36b';
 const shared = (o, geo = true, mat = true) => { o.userData.sharedGeo = geo; o.userData.sharedMat = mat; return o; };
 
@@ -964,7 +1008,7 @@ function noteCenter(n) {
   if (n.type === 'pin') return pinHead(n);
   if (n.type === 'measure') return vec(n.a).add(vec(n.b)).multiplyScalar(0.5);
   if (n.type === 'box') return vec(n.min).add(vec(n.max)).multiplyScalar(0.5);
-  if (n.type === 'line') { const pts = n.pts; return vec(pts[Math.floor(pts.length / 2)]); }
+  if (n.type === 'line') { if (n.c) return vec(n.c); const pts = n.pts; return vec(pts[Math.floor(pts.length / 2)]); }
   return new V3();
 }
 function makeNoteObj(n) {
@@ -978,10 +1022,11 @@ function makeNoteObj(n) {
     g.add(m); pick.push(m); g.userData.surface = m;
   } else if (n.type === 'pin') {
     const p = vec(n.p), head = pinHead(n);
-    const stem = new THREE.Line(new THREE.BufferGeometry().setFromPoints([p, head]), new THREE.LineBasicMaterial({ color: KINDS[n.kind]?.color || '#e0604a' }));
-    const h = shared(new THREE.Mesh(PIN_GEO, PIN_MATS[n.kind] || PIN_MATS.issue)); h.position.copy(head);
+    const col = pinColor(n);
+    const stem = new THREE.Line(new THREE.BufferGeometry().setFromPoints([p, head]), new THREE.LineBasicMaterial({ color: col }));
+    const h = shared(new THREE.Mesh(PIN_GEO, new THREE.MeshStandardMaterial({ color: col, roughness: 0.4, emissive: col, emissiveIntensity: 0.35 })), true, false); h.position.copy(head);
     const pk = shared(new THREE.Mesh(PICK_GEO, PICK_MAT)); pk.position.copy(head);
-    const lab = makeLabel(`${n.num}. ${n.text || KINDS[n.kind]?.label || 'Метка'}`, KINDS[n.kind]?.color, { anchorBottom: true });
+    const lab = makeLabel(`${n.num}. ${n.text || KINDS[n.kind]?.label || 'Метка'}`, null, { anchorBottom: true, bg: col });
     lab.position.copy(head).add(new V3(0, 0.13, 0));
     g.add(stem, h, pk, lab); pick.push(pk, h);
   } else if (n.type === 'measure') {
@@ -995,9 +1040,12 @@ function makeNoteObj(n) {
     const lab = makeLabel(`${fmt2(d)} м`, null, { depthTest: false }); lab.position.copy(a).add(b).multiplyScalar(0.5);
     g.add(line, cyl, lab); pick.push(cyl);
   } else if (n.type === 'line') {
-    const pts = n.pts.map(vec); let m;
-    if (n.n && n.w) m = new THREE.Mesh(ribbonGeometry(pts, vec(n.n), n.w), strokeMat(n.color));
-    else m = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), Math.min(800, pts.length * 3), n.r || 0.012, 6, false), new THREE.MeshStandardMaterial({ color: n.color, roughness: 0.6 }));
+    let m;
+    if (n.p2) {
+      m = new THREE.Mesh(ribbonGeometry(n.p2.map(([x, y]) => new V3(x, y, 0)), new V3(0, 0, 1), n.w || 0.02), strokeMat(n.color));
+      m.renderOrder = 11;
+      g.position.copy(vec(n.c)); g.userData.billboard = true;
+    } else { const pts = n.pts.map(vec); m = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), Math.min(800, pts.length * 3), n.r || 0.012, 6, false), new THREE.MeshStandardMaterial({ color: n.color, roughness: 0.6 })); }
     g.add(m); pick.push(m);
   }
   g.userData.noteId = n.id; pick.forEach(p => { p.userData.noteId = n.id; });
@@ -1005,7 +1053,7 @@ function makeNoteObj(n) {
   return g;
 }
 const END_GEO = new THREE.SphereGeometry(0.03, 10, 8);
-function mountNote(rec, n) { const o = makeNoteObj(n); rec.notesGroup.add(o); rec.noteObjs.set(n.id, o); }
+function mountNote(rec, n) { migrateNote(n); const o = makeNoteObj(n); rec.notesGroup.add(o); rec.noteObjs.set(n.id, o); if (o.userData.billboard) billboards.add(o); }
 
 const undoStack = [];
 function addNote(n, record = true) {
@@ -1040,31 +1088,31 @@ function nextPinNum(rec) { return rec.notes.filter(n => n.type === 'pin').reduce
 function flash(msg) { if (state.view === 'xr') { palMessage = msg; drawPalette(); clearTimeout(flash.t); flash.t = setTimeout(() => { palMessage = ''; drawPalette(); }, 1800); } else toast(msg); }
 
 function noteSummary(n) {
-  if (n.type === 'pin') return { badge: String(n.num), color: KINDS[n.kind]?.color, title: n.text || 'Без текста', sub: KINDS[n.kind]?.label || 'Метка' };
+  if (n.type === 'pin') return { badge: String(n.num), color: pinColor(n), title: n.text || 'Без текста', sub: KINDS[n.kind]?.label || 'Метка' };
   if (n.type === 'measure') {
     const a = vec(n.a), b = vec(n.b); const d = a.distanceTo(b), hz = Math.hypot(a.x - b.x, a.z - b.z), vt = Math.abs(a.y - b.y);
     return { badge: '↔', ghost: true, title: `Размер ${fmt2(d)} м`, sub: `гор. ${fmt2(hz)} · верт. ${fmt2(vt)} м` };
   }
   if (n.type === 'box') { const s = vec(n.max).sub(vec(n.min)); return { badge: '', sq: true, color: n.color, title: 'Куб', sub: `${fmt(s.x)} × ${fmt(s.z)} × ${fmt(s.y)} м` }; }
-  if (n.type === 'line') return { badge: '~', color: n.color, title: 'Линия от руки', sub: `${n.pts.length} точек` };
+  if (n.type === 'line') return { badge: '~', color: n.color, title: 'Линия от руки', sub: `${(n.p2 || n.pts || []).length} точек` };
   return { badge: '?', title: 'Объект', sub: '' };
 }
 function renderNotes() {
   const ul = $('#notes'); ul.textContent = '';
   const rec = activeRec(); const list = rec?.built ? rec.notes : [];
-  $('#n-export').disabled = !list.length; $('#n-clear').disabled = !list.length;
+  $('#n-export').disabled = !list.length; $('#n-clear').disabled = !list.length; $('#n-obj').disabled = !rec?.built;
   if (!list.length) { const li = document.createElement('li'); li.style.display = 'block'; li.innerHTML = '<p class="empty">Пока нет. Выберите «Метку», «Рулетку» или «Карандаш» на панели над моделью и щёлкните по модели.</p>'; ul.append(li); return; }
   const sorted = [...list].sort((a, b) => (a.type === 'pin' ? 0 : 1) - (b.type === 'pin' ? 0 : 1) || (a.num || 0) - (b.num || 0) || a.t - b.t);
   for (const n of sorted) {
     const s = noteSummary(n);
     const li = document.createElement('li');
-    const bd = document.createElement('span'); bd.className = 'badge' + (s.sq ? ' sq' : '') + (s.ghost ? ' ghost' : ''); bd.textContent = s.badge; if (s.color) bd.style.background = s.color;
+    const bd = document.createElement('span'); bd.className = 'badge' + (s.sq ? ' sq' : '') + (s.ghost ? ' ghost' : ''); bd.textContent = s.badge; if (s.color) { bd.style.background = s.color; bd.style.color = inkFor(s.color); }
     const nt = document.createElement('span'); nt.className = 'nt';
     const b = document.createElement('b'); b.textContent = s.title; const sm = document.createElement('small'); sm.textContent = s.sub; nt.append(b, sm);
     const act = document.createElement('span'); act.className = 'nact';
     const mk = (txt, label, fn) => { const x = document.createElement('button'); x.type = 'button'; x.textContent = txt; x.title = label; x.setAttribute('aria-label', label); x.addEventListener('click', fn); act.append(x); };
     mk('Показать', 'Показать на модели', () => goToNote(n));
-    if (n.type === 'pin') mk('✎', 'Изменить текст', async () => { const r = await openNoteDialog(n, false); if (r) { n.text = r.text; n.kind = r.kind; updateNote(n); } });
+    if (n.type === 'pin') mk('✎', 'Изменить текст', async () => { const r = await openNoteDialog(n, false); if (r) { n.text = r.text; n.kind = r.kind; n.color = r.color; updateNote(n); } });
     mk('×', 'Удалить', () => removeNote(n.id));
     li.append(bd, nt, act); ul.append(li);
   }
@@ -1074,6 +1122,86 @@ $('#n-export').addEventListener('click', () => {
   const data = { app: 'VRtrip', author: AUTHOR, model: rec.name, units: 'm', exported: new Date().toISOString(), notes: rec.notes };
   download(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }), `VRtrip-заметки-${rec.name}-${stamp()}.json`);
 });
+/* OBJ package: the model in its original file coordinates + markup as VRtrip_* objects, original MTL/textures,
+   and vrtrip.json so VRtrip can reopen the archive with every note intact */
+const f6 = v => (Math.round(v * 1e6) / 1e6).toString();
+const kdOf = hex => { const v = parseInt(String(hex).slice(1), 16); return [(v >> 16 & 255) / 255, (v >> 8 & 255) / 255, (v & 255) / 255].map(x => x.toFixed(4)).join(' '); };
+const safeFile = t => String(t).replace(/[\\/:*?"<>|]+/g, '_').trim() || 'model';
+const slug = t => String(t || '').replace(/\s+/g, '_').replace(/[^\p{L}\p{N}_.,-]/gu, '').slice(0, 40);
+async function exportPackage() {
+  const rec = activeRec(); if (!rec?.built) return;
+  if (!window.JSZip) { toast('Не загрузилась библиотека для ZIP. Проверьте интернет и перезагрузите страницу.', 'bad'); return; }
+  busy('Собираю OBJ с разметкой…'); await pause();
+  try {
+    const name = safeFile(rec.name);
+    rec.root.updateMatrix(); rec.xf.updateMatrix();
+    const toFile = new THREE.Matrix4().multiplyMatrices(rec.root.matrix, rec.xf.matrix).invert();   // holder metres → original file coordinates
+    const PKG = /^(vrtrip\.mtl|vrtrip\.json|заметки\.txt)$/i;
+    const origMtl = (rec.files || []).find(f => /\.mtl$/i.test(f.name) && !PKG.test(f.name));
+    const parts = [], gen = [], marks = new Map();
+    let vi = 1, ti = 1;
+    parts.push(`# VRtrip — ${rec.name}\n# ${AUTHOR}\n# Координаты и единицы исходного файла (${rec.settings.units}${rec.settings.zUp ? ', Z вверх' : ''}). Объекты VRtrip_* — разметка.\n`);
+    parts.push(`mtllib ${origMtl ? origMtl.name + ' ' : ''}vrtrip.mtl\n`);
+    rec.meshes.forEach((m, k) => {
+      const g = m.geometry, pos = g.attributes.position, uv = g.attributes.uv, mat = m.userData.orig;
+      const mn = origMtl && mat.name ? mat.name : `model_${k}`;
+      if (!(origMtl && mat.name)) gen.push(`newmtl ${mn}\nKd ${kdOf('#' + (mat.color ? mat.color.getHexString(THREE.SRGBColorSpace) : 'cccccc'))}\n${mat.transparent && mat.opacity < 1 ? `d ${mat.opacity.toFixed(3)}\n` : ''}`);
+      const hasUV = !!(uv && mat.map), L = [`o model_${k}\nusemtl ${mn}\n`];
+      for (let i = 0; i < pos.count; i++) L.push(`v ${f6(pos.getX(i))} ${f6(pos.getY(i))} ${f6(pos.getZ(i))}\n`);
+      if (hasUV) for (let i = 0; i < uv.count; i++) L.push(`vt ${f6(uv.getX(i))} ${f6(uv.getY(i))}\n`);
+      for (let i = 0; i + 2 < pos.count; i += 3) { const a = vi + i; L.push(hasUV ? `f ${a}/${ti + i} ${a + 1}/${ti + i + 1} ${a + 2}/${ti + i + 2}\n` : `f ${a} ${a + 1} ${a + 2}\n`); }
+      vi += pos.count; if (hasUV) ti += uv.count;
+      parts.push(L.join(''));
+    });
+    const mname = hex => { const n = 'vrtrip_' + String(hex).replace('#', ''); marks.set(n, hex); return n; };
+    const V = v => { const p = v.clone().applyMatrix4(toFile); parts.push(`v ${f6(p.x)} ${f6(p.y)} ${f6(p.z)}\n`); return vi++; };
+    const txt = [`VRtrip — ${rec.name}`, AUTHOR, `Выгружено ${new Date().toLocaleString('ru-RU')}`, ''];
+    for (const n of rec.notes) {
+      if (n.type === 'pin') {
+        const col = pinColor(n), head = pinHead(n), r = 0.08;
+        parts.push(`# ${n.num}. ${KINDS[n.kind]?.label || 'Метка'}: ${(n.text || '').replace(/\n/g, ' ')}\no VRtrip_Метка_${n.num}_${slug(n.text)}\nusemtl ${mname(col)}\n`);
+        const ids = [[r, 0, 0], [-r, 0, 0], [0, r, 0], [0, -r, 0], [0, 0, r], [0, 0, -r]].map(d => V(head.clone().add(new V3(...d))));
+        const [px, nx, py, ny, pz, nz] = ids;
+        for (const [a, b, c] of [[px, py, pz], [py, nx, pz], [nx, ny, pz], [ny, px, pz], [py, px, nz], [nx, py, nz], [ny, nx, nz], [px, ny, nz]]) parts.push(`f ${a} ${b} ${c}\n`);
+        const a = V(vec(n.p)), b = V(head); parts.push(`l ${a} ${b}\n`);
+        txt.push(`${n.num}. [${KINDS[n.kind]?.label || 'Метка'}] ${n.text || '(без текста)'}`);
+      } else if (n.type === 'measure') {
+        const A = vec(n.a), B = vec(n.b), d = A.distanceTo(B);
+        parts.push(`o VRtrip_Размер_${fmt2(d).replace(',', '.')}м\nusemtl ${mname(MEASURE_COLOR)}\n`);
+        const a = V(A), b = V(B); parts.push(`l ${a} ${b}\n`);
+        txt.push(`Размер ${fmt2(d)} м`);
+      } else if (n.type === 'box') {
+        const a = vec(n.min), b = vec(n.max);
+        parts.push(`o VRtrip_Куб\nusemtl ${mname(n.color)}\n`);
+        const c = []; for (const x of [a.x, b.x]) for (const y of [a.y, b.y]) for (const z of [a.z, b.z]) c.push(V(new V3(x, y, z)));
+        for (const q of [[0, 1, 3, 2], [4, 6, 7, 5], [0, 4, 5, 1], [2, 3, 7, 6], [0, 2, 6, 4], [1, 5, 7, 3]]) parts.push(`f ${q.map(i => c[i]).join(' ')}\n`);
+      } else if (n.type === 'line') {
+        parts.push(`o VRtrip_Эскиз\nusemtl ${mname(n.color)}\n`);
+        if (n.p2 && n.basis) {
+          const C = vec(n.c), R = vec(n.basis.r), U = vec(n.basis.u), N = vec(n.basis.n);
+          const pts = n.p2.map(([x, y]) => C.clone().addScaledVector(R, x).addScaledVector(U, y));
+          const g = ribbonGeometry(pts, N, n.w || 0.02), pos = g.attributes.position, idx = g.index.array;
+          const base = vi; for (let i = 0; i < pos.count; i++) V(new V3(pos.getX(i), pos.getY(i), pos.getZ(i)));
+          for (let i = 0; i < idx.length; i += 3) parts.push(`f ${base + idx[i]} ${base + idx[i + 1]} ${base + idx[i + 2]}\n`);
+          g.dispose();
+        } else if (n.pts) { const ids = n.pts.map(p => V(vec(p))); parts.push(`l ${ids.join(' ')}\n`); }
+      }
+    }
+    const mtl = [`# VRtrip — материалы разметки\n`, ...gen, ...[...marks].map(([k, hex]) => `newmtl ${k}\nKd ${kdOf(hex)}\nKa 0 0 0\n`)].join('\n');
+    const zip = new JSZip();
+    zip.file(`${name}.obj`, new Blob(parts, { type: 'text/plain' }));
+    zip.file('vrtrip.mtl', mtl);
+    for (const f of rec.files || []) if (!/\.obj$/i.test(f.name) && !PKG.test(f.name)) zip.file(f.name, f.blob);
+    const s = rec.settings;
+    zip.file('vrtrip.json', JSON.stringify({ app: 'VRtrip', version: 1, author: AUTHOR, model: rec.name, objName: `${name}.obj`, settings: { units: s.units, zUp: s.zUp, clay: s.clay }, notes: rec.notes }, null, 1));
+    zip.file('заметки.txt', txt.join('\r\n'));
+    const blob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 6 } });
+    download(blob, `${name}-VRtrip.zip`);
+    toast('Архив готов: OBJ с разметкой, материалы и заметки.', 'ok');
+  } catch (e) { console.error(e); toast('Не получилось собрать архив: ' + e.message, 'bad'); }
+  finally { busy(false); }
+}
+$('#n-obj').addEventListener('click', exportPackage);
 $('#n-import').addEventListener('change', e => { const f = e.target.files[0]; e.target.value = ''; if (f) importNotes(f); });
 async function importNotes(file) {
   const rec = activeRec(); if (!rec?.built) { toast('Сначала откройте модель, к которой относятся заметки.', 'warn'); return; }
@@ -1098,17 +1226,22 @@ $('#n-clear').addEventListener('click', e => {
 });
 
 /* desktop note dialog */
-let dlgResolve = null, dlgKind = 'issue';
+let dlgResolve = null, dlgKind = 'issue', dlgColor = '#e0604a';
+function paintDlgColors() {
+  const box = $('#dlg-colors'); box.textContent = '';
+  for (const c of allColors()) { const b = document.createElement('button'); b.type = 'button'; b.className = 'sw'; b.style.setProperty('--sw', c); b.dataset.c = c; b.setAttribute('aria-label', 'Цвет ' + c); b.setAttribute('aria-pressed', String(c === dlgColor)); box.append(b); }
+}
+$('#dlg-colors').addEventListener('click', e => { const b = e.target.closest('[data-c]'); if (b) { dlgColor = b.dataset.c; paintDlgColors(); } });
 function openNoteDialog(n, isNew) {
   $('#dlg-title').textContent = `${isNew ? 'Новая метка' : 'Метка'} ${n.num}`;
-  $('#dlg-text').value = n.text || ''; dlgKind = n.kind || 'issue'; paintKind();
+  $('#dlg-text').value = n.text || ''; dlgKind = n.kind || 'issue'; paintKind(); dlgColor = pinColor(n); paintDlgColors();
   $('#dlg').hidden = false; setTimeout(() => $('#dlg-text').focus(), 30);
   return new Promise(r => { dlgResolve = r; });
 }
 function paintKind() { $('#dlg-kind').querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.val === dlgKind))); }
 function closeDialog(result) { $('#dlg').hidden = true; const r = dlgResolve; dlgResolve = null; r?.(result); canvas.focus({ preventScroll: true }); }
 $('#dlg-kind').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { dlgKind = b.dataset.val; paintKind(); } });
-$('#dlg').addEventListener('submit', e => { e.preventDefault(); closeDialog({ text: $('#dlg-text').value.trim(), kind: dlgKind }); });
+$('#dlg').addEventListener('submit', e => { e.preventDefault(); closeDialog({ text: $('#dlg-text').value.trim(), kind: dlgKind, color: dlgColor }); });
 $('#dlg-cancel').addEventListener('click', () => closeDialog(null));
 $('#dlg-text').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); $('#dlg').requestSubmit(); } if (e.key === 'Escape') closeDialog(null); });
 
@@ -1226,8 +1359,14 @@ function setTool(id) {
   if (!TOOLS.some(t => t[0] === id)) return;
   cancelTool(); state.tool = id; marker.visible = false; hideCursor(); renderToolbar(); updateTip(); drawPalette();
 }
-function setColor(i) { state.color = i; renderToolbar(); drawPalette(); }
-const curColor = () => COLORS[state.color] || COLORS[0];
+function setColor(i) { const c = allColors(); state.color = Math.min(Math.max(0, i), c.length - 1); lsSet('vrtrip-color', c[state.color]); renderToolbar(); drawPalette(); }
+const curColor = () => allColors()[state.color] || BASE_COLORS[0];
+function addCustomColor(hex) {
+  hex = String(hex).toLowerCase(); if (!/^#[0-9a-f]{6}$/.test(hex)) return;
+  if (!allColors().includes(hex)) { customColors.push(hex); if (customColors.length > 8) customColors.shift(); saveColors(); }
+  setColor(allColors().indexOf(hex));
+}
+function saveColors() { lsSet('vrtrip-colors', JSON.stringify(customColors)); if (palReady) layoutPalette(); }
 
 function boxDims() {
   const a = tool.a, b = tool.b;
@@ -1253,7 +1392,7 @@ function drawMeasurePreview() {
 }
 /* pen strokes */
 /* A stroke is a flat ribbon lying in one plane (normal n), like a marker line on glass: seen edge-on it is a thin strip */
-function strokeMat(color) { return new THREE.MeshBasicMaterial({ color, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }); }
+function strokeMat(color) { return new THREE.MeshBasicMaterial({ color, side: THREE.DoubleSide, depthTest: false, transparent: true }); }
 function ribbonGeometry(pts, n, w) {
   const N = pts.length, pos = new Float32Array(N * 6), nor = new Float32Array(N * 6), idx = [];
   const dir = new V3(), side = new V3(), lastSide = new V3(1, 0, 0);
@@ -1274,7 +1413,7 @@ function ribbonGeometry(pts, n, w) {
 }
 function penStart(p, w, n, plane = null) {
   tool.pen = { pts: [p.clone()], w, n: n.clone().normalize(), plane, dirty: false };
-  prevPen = new THREE.Mesh(new THREE.BufferGeometry(), strokeMat(curColor())); prevPen.frustumCulled = false; previewGroup.add(prevPen);
+  prevPen = new THREE.Mesh(new THREE.BufferGeometry(), strokeMat(curColor())); prevPen.frustumCulled = false; prevPen.renderOrder = 11; previewGroup.add(prevPen);
 }
 function penAdd(p) {
   const s = tool.pen; if (!s) return; const last = s.pts[s.pts.length - 1];
@@ -1284,7 +1423,7 @@ function penAdd(p) {
 }
 function penEnd() {
   const s = tool.pen; tool.pen = null; clearPreview();
-  if (s && s.pts.length >= 2) addNote({ type: 'line', pts: s.pts.map(arr), color: curColor(), w: Math.round(s.w * 10000) / 10000, n: arr(s.n) });
+  if (s && s.pts.length >= 2) addNote({ type: 'line', ...strokeTo2D(s.pts, s.n), color: curColor(), w: Math.round(s.w * 10000) / 10000 });
 }
 /* Desktop: the stroke plane goes through the point you clicked on the model and faces your view */
 function penBegin(wr) {
@@ -1301,11 +1440,11 @@ function penBegin(wr) {
 
 async function createPin(hit) {
   const rec = activeRec();
-  const n = addNote({ type: 'pin', p: arr(hit.local), n: arr(hit.normal), kind: 'issue', text: '', num: nextPinNum(rec) });
+  const n = addNote({ type: 'pin', p: arr(hit.local), n: arr(hit.normal), kind: 'issue', text: '', num: nextPinNum(rec), color: curColor() });
   if (!n) return;
   const res = state.view === 'xr' ? await openKeyboard(n) : await openNoteDialog(n, true);
   if (!res) { removeNote(n.id, false); undoStack.pop(); return; }
-  n.text = res.text; n.kind = res.kind; updateNote(n);
+  n.text = res.text; n.kind = res.kind; if (res.color) n.color = res.color; updateNote(n);
 }
 
 function toolDown(wr) {
@@ -1397,7 +1536,13 @@ function updateTip() {
 function renderToolbar() {
   const on = isReady();
   document.querySelectorAll('#toolbar [data-tool]').forEach(b => { b.disabled = !on; b.setAttribute('aria-pressed', String(b.dataset.tool === state.tool)); });
-  document.querySelectorAll('#toolbar [data-color]').forEach(b => { b.disabled = !on; b.setAttribute('aria-pressed', String(+b.dataset.color === state.color)); });
+  const sw = $('#swatches'); sw.textContent = '';
+  allColors().forEach((c, i) => {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'sw'; b.dataset.color = i; b.style.setProperty('--sw', c);
+    b.title = i >= BASE_COLORS.length ? `${c} · правый клик — убрать` : c; b.setAttribute('aria-label', 'Цвет ' + c);
+    b.disabled = !on; b.setAttribute('aria-pressed', String(i === state.color)); sw.append(b);
+  });
+  $('#sw-add').disabled = !on;
   $('#tb-undo').disabled = !on; $('#tb-shot').disabled = !on;
 }
 $('#toolbar').addEventListener('click', e => {
@@ -1407,6 +1552,14 @@ $('#toolbar').addEventListener('click', e => {
   canvas.focus({ preventScroll: true });
 });
 $('#tb-undo').addEventListener('click', () => undo());
+$('#sw-add').addEventListener('click', () => $('#sw-input').click());
+$('#sw-input').addEventListener('change', e => addCustomColor(e.target.value));
+$('#swatches').addEventListener('contextmenu', e => {
+  const b = e.target.closest('[data-color]'); if (!b) return; e.preventDefault();
+  const i = +b.dataset.color - BASE_COLORS.length; if (i < 0) return;
+  const cur = curColor(); customColors.splice(i, 1); saveColors();
+  const k = allColors().indexOf(cur); setColor(k >= 0 ? k : 1);
+});
 $('#tb-shot').addEventListener('click', () => {
   const rec = activeRec(); if (!rec) return;
   updateLabels(); renderer.render(scene, camera);
@@ -1637,15 +1790,18 @@ function drawBtn(c, b, { active = false, hover = false, fill = null, label = b.l
 /* palette: 1024×700 canvas, 0.24 m wide */
 let palMessage = '', palReady = false;
 const pal = makePanel(1024, 700, 0.24, drawPalette, palClick);
-(() => {
-  const B = pal.buttons;
-  TOOLS.forEach(([id, label], i) => B.push({ id, label, x: 24 + (i % 3) * 330, y: 104 + Math.floor(i / 3) * 112, w: 316, h: 100 }));
-  COLORS.forEach((c, i) => B.push({ id: 'c' + i, label: '', color: c, x: 24 + i * 112, y: 336, w: 100, h: 96 }));
-  B.push({ id: 'undo', label: 'Отменить', x: 478, y: 336, w: 522, h: 96 });
+const starImg = new Image(); starImg.onload = () => drawPalette(); starImg.src = STAR_LOGO;
+function layoutPalette() {
+  const B = pal.buttons = [];
+  [...TOOLS, ['undo', 'Отменить']].forEach(([id, label], i) => B.push({ id, label, x: 24 + (i % 3) * 330, y: 104 + Math.floor(i / 3) * 112, w: 316, h: 100 }));
+  const cols = allColors();
+  const shown = cols.length <= 8 ? cols.map((c, i) => i) : [0, 1, 2, 3, ...[4, 3, 2, 1].map(k => cols.length - k)];
+  shown.forEach((ci, k) => B.push({ id: 'c' + ci, label: '', color: cols[ci], x: 24 + k * 122, y: 336, w: 110, h: 96 }));
   B.push({ id: 'pt', label: 'Сквозной', x: 24, y: 446, w: 316, h: 96 });
   B.push({ id: 'table', label: '1:1 ↔ макет', x: 354, y: 446, w: 316, h: 96 });
   B.push({ id: 'grav', label: 'Гравитация', x: 684, y: 446, w: 316, h: 96 });
-})();
+  drawPalette();
+}
 function drawPalette() {
   if (!palReady) return;
   const c = pal.ctx, W = pal.W, H = pal.H;
@@ -1670,7 +1826,8 @@ function drawPalette() {
   }
   const vt = VR_TIPS[state.tool]; const tipTxt = palMessage || (typeof vt === 'string' ? vt : vt[tool.phase] || vt.idle);
   fitText(c, tipTxt, 28, 584, W - 56, 32, 500, palMessage ? '#86c3a0' : '#c9cdd1');
-  fitText(c, `VRtrip · ${AUTHOR}`, 28, 648, W - 56, 24, 500, '#7d848b');
+  if (starImg.complete && starImg.naturalWidth) c.drawImage(starImg, 28, 622, 50, 50);
+  fitText(c, `VRtrip · ${AUTHOR}`, 90, 648, W - 120, 26, 500, '#9aa0a6');
   pal.tex.needsUpdate = true;
 }
 function palClick(id) {
@@ -1682,7 +1839,7 @@ function palClick(id) {
   else if (id === 'grav') { prefs.gravity = !prefs.gravity; savePrefs(); renderPrefs(); state.vy = 0; }
   drawPalette();
 }
-palReady = true;
+palReady = true; layoutPalette();
 const palMesh = pal.mesh; palMesh.position.set(0, 0.085, 0.03); palMesh.rotation.x = -0.9;
 
 /* virtual keyboard for pin comments */
@@ -1977,11 +2134,12 @@ renderer.setAnimationLoop(() => {
   else if (state.view === 'walk') walkUpdate(dt);
   else controls.update();
   if (sky.visible) sky.position.copy(camera.getWorldPosition(_v));
-  updateLabels(); updateCursor();
+  updateBillboards(); updateLabels(); updateCursor();
   renderer.render(scene, camera);
 });
 
 (async () => {
+  { const sc = allColors().indexOf(lsGet('vrtrip-color') || ''); state.color = sc >= 0 ? sc : 1; }
   renderPrefs(); onResize(); frame(null); renderList(); renderSettings(); renderNotes(); renderToolbar(); updateTip(); applyEnv();
   checkXR();
   if (document.fonts?.ready) document.fonts.ready.then(() => { drawPalette(); drawKeyboard(); });
