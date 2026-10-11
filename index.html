@@ -1132,7 +1132,7 @@ function hitScene(wr, { notes = true, ground = true } = {}) {
     const n = h.face ? h.face.normal.clone().transformDirection(h.object.matrixWorld) : UP.clone();
     if (n.dot(wr.direction) > 0) n.negate();
     holderInv.copy(holder.matrixWorld).invert();
-    best = { world: h.point.clone(), local: h.point.clone().applyMatrix4(holderInv), normal: n.transformDirection(holderInv).normalize(), dist: h.distance };
+    best = { world: h.point.clone(), local: h.point.clone().applyMatrix4(holderInv), normal: n.transformDirection(holderInv).normalize(), dist: h.distance, object: h.object, face: h.face };
   }
   if (ground) {
     const lr = localRay(wr);
@@ -1145,6 +1145,59 @@ function hitScene(wr, { notes = true, ground = true } = {}) {
   }
   return best;
 }
+/* Vertex snapping: the cursor jumps to the nearest corner of the triangle under it when close enough */
+const SNAP_TOOLS = new Set(['measure', 'box']);
+/* Look a little around the pointer ray (9 rays) and snap to the nearest model corner within the tolerance */
+const _u = new V3(), _w = new V3();
+function trySnap(h, wr) {
+  const rec = activeRec(); if (!rec?.built || !wr) return h;
+  const meshes = surfaceMeshes(rec);
+  const tol = state.view === 'xr' ? 0.035 : (18 / Math.max(canvas.clientHeight, 1)) * THREE.MathUtils.degToRad(camera.fov);
+  _u.copy(Math.abs(wr.direction.y) < 0.9 ? UP : new V3(1, 0, 0)).cross(wr.direction).normalize(); _w.crossVectors(wr.direction, _u).normalize();
+  const dirs = [wr.direction.clone()];
+  for (let k = 0; k < 8; k++) { const a = k * Math.PI / 4; dirs.push(wr.direction.clone().addScaledVector(_u, Math.cos(a) * tol * 0.8).addScaledVector(_w, Math.sin(a) * tol * 0.8).normalize()); }
+  let best = null, bestAng = tol, bestDist = 0;
+  raycaster.far = 400;
+  for (const d of dirs) {
+    raycaster.set(wr.origin, d); const hit = raycaster.intersectObjects(meshes, false)[0];
+    if (!hit?.face) continue;
+    const pos = hit.object.geometry.attributes.position, m = hit.object.matrixWorld;
+    for (const i of [hit.face.a, hit.face.b, hit.face.c]) {
+      const v = new V3().fromBufferAttribute(pos, i).applyMatrix4(m);
+      const to = v.clone().sub(wr.origin); const dist = to.length(); if (dist < 1e-4) continue;
+      const ang = to.angleTo(wr.direction);
+      if (ang < bestAng) { bestAng = ang; best = v; bestDist = dist; }
+    }
+  }
+  if (!best) return h;
+  holder.updateMatrixWorld(); holderInv.copy(holder.matrixWorld).invert();
+  const out = h ? { ...h } : { normal: UP.clone() };
+  out.world = best; out.local = best.clone().applyMatrix4(holderInv); out.dist = bestDist; out.snapped = true; out.ground = false;
+  return out;
+}
+function toolHit(wr) { const h = hitScene(wr); return SNAP_TOOLS.has(state.tool) ? trySnap(h, wr) : h; }
+function dotTexture(snap) {
+  const c = document.createElement('canvas'); c.width = c.height = 64; const x = c.getContext('2d');
+  x.beginPath(); x.arc(32, 32, snap ? 24 : 15, 0, Math.PI * 2);
+  x.fillStyle = snap ? '#3ddc84' : '#ffffff'; x.fill(); x.lineWidth = snap ? 6 : 5; x.strokeStyle = snap ? '#ffffff' : '#15181b'; x.stroke();
+  if (snap) { x.beginPath(); x.arc(32, 32, 6, 0, Math.PI * 2); x.fillStyle = '#15181b'; x.fill(); }
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+}
+const CUR_MATS = { free: new THREE.SpriteMaterial({ map: dotTexture(false), depthTest: false, transparent: true }), snap: new THREE.SpriteMaterial({ map: dotTexture(true), depthTest: false, transparent: true }) };
+const cursor = new THREE.Sprite(CUR_MATS.free); cursor.renderOrder = 30; cursor.visible = false; scene.add(cursor);
+function setCursor(pos, snap = false) { cursor.position.copy(pos); cursor.material = snap ? CUR_MATS.snap : CUR_MATS.free; cursor.userData.snap = snap; cursor.visible = true; }
+function hideCursor() { cursor.visible = false; }
+function updateCursor() {
+  if (!cursor.visible) return;
+  const d = camera.getWorldPosition(_cam).distanceTo(cursor.position);
+  const k = state.view === 'xr' ? (cursor.userData.snap ? 0.03 : 0.016) : (cursor.userData.snap ? 0.034 : 0.02);
+  cursor.scale.setScalar(Math.max(d * k, 0.004));
+}
+function hoverCursor(wr) {
+  if (state.tool === 'nav' || state.tool === 'erase' || !isReady()) { hideCursor(); return; }
+  const h = toolHit(wr); if (h) setCursor(h.world, !!h.snapped); else hideCursor();
+}
+
 function pickNote(wr) {
   const rec = activeRec(); if (!rec?.built) return null;
   const objs = []; for (const o of rec.noteObjs.values()) objs.push(...o.userData.pick);
@@ -1170,7 +1223,7 @@ function setPreviewLabel(text, pos) {
 function cancelTool() { tool.phase = 'idle'; tool.pen = null; clearPreview(); updateTip(); }
 function setTool(id) {
   if (!TOOLS.some(t => t[0] === id)) return;
-  cancelTool(); state.tool = id; marker.visible = false; renderToolbar(); updateTip(); drawPalette();
+  cancelTool(); state.tool = id; marker.visible = false; hideCursor(); renderToolbar(); updateTip(); drawPalette();
 }
 function setColor(i) { state.color = i; renderToolbar(); drawPalette(); }
 const curColor = () => COLORS[state.color] || COLORS[0];
@@ -1229,8 +1282,8 @@ function toolDown(wr) {
   const t = state.tool;
   if (t === 'box') {
     if (tool.phase === 'idle') {
-      const h = hitScene(wr); if (!h) return;
-      tool.a = new V3(snapv(h.local.x), h.local.y, snapv(h.local.z)); tool.base = h.local.y; tool.b = tool.a.clone(); tool.h = 0;
+      const h = toolHit(wr); if (!h) return;
+      tool.a = h.snapped ? h.local.clone() : new V3(snapv(h.local.x), h.local.y, snapv(h.local.z)); tool.base = h.local.y; tool.b = tool.a.clone(); tool.h = 0;
       tool.phase = 'foot'; drawBoxPreview();
     } else if (tool.phase === 'foot') { if (footBig()) tool.phase = 'height'; }
     else if (tool.phase === 'height') {
@@ -1238,7 +1291,7 @@ function toolDown(wr) {
       if (max.y - min.y >= 0.05) addNote({ type: 'box', min: arr(min), max: arr(max), color: curColor() });
     }
   } else if (t === 'measure') {
-    const h = hitScene(wr); if (!h) return;
+    const h = toolHit(wr); if (!h) return;
     if (tool.phase === 'idle') { tool.a = h.local.clone(); tool.b = h.local.clone(); tool.phase = 'm'; drawMeasurePreview(); }
     else if (tool.phase === 'm') { tool.b = h.local.clone(); finishMeasure(); }
   } else if (t === 'pin') {
@@ -1258,15 +1311,19 @@ function toolMove(wr) {
   if (!isReady()) return;
   const t = state.tool;
   if (t === 'box' && tool.phase === 'foot') {
-    const lr = localRay(wr); const pl = new THREE.Plane(UP, -tool.base); const p = lr.intersectPlane(pl, new V3());
-    if (p) { tool.b.set(snapv(p.x), tool.base, snapv(p.z)); drawBoxPreview(); }
+    const sh = trySnap(null, wr);
+    if (sh?.snapped) { tool.b.set(sh.local.x, tool.base, sh.local.z); drawBoxPreview(); }
+    else {
+      const lr = localRay(wr); const pl = new THREE.Plane(UP, -tool.base); const p = lr.intersectPlane(pl, new V3());
+      if (p) { tool.b.set(snapv(p.x), tool.base, snapv(p.z)); drawBoxPreview(); }
+    }
   } else if (t === 'box' && tool.phase === 'height') {
     const lr = localRay(wr); const c = new V3((tool.a.x + tool.b.x) / 2, tool.base, (tool.a.z + tool.b.z) / 2);
     const n = lr.origin.clone().sub(c); n.y = 0; if (n.lengthSq() < 1e-6) n.set(0, 0, 1); n.normalize();
     const p = lr.intersectPlane(new THREE.Plane().setFromNormalAndCoplanarPoint(n, c), new V3());
     if (p) { tool.h = Math.max(0.05, snapv(p.y - tool.base)); drawBoxPreview(); }
   } else if (t === 'measure' && tool.phase === 'm') {
-    const h = hitScene(wr); if (h) { tool.b = h.local.clone(); drawMeasurePreview(); }
+    const h = toolHit(wr); if (h) { tool.b = h.local.clone(); drawMeasurePreview(); }
   } else if (t === 'pen' && tool.pen && state.view !== 'xr') {
     const h = hitScene(wr); if (h) penAdd(h.local.clone().addScaledVector(h.normal, 0.012));
   }
@@ -1283,7 +1340,7 @@ const TIPS = {
   nav: { walk: 'Клик по полу — перейти туда. Тянуть мышью — осмотреться.', orbit: '' },
   box: { idle: 'Куб: щёлкните первый угол основания', foot: 'Задайте второй угол и щёлкните', height: 'Поднимите на нужную высоту и щёлкните. Esc — отмена' },
   pin: { idle: 'Метка: щёлкните по поверхности, чтобы оставить комментарий' },
-  measure: { idle: 'Рулетка: щёлкните первую точку', m: 'Щёлкните вторую точку. Esc — отмена' },
+  measure: { idle: 'Рулетка: щёлкните первую точку. Зелёная точка — привязка к вершине', m: 'Щёлкните вторую точку. Esc — отмена' },
   pen: { idle: 'Карандаш: ведите с зажатой кнопкой по поверхностям' },
   erase: { idle: 'Ластик: щёлкните по кубу, метке, размеру или линии' },
 };
@@ -1489,7 +1546,7 @@ canvas.addEventListener('pointermove', e => {
       return;
     }
   }
-  if (state.tool !== 'nav' && (!pd || pd.tool)) toolMove(rayFromEvent(e));
+  if (state.tool !== 'nav' && (!pd || pd.tool)) { const wr = rayFromEvent(e); toolMove(wr); hoverCursor(wr); }
 });
 const endPointer = e => {
   if (!pd || e.pointerId !== pd.id) return;
@@ -1502,6 +1559,7 @@ const endPointer = e => {
 };
 canvas.addEventListener('pointerup', e => { endPointer(e); controls.enabled = state.view === 'orbit'; });
 canvas.addEventListener('pointercancel', e => { endPointer(e); controls.enabled = state.view === 'orbit'; });
+canvas.addEventListener('pointerleave', () => { if (!pd && state.view !== 'xr') hideCursor(); });
 
 /* ================= orbit preview ================= */
 function frame(rec) {
@@ -1657,8 +1715,6 @@ const factory = new XRControllerModelFactory();
 const rayGeo = new THREE.BufferGeometry().setFromPoints([new V3(0, 0, 0), new V3(0, 0, -1)]);
 const marker = new THREE.Mesh(new THREE.RingGeometry(0.17, 0.24, 40).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xd8a33f, transparent: true, opacity: 0.95, depthTest: false }));
 marker.renderOrder = 11; marker.visible = false; scene.add(marker);
-const dot = new THREE.Mesh(new THREE.SphereGeometry(0.008, 10, 8), new THREE.MeshBasicMaterial({ color: 0xffffff, depthTest: false }));
-dot.renderOrder = 21; dot.visible = false; scene.add(dot);
 const ctrls = [0, 1].map(i => {
   const c = renderer.xr.getController(i); rig.add(c);
   const g = renderer.xr.getControllerGrip(i); g.add(factory.createControllerModel(g)); rig.add(g);
@@ -1796,7 +1852,7 @@ function drawPaletteThrottled() { const t = performance.now(); if (t - palThrott
 
 const panelHits = new THREE.Raycaster();
 function handleRightPointer(pads) {
-  const r = ctrlFor('right'); dot.visible = false;
+  const r = ctrlFor('right'); hideCursor();
   if (!r) return;
   const trig = !!pads.right?.buttons[0]?.pressed; const down = trig && !state.prevTrig, up = !trig && state.prevTrig; state.prevTrig = trig;
   r.c.getWorldPosition(_o); _d.set(0, 0, -1).applyQuaternion(r.c.getWorldQuaternion(_q));
@@ -1809,7 +1865,7 @@ function handleRightPointer(pads) {
   const ui = ph ? { p: ph.object.userData.panel, btn: btnAt(ph.object.userData.panel, ph.uv) } : null;
   for (const p of [pal, kb]) { const id = ui && ui.p === p ? ui.btn?.id ?? null : null; if (p.hover !== id) { p.hover = id; p.draw(); } }
   if (ui) {
-    len = ph.distance; dot.position.copy(ph.point); dot.visible = true; marker.visible = false;
+    len = ph.distance; setCursor(ph.point); marker.visible = false;
     if (down && ui.btn) { ui.p.click(ui.btn.id); state.uiCapture = true; }
   } else if (state.uiCapture || kbd.open || state.grab) {
     if (!trig) state.uiCapture = false;
@@ -1823,11 +1879,11 @@ function handleRightPointer(pads) {
   } else if (state.tool === 'pen') {
     const tip = _o.clone().addScaledVector(_d, 0.03); holder.updateMatrixWorld();
     const lp = holder.worldToLocal(tip.clone());
-    dot.position.copy(tip); dot.visible = true; len = 0.03;
+    setCursor(tip); len = 0.03;
     if (down) penStart(lp, 0.005 / holder.scale.x); else if (trig && tool.pen) penAdd(lp);
     if (up && tool.pen) penEnd();
   } else {
-    const h = hitScene(wr); if (h) { len = h.dist; dot.position.copy(h.world); dot.visible = true; }
+    const h = toolHit(wr); if (h) { len = h.dist; if (state.tool !== 'erase') setCursor(h.world, !!h.snapped); }
     if (down) toolDown(wr);
     toolMove(wr);
     if (up) toolUp(wr);
@@ -1857,7 +1913,7 @@ function onEnd() {
   if (kbd.open) closeKeyboard(null);
   state.view = 'orbit'; state.sessionMode = null; state.grab = null; state.mode = 'walk'; state.uiCapture = false; cancelTool();
   rig.position.set(0, 0, 0); rig.rotation.set(0, 0, 0); resetHolder();
-  marker.visible = false; dot.visible = false;
+  marker.visible = false; hideCursor();
   controls.enabled = true; applyEnv(); frame(activeRec()); onResize(); updateTip();
 }
 $('#m-mr').addEventListener('click', () => enter(true));
@@ -1889,7 +1945,7 @@ renderer.setAnimationLoop(() => {
   else if (state.view === 'walk') walkUpdate(dt);
   else controls.update();
   if (sky.visible) sky.position.copy(camera.getWorldPosition(_v));
-  updateLabels();
+  updateLabels(); updateCursor();
   renderer.render(scene, camera);
 });
 
