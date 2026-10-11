@@ -324,9 +324,9 @@ h2{display:flex;align-items:center;gap:10px;margin:0;font:600 16px/1.2 var(--f-b
     <h3>Браузер</h3>
     <dl>
       <dt>W A S D</dt><dd>Идти, Shift — бегом. На телефоне и в Quest — джойстик в углу.</dd>
-      <dt>Мышь</dt><dd>Тянуть — осмотреться. Клик по полу — перейти туда. С инструментом смотреть — правой кнопкой.</dd>
+      <dt>Мышь</dt><dd>В обзоре: правая кнопка — вращать, Shift + кнопка — двигать, колесо — масштаб. В прогулке: тянуть — осмотреться, клик по полу — перейти. С инструментом смотреть — правой кнопкой.</dd>
       <dt>R / F</dt><dd>Этаж выше / ниже. Q / E — вниз / вверх без гравитации.</dd>
-      <dt>1–6</dt><dd>Инструменты. Ctrl+Z — отменить, Esc — прервать или выйти.</dd>
+      <dt>1–5</dt><dd>Инструменты. Ctrl+Z — отменить, Esc — прервать или выйти.</dd>
     </dl>
   </details>
 
@@ -339,11 +339,10 @@ h2{display:flex;align-items:center;gap:10px;margin:0;font:600 16px/1.2 var(--f-b
   <canvas id="c" tabindex="0" aria-label="3D-вид модели"></canvas>
   <div class="toolbar" id="toolbar" role="toolbar" aria-label="Инструменты">
     <button type="button" class="tb" data-tool="nav" title="Навигация (1)"><svg viewBox="0 0 24 24"><path d="M5 3l14 7.5-6.2 1.8L10 19z"/></svg><span>Ходьба</span></button>
-    <button type="button" class="tb" data-tool="box" title="Куб (2)"><svg viewBox="0 0 24 24"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M12 12l8-4.5M12 12v9M12 12L4 7.5"/></svg><span>Куб</span></button>
-    <button type="button" class="tb" data-tool="pin" title="Метка с комментарием (3)"><svg viewBox="0 0 24 24"><path d="M12 21s-6-6.2-6-11a6 6 0 0 1 12 0c0 4.8-6 11-6 11z"/><circle cx="12" cy="10" r="2.2"/></svg><span>Метка</span></button>
-    <button type="button" class="tb" data-tool="measure" title="Рулетка (4)"><svg viewBox="0 0 24 24"><path d="M3 17L17 3l4 4L7 21z"/><path d="M7 13l2 2M10 10l2 2M13 7l2 2"/></svg><span>Рулетка</span></button>
-    <button type="button" class="tb" data-tool="pen" title="Карандаш (5)"><svg viewBox="0 0 24 24"><path d="M4 20l4-1 11-11-3-3L5 16z"/><path d="M14 6l3 3"/></svg><span>Карандаш</span></button>
-    <button type="button" class="tb" data-tool="erase" title="Ластик (6)"><svg viewBox="0 0 24 24"><path d="M8 20h12"/><path d="M4 15.5l9.5-9.5 6 6-7.5 7.5H8z"/></svg><span>Ластик</span></button>
+    <button type="button" class="tb" data-tool="pin" title="Метка с комментарием (2)"><svg viewBox="0 0 24 24"><path d="M12 21s-6-6.2-6-11a6 6 0 0 1 12 0c0 4.8-6 11-6 11z"/><circle cx="12" cy="10" r="2.2"/></svg><span>Метка</span></button>
+    <button type="button" class="tb" data-tool="measure" title="Рулетка (3)"><svg viewBox="0 0 24 24"><path d="M3 17L17 3l4 4L7 21z"/><path d="M7 13l2 2M10 10l2 2M13 7l2 2"/></svg><span>Рулетка</span></button>
+    <button type="button" class="tb" data-tool="pen" title="Карандаш (4)"><svg viewBox="0 0 24 24"><path d="M4 20l4-1 11-11-3-3L5 16z"/><path d="M14 6l3 3"/></svg><span>Карандаш</span></button>
+    <button type="button" class="tb" data-tool="erase" title="Ластик (5)"><svg viewBox="0 0 24 24"><path d="M8 20h12"/><path d="M4 15.5l9.5-9.5 6 6-7.5 7.5H8z"/></svg><span>Ластик</span></button>
     <span class="tb-sep"></span>
     <button type="button" class="sw" data-color="0" style="--sw:#f2efe8" aria-label="Белый"></button>
     <button type="button" class="sw" data-color="1" style="--sw:#d8a33f" aria-label="Янтарный"></button>
@@ -353,7 +352,7 @@ h2{display:flex;align-items:center;gap:10px;margin:0;font:600 16px/1.2 var(--f-b
     <button type="button" class="tb" id="tb-undo" title="Отменить (Ctrl+Z)"><svg viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg><span>Отменить</span></button>
     <button type="button" class="tb" id="tb-shot" title="Сохранить снимок экрана"><svg viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.2"/></svg><span>Снимок</span></button>
   </div>
-  <div class="chip" id="chip">Обзор · мышь вращает, колесо приближает</div>
+  <div class="chip" id="chip">Обзор · правая кнопка — вращать · с Shift — двигать · колесо — масштаб</div>
   <div class="walkui" id="walkui" hidden>
     <div class="joy" id="joy" aria-label="Джойстик движения"><div class="knob" id="knob"></div></div>
     <div class="floors">
@@ -401,7 +400,7 @@ const TABLE_STEPS = [20, 50, 100, 200, 500, 1000];
 const EYE = 1.65, STEP = 0.45, RADIUS = 0.3, GRAV = 9.8;
 const COLORS = ['#f2efe8', '#d8a33f', '#e0604a', '#3f86c9'];
 const KINDS = { issue: { label: 'Замечание', color: '#e0604a' }, question: { label: 'Вопрос', color: '#d8a33f' }, idea: { label: 'Идея', color: '#4fae7f' } };
-const TOOLS = [['nav', 'Ходьба'], ['box', 'Куб'], ['pin', 'Метка'], ['measure', 'Рулетка'], ['pen', 'Карандаш'], ['erase', 'Ластик']];
+const TOOLS = [['nav', 'Ходьба'], ['pin', 'Метка'], ['measure', 'Рулетка'], ['pen', 'Карандаш'], ['erase', 'Ластик']];   // «Куб» временно скрыт: код инструмента сохранён
 const AUTHOR = 'Сергей Дмитриев · Rock Parametric';
 const base = p => String(p).split(/[\\/]/).pop();
 const safeDecode = s => { try { return decodeURIComponent(s); } catch { return s; } };
@@ -475,6 +474,8 @@ scene.background = PREVIEW_BG;
 const rig = new THREE.Group(); scene.add(rig);
 const camera = new THREE.PerspectiveCamera(55, 1, 0.05, 3000); camera.rotation.order = 'YXZ'; rig.add(camera);
 const controls = new OrbitControls(camera, canvas); controls.enableDamping = true; controls.dampingFactor = 0.08;
+controls.mouseButtons = { LEFT: THREE.MOUSE.ROTATE, MIDDLE: THREE.MOUSE.ROTATE, RIGHT: THREE.MOUSE.ROTATE };   // any button orbits; with Shift it pans (OrbitControls built-in)
+controls.screenSpacePanning = true;
 
 const hemi = new THREE.HemisphereLight(0xffffff, 0x7f8589, 2.1); scene.add(hemi);
 const sun = new THREE.DirectionalLight(0xfff6ea, 2.2); sun.position.set(40, 70, 25); scene.add(sun);
@@ -994,10 +995,10 @@ function makeNoteObj(n) {
     const lab = makeLabel(`${fmt2(d)} м`, null, { depthTest: false }); lab.position.copy(a).add(b).multiplyScalar(0.5);
     g.add(line, cyl, lab); pick.push(cyl);
   } else if (n.type === 'line') {
-    const pts = n.pts.map(vec);
-    const curve = new THREE.CatmullRomCurve3(pts);
-    const tube = new THREE.Mesh(new THREE.TubeGeometry(curve, Math.min(800, pts.length * 3), n.r || 0.012, 6, false), new THREE.MeshStandardMaterial({ color: n.color, roughness: 0.6 }));
-    g.add(tube); pick.push(tube);
+    const pts = n.pts.map(vec); let m;
+    if (n.n && n.w) m = new THREE.Mesh(ribbonGeometry(pts, vec(n.n), n.w), strokeMat(n.color));
+    else m = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), Math.min(800, pts.length * 3), n.r || 0.012, 6, false), new THREE.MeshStandardMaterial({ color: n.color, roughness: 0.6 }));
+    g.add(m); pick.push(m);
   }
   g.userData.noteId = n.id; pick.forEach(p => { p.userData.noteId = n.id; });
   g.userData.pick = pick;
@@ -1052,7 +1053,7 @@ function renderNotes() {
   const ul = $('#notes'); ul.textContent = '';
   const rec = activeRec(); const list = rec?.built ? rec.notes : [];
   $('#n-export').disabled = !list.length; $('#n-clear').disabled = !list.length;
-  if (!list.length) { const li = document.createElement('li'); li.style.display = 'block'; li.innerHTML = '<p class="empty">Пока нет. Выберите «Метку», «Рулетку» или «Куб» на панели над моделью и щёлкните по поверхности.</p>'; ul.append(li); return; }
+  if (!list.length) { const li = document.createElement('li'); li.style.display = 'block'; li.innerHTML = '<p class="empty">Пока нет. Выберите «Метку», «Рулетку» или «Карандаш» на панели над моделью и щёлкните по модели.</p>'; ul.append(li); return; }
   const sorted = [...list].sort((a, b) => (a.type === 'pin' ? 0 : 1) - (b.type === 'pin' ? 0 : 1) || (a.num || 0) - (b.num || 0) || a.t - b.t);
   for (const n of sorted) {
     const s = noteSummary(n);
@@ -1251,21 +1252,51 @@ function drawMeasurePreview() {
   setPreviewLabel(`${fmt2(a.distanceTo(b))} м`, a.clone().add(b).multiplyScalar(0.5).add(new V3(0, 0.05, 0)));
 }
 /* pen strokes */
-function penStart(p, r) {
-  tool.pen = { pts: [p.clone()], r };
-  const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(3 * 4096), 3)); geo.setDrawRange(0, 1);
-  prevPen = new THREE.Line(geo, new THREE.LineBasicMaterial({ color: curColor() })); prevPen.frustumCulled = false; previewGroup.add(prevPen);
-  geo.attributes.position.setXYZ(0, p.x, p.y, p.z);
+/* A stroke is a flat ribbon lying in one plane (normal n), like a marker line on glass: seen edge-on it is a thin strip */
+function strokeMat(color) { return new THREE.MeshBasicMaterial({ color, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }); }
+function ribbonGeometry(pts, n, w) {
+  const N = pts.length, pos = new Float32Array(N * 6), nor = new Float32Array(N * 6), idx = [];
+  const dir = new V3(), side = new V3(), lastSide = new V3(1, 0, 0);
+  for (let i = 0; i < N; i++) {
+    dir.subVectors(pts[Math.min(i + 1, N - 1)], pts[Math.max(i - 1, 0)]);
+    side.crossVectors(n, dir);
+    if (side.lengthSq() < 1e-12) side.copy(lastSide); else side.normalize();
+    lastSide.copy(side);
+    const p = pts[i], h = w / 2;
+    pos.set([p.x + side.x * h, p.y + side.y * h, p.z + side.z * h, p.x - side.x * h, p.y - side.y * h, p.z - side.z * h], i * 6);
+    nor.set([n.x, n.y, n.z, n.x, n.y, n.z], i * 6);
+    if (i < N - 1) { const a = i * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); g.setAttribute('normal', new THREE.BufferAttribute(nor, 3)); g.setIndex(idx);
+  g.computeBoundingSphere(); g.computeBoundingBox();
+  return g;
+}
+function penStart(p, w, n, plane = null) {
+  tool.pen = { pts: [p.clone()], w, n: n.clone().normalize(), plane, dirty: false };
+  prevPen = new THREE.Mesh(new THREE.BufferGeometry(), strokeMat(curColor())); prevPen.frustumCulled = false; previewGroup.add(prevPen);
 }
 function penAdd(p) {
   const s = tool.pen; if (!s) return; const last = s.pts[s.pts.length - 1];
-  if (last.distanceTo(p) < Math.max(s.r * 0.8, 0.004) || s.pts.length >= 4096) return;
-  s.pts.push(p.clone()); const a = prevPen.geometry.attributes.position; a.setXYZ(s.pts.length - 1, p.x, p.y, p.z); a.needsUpdate = true;
-  prevPen.geometry.setDrawRange(0, s.pts.length);
+  if (last.distanceTo(p) < Math.max(s.w * 0.6, 0.002) || s.pts.length >= 4096) return;
+  s.pts.push(p.clone());
+  prevPen.geometry.dispose(); prevPen.geometry = ribbonGeometry(s.pts, s.n, s.w);
 }
 function penEnd() {
   const s = tool.pen; tool.pen = null; clearPreview();
-  if (s && s.pts.length >= 2) addNote({ type: 'line', pts: s.pts.map(arr), color: curColor(), r: r3(s.r * 1000) / 1000 || s.r });
+  if (s && s.pts.length >= 2) addNote({ type: 'line', pts: s.pts.map(arr), color: curColor(), w: Math.round(s.w * 10000) / 10000, n: arr(s.n) });
+}
+/* Desktop: the stroke plane goes through the point you clicked on the model and faces your view */
+function penBegin(wr) {
+  const lr = localRay(wr); const h = hitScene(wr);
+  const nrm = lr.direction.clone().negate();
+  const scale = holder.scale.x;
+  const distW = h ? h.dist : 5;
+  const anchor = h ? h.local.clone() : lr.origin.clone().addScaledVector(lr.direction, 5 / scale);
+  anchor.addScaledVector(nrm, Math.min(0.3, distW * 0.02) / scale);        // lift a little toward the eye so the surface does not cover it
+  const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(nrm, anchor);
+  const w = THREE.MathUtils.clamp(distW * 0.006, 0.006, 0.25) / scale;
+  penStart(anchor, w, nrm, plane);
 }
 
 async function createPin(hit) {
@@ -1297,7 +1328,7 @@ function toolDown(wr) {
   } else if (t === 'pin') {
     const h = hitScene(wr); if (h) createPin(h);
   } else if (t === 'pen') {
-    const h = hitScene(wr); if (h) penStart(h.local.clone().addScaledVector(h.normal, 0.012), 0.012);
+    penBegin(wr);
   } else if (t === 'erase') {
     const p = pickNote(wr); if (p) { removeNote(p.id); flash('Удалено'); }
   }
@@ -1324,8 +1355,8 @@ function toolMove(wr) {
     if (p) { tool.h = Math.max(0.05, snapv(p.y - tool.base)); drawBoxPreview(); }
   } else if (t === 'measure' && tool.phase === 'm') {
     const h = toolHit(wr); if (h) { tool.b = h.local.clone(); drawMeasurePreview(); }
-  } else if (t === 'pen' && tool.pen && state.view !== 'xr') {
-    const h = hitScene(wr); if (h) penAdd(h.local.clone().addScaledVector(h.normal, 0.012));
+  } else if (t === 'pen' && tool.pen?.plane) {
+    const p = localRay(wr).intersectPlane(tool.pen.plane, new V3()); if (p) penAdd(p);
   }
 }
 function toolUp() {
@@ -1341,8 +1372,8 @@ const TIPS = {
   box: { idle: 'Куб: щёлкните первый угол основания', foot: 'Задайте второй угол и щёлкните', height: 'Поднимите на нужную высоту и щёлкните. Esc — отмена' },
   pin: { idle: 'Метка: щёлкните по поверхности, чтобы оставить комментарий' },
   measure: { idle: 'Рулетка: щёлкните первую точку. Зелёная точка — привязка к вершине', m: 'Щёлкните вторую точку. Esc — отмена' },
-  pen: { idle: 'Карандаш: ведите с зажатой кнопкой по поверхностям' },
-  erase: { idle: 'Ластик: щёлкните по кубу, метке, размеру или линии' },
+  pen: { idle: 'Карандаш: нажмите на модель и рисуйте — линия ляжет в плоскость перед вами' },
+  erase: { idle: 'Ластик: щёлкните по метке, размеру или линии' },
 };
 const VR_TIPS = {
   nav: 'Курок на пол — телепорт. Два грипа — масштаб.',
@@ -1357,6 +1388,7 @@ function updateTip() {
   let txt = '';
   if (state.tool === 'nav') txt = state.view !== 'walk' ? '' : matchMedia('(pointer:coarse)').matches ? 'Джойстик — идти, тянуть пальцем — осмотреться, касание пола — перейти туда.' : TIPS.nav.walk + ' WASD — идти, R / F — этаж.';
   else txt = TIPS[state.tool][tool.phase] || TIPS[state.tool].idle;
+  if (txt && state.view === 'orbit' && state.tool !== 'nav' && !matchMedia('(pointer:coarse)').matches) txt += ' · правая кнопка — вращать, Shift — двигать';
   tip.textContent = txt; tip.hidden = !txt; tip.classList.toggle('tool', state.tool !== 'nav');
   $('#chip').hidden = state.view !== 'orbit' || state.tool !== 'nav';
 }
@@ -1504,7 +1536,7 @@ window.addEventListener('keydown', e => {
   if (typing(e) || state.view === 'xr') return;
   if ((e.ctrlKey || e.metaKey) && e.code === 'KeyZ') { e.preventDefault(); undo(); return; }
   if (e.code === 'Escape') { if (tool.phase !== 'idle' || tool.pen) cancelTool(); else if (state.tool !== 'nav') setTool('nav'); else if (state.view === 'walk') exitWalk(); return; }
-  if (/^Digit[1-6]$/.test(e.code) && isReady()) { setTool(TOOLS[+e.code.slice(5) - 1][0]); return; }
+  if (/^Digit[1-9]$/.test(e.code) && isReady() && TOOLS[+e.code.slice(5) - 1]) { setTool(TOOLS[+e.code.slice(5) - 1][0]); return; }
   if (state.view !== 'walk') return;
   if (e.code === 'KeyR' || e.code === 'PageUp') { walkFloor(true); e.preventDefault(); return; }
   if (e.code === 'KeyF' || e.code === 'PageDown') { walkFloor(false); e.preventDefault(); return; }
@@ -1880,7 +1912,7 @@ function handleRightPointer(pads) {
     const tip = _o.clone().addScaledVector(_d, 0.03); holder.updateMatrixWorld();
     const lp = holder.worldToLocal(tip.clone());
     setCursor(tip); len = 0.03;
-    if (down) penStart(lp, 0.005 / holder.scale.x); else if (trig && tool.pen) penAdd(lp);
+    if (down) { const hl = holder.worldToLocal(headPos(new V3())); penStart(lp, 0.008 / holder.scale.x, hl.sub(lp)); } else if (trig && tool.pen) penAdd(lp);
     if (up && tool.pen) penEnd();
   } else {
     const h = toolHit(wr); if (h) { len = h.dist; if (state.tool !== 'erase') setCursor(h.world, !!h.snapped); }
