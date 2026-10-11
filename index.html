@@ -319,9 +319,9 @@ h2{display:flex;align-items:center;gap:10px;margin:0;font:600 16px/1.2 var(--f-b
       <dt>Один грип</dt><dd>В режиме макета — взять и переставить модель.</dd>
       <dt>A</dt><dd>1:1 ↔ макет. Макет запоминает последний масштаб и положение.</dd>
       <dt>B</dt><dd>Сквозной режим вкл / выкл.</dd>
-      <dt>X</dt><dd>Ко входу или поставить макет перед собой.</dd>
+      <dt>X</dt><dd>Показать или скрыть меню на левом контроллере. «Ко входу» — во вкладке «Вид».</dd>
       <dt>Y</dt><dd>Следующая модель экспозиции.</dd>
-      <dt>Клик левым стиком</dt><dd>Скрыть или показать палитру.</dd>
+      <dt>Клик левым стиком</dt><dd>Тоже показывает или скрывает меню.</dd>
     </dl>
     <h3>Браузер</h3>
     <dl>
@@ -395,7 +395,7 @@ const UP = new V3(0, 1, 0), DOWN = new V3(0, -1, 0);
 const UNITS = { mm: 0.001, cm: 0.01, m: 1, in: 0.0254, ft: 0.3048 };
 const TABLE_STEPS = [20, 50, 100, 200, 500, 1000];
 const EYE = 1.65, STEP = 0.45, RADIUS = 0.3, GRAV = 9.8;
-const APP_VERSION = '1.7';
+const APP_VERSION = '1.8';
 const BASE_COLORS = ['#f2efe8', '#d8a33f', '#e0604a', '#3f86c9'];
 const STAR_LOGO = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAYAAADDPmHLAAAiB0lEQVR42u19eXhcV5XnOfe+V6/2RV4UWfIqW44t2TGxk5CwSU0C2ROgbWjWZodMDzRfJw1ND0imGwJDmI9uphvCfBAaSM+MlP6gcTNhgFA1oZlhEZAQO7ZlO7K1L7akqnpLveXeM3/UK7ssS15kyVaVdb9P1h9WSVXv/O5ZfmcDqPBDRAwAoP+lF955auSlw6MDPd6p4WP9w/2HPl78/05OBAhLp/oOdXZyAIDhE4f25E7106mRYzR04qAcHThCtj5K/b0HOgAAKJ1Wlp7WzAcr/PYjwG+V4b7ogXA4tMk0TQ8RFSKQjCEFg0Gum/odDWubf0pEHBHFksjPPqxS33h7eztDRBp6KVgHRA22XQAA4AAAiMCklCiFIE3Vnhga6lkBALK9vZ0tibxKANDc3IwAAIqm1iiqEpKSCBFPazREZFahICORcAM53jcQkVpbW5cAUC0A2L17NwAACKI6TQsAEdE5H44xPjWV82pqUvf1977w521tbV56yR+oDgBkMhkEAECiOkVRAABoFk+B5/O6CIciXzhx4uCutrY2r9N3HpcOQMXehtZWX7wS6znjswIAEdF1XQwE1IDG+HdG9++/aWVzs0lFi0FLGqBiTysBAHAGqyRJKDP/MIMpYKZpeYlE7HoRU/4eEWUmk1nSApUNgK6iDwDQIKX0Q8LzxLuIytRU1kskYu/uP3bg7Uv+QIXzACUVPnTi0K+ikfDNhmmKUhh4nteQqqrEEHXTKOxavbH5CBExRJRLGqAChd/b2xsEpBWe8IAuAsyIiI7rUiAQiKsB/h0iUop+JOESACrwCJGNA+FyzxMAFylEhsjzuu4lU8lbho4f+BwiCriG/QGsUA3AEFEOHe/ZCky+wBCZlPIsIuhCvwKRiVBQU3K6fvfq9c1PX6tUMatk4CIXK4OaxiSRvAThAwCglIK5nkfBQOCbo7291wGALGUWlwCwyM8ZEojVaVoAEOCSnThEZLZty3AkfJ3HrCd8TuCa8wcqEgCt/ncJctWlXfxz+AGezea8ZamaO/teeuERRBTXGj9QmSrvDAIaEBHo8vg8ns3lRDQc+Vx/74svv9ao4golQoosIDCoI0lwGUoAEBE9T2AgEOCqwr578uTJG5ctW6ZfK1RxpTo9RZsvqd4TAi635IsxZKZpikQi0Wgb4//1WqKKKxIAiEjt1M6QsRVCCAC4fMetmDrOeqlE/B0Dvfvffa1QxRXn8ZZU84kTf0gpoB7SVHWl63lyPsBMRKQoCjFEy7Gtm1at33aw2qliVqmg1UBLIUCqaALmJ3Qr+gMeBbRABHngO0T7A9UeGlYcALq6uhAAwJOiVtM09RIZwIsBAdd1w0ulEjsHT+AXqj00rEQTwBFRjPQdejAcCX/PMC6cBZwjELxwOKTkssYDDRu2/ICokyPuERX4vNCXMwKAnB7ZVKAJKLKAkqBOVVUgggUJ1aSUzHFcCgSVb5zsO1wPsFvSIq8qJiIkIkZEPJ1OK77/QogoEVEgIk3nOCoOAJnTNxTqFzjSKFLFodByF+S3EJEyxariRaM129vbGRFxSqeVzs5OXi7strY2DxEl9fWFRvoObpsYPPaqkWN/qN2zZ48o92kq1gQM9x38p0Q88c5sLufBAhJaROSlUknl1KmJ/9SwvvmzlE4r2NbmXY3b3dXVxXavWIHQ2kozZS6JiI/1H10PKLcDwxtJ0i4pZTNDbAiGQiClnLAK1hfr1279fHt7O9u7d6+sRAAwRJTDfYf+dywafV0unxeIyBfw7xHnXKqqClbBaK1f2/Lv1NnJcc/C+QMlu53JZFgrAEBrq5iJlezrO1zPyNuiMr4LGd8phNhORBtisaiiKAp4ngDHccBxHJBEUlUUlkolYHxs4h2r1l3/XaK0UnFEByJKIsLhvkMrPSEWXIuVqGJVVZnKA9/u7e29Edaty1F7O8O9e+V8Cbv4lUGAVunzDgRlWc5sdmCZlTM3Sc+7UVGUmwhpuyfk5kg4GtECAZAkwXEcsG0H8nlDFF9P6EdIyBCZ53meZRUYIn2EiJ4E6KgsDVAigQYHu8Mookc0VV1lO868hoHncQpFKpXik5OT/7N+3da3zNUU+AJnRWGP00yRxejo/ig5oQ0I7g0C4CYGbAciXc+5siIcDgEQgOO64DgOeJ4nAVFCGZBmex5EJDVNQ9uxj0/kxPUtLS1ORWmAjo4OBADSZLzGJZks0sBXiDApUcWp5Jv7X9qfxg0tjxOlFcTZQVCy2ytWrMBW3277qlyc+ZlOPjb2svXcw22O6+xCjjeSjS0EXn0sHkPGGLiuC7btgOM45LquKJlCX9gMANjFZMQIgDRNY7bjHG9paXGIiFWaBmCIKEcHDu8ggt9daYauWFWsSMaYYxj6LWsab3ihu7tb3bVrl1tut4tme2a7feLEwVVBhbcAwA7PkzczhG2IuDYSCWuKooDwBNiODY7jAhEJACREQP+zX87nJcaYUAMqNy3zdaWO6UrzAYosoMCVsWgQdd2Q/g24Uv4Huq4HkUgkpGnB71JPz83Y1GSXpY7Pstt9fftrAkzbzBnbIYS4WUqxA5E1aoFATNM0kLLMbuuGADrbbpc7t5dr5YhIJBJxZfzUxGdXr2v+qR82iooCQKkUjKGo54yD7yxdUS7Dp4pFPBbdPkbmvpH+Qw8DwP7h554Le7FgoxqA7QzZLZLkDUS0RVXY8lCoaLdd1wXbccA0LWmaBelnMc8IGxfGpyUiEYtFlcnJqf/bsHZLOxFxgGKCq6IAcLofEKCecQZ0lYgMxpDndF3GopE7DMP83XDf4aOYCoYDHFdHI1FgjIHrFe22bTvkOLPY7Svw7v1mGLRtJ+uQ8w5EFEVzUmRQK8sEZE7bgVUlJFwtKoshMl03BWPIg0Ftc0mdZ3M5AYiEcJbdVuZDjc9JYzEU4VBImchO/dnaddtfml7+XlkAaG2VvtxXnSkEuXp+LCJwKSVZlkW+cNl82u15YTGTSWViYvKJ1euav5tOpxVEPCtqqTQnkPwnWyeEBFgEVHbJYVtsD0pKkpFISMlmc4eV0LKP+ObnnLi5YpJBJU+b9u8PIMGyK8kBVNrxw1USQrrkuO+sra3Vu7q6ZixyrTgqeCToJQn4Ms/zAGBp/t8sR8RjMeXkyVN/1dDY8ut0Oq20zcJaVlI6GAEACpwvA4KElPKq29jFeKQkkYjHlcmp7NMNG5q/eD7hVxgAupCIUOPayqCmoZSSljTAOapfalqAWZY1yqV4LxFhJpM5b8KqUgCAR47sUBCRgLx1wVAQYGno47nC5EyqqoKW5bx35bqtwwDA9l4gY8kWMZqRqJP7tfnUVKRcOefKhx3HBVy6/eeEfMlEXMnn9C+vbtz6Qz/ku+AlwcUm9BIoy9880f7AyRHtFdKjvw6GtNcahnlFcwCL3+5LGYtFmWGYv7tu9eZb/XBPXkxrm7IIhS4AAAYHu8Pci93GVXbv+BDcqarKZqZyMIxZE0BUHBaJBHDZmbMKC/lUcBzXJOm9AxGdUjHoxbxeWUxCp+HhyATpr/IkvQEI7ggE1fXBYBCsQgFMs0CIQDMJn4oDIlgkEkaGDAq2Da7rLmip2CJyj0QkElamprIfrV/X8uKlTjrBqyh0AACYONadsLX4qxjhg4B0RzCorVFVFQpWAQq2IwFA+jeazaL+KBwOo23bAAC/ISlNZLg1EomuyOfzVM2aQEopalIpPjk59T9WrdvyJxcqULniGuCM0LvOuumTk71JYYs2EnSfS/KOcFBrUFUVLMsC375LImCIcN6sGRHJcDjMPM/d73ri/avXb/0lAEBu8NDygml+OhKJ/EfTNK94yviKCJ9IhkMhns/ne110HyIi1tHRcemTUhZC6JlMhre2ni5uhJJQDILXMmIPMoavCYaCdZxzsEwLbMeRZbl9dpF/hzhnwJliFqz8jQ2NO3o6Ozv57t27qfR3h/sO/TAaidyd1w2BCFVjDoiIGOdSVRRmmFbrmg3Nz851yNW8aID29nbW2trKyoTuAQCMjByrVQlfQ0APWkK8NhoOr2QMwbIsyOV06eek2Zn8+KVdgmg0yqey2acbGnf0UHe3irt2uQAA3d3d6s6dO73h/sNfAYC7q9AIiGQ8rpycmPj0mg3Nz86U5VtwDUDUzjKZs4QOAAD9/c83KBR4HUN2PyC+OhIJpxARTNOCUkGjL3S8vFsAXiqVUKamsn933erNH8tkMrxEeZ6uHew/fAMgPidl9XR3S0kikYjxXC6XqVuz5Y/8iyPnOs1EuUTVwzKZDMtkMhJxrwQoskz9/T0NIYXdLgkeJClbo7FIgojANC3I5fLlQp8/NYxQSg5riEjpdHq291xNIZ/UtABaVmGCPPkuRCQqpknn/CGVixW6X+Xqe+UAUyMnNtiefScRPQBAt4ZD4ZgkCaZpQTabWxihz6YLrpGDjElN05SpyakPrm5s6ZuP4ZbKbEKHTIbBNKGPnuhpVIP8dULQG2yv8MpYNBYSUoJlWTCVzV5BoV97p1jdk1BOnZr4+urGlqeKIR9edo/iWQDwvWhZLvSTQz1bpYDXC5APANItwWAoKIQA01wkQl+g9vBFJnwRiYSVXC73guSxPy+uy2udl2SYUu7UldqUTg0faZbA7wYS9wtJt8TjMdX1PLBME6amFsdNR1/2BBAAAGhtbaUqFT75jZ4F14V3rlm/xiK/FXzeAFDymvuPv/CmiBZ52BXerng8pLiuC6ZpwWQ26wEAQvHnFpV6RwS1yi2/iMWiyvjJUx9bs6HlubmwfecFQMmRGOp/8Y2JaOIpIQTYrgOTk1mvrCVJKT3tRXdDqtgJlFKKVDKpTE5N/euaDS1fKabG2+a1DoJBcUq2AoSf8YRHumG4vqwVAOC4VHd11UK+YDDIdNMYBIW/n4iwtTVTIs/mDwCISGPHDyxHgg2WVUCo4E1i1SR/zrnknKHruu9etappHKCLFbmX+T1F+tUAnRDyqqIKAKCl53/1vf5EIq7oeePR+rVbf0LptLJQE8oYEfHalhYdCJ6oWZbiRXYJPKoCCo2g8j5FsZEzpkxOTv2yfv3WTxERh9a2Bat/LPkAbGKN+PTY6NjXVFVhiURcURSOROTBHJYxLBonykOXiERxpPzih4If8rGCXZhkwN/hs3w033b/HB8AEWULtji1qzd/2LadXYZhPI7IplKppBJQVUZEgoiu2dVqVy6kRRGNRtApuI/Vrtl0lIiUhZ5TzKYhkNWv2/q7lfWbPuQQ3pDXjXYJdCKRiPNwOMyISBanViydhZJHoWADU9gz7e3trKura8G1ljINgbKsh70PAD4zMXHs7/J5/c0K5x+IRiI7kTHQdd0fXwJsKUycVxMAnDNQFBbq6Oi4Io0vbAY1JP0hAphOp5Wamsbsdas3f31ZXeNNtuveb1rW05xzSiYTnHOO1eIwLhITIBVFAbfgvv1KbSth53kz1NbW5vnzZzki0oq6xn219ZvuZozfahjGEwhopJIJJRAIoLxafgJWT9hKRDyf16UW0v50fOjgTkQUC72/iF0EKk+PJSUiTkRsed2GX61Ytek9UsjtumE8KqUcTCUTPBQKMSlJEoG4Mg8MACULVJEGQCklBQIad1x67Er8TeUS3+D0WTcvAcAnT5z4wxfRZG8lKT8Yj0W3AQDkdb00MWsB/QQCJD9P4W8TrwIQ8Hw+LxLxeOtof88f165uemoht5qyOb5JiYiiNK167drtkyvqGv9hxaqNN5qmtdu2nWe0QAATiThnjKGUJBbMT8Cq9D/QcVySJL9Ag4NhnyLARQOA0tm7d+9ph9FHqVe7uump5asab/ckvdKyrCcZw0JNKsFVVS05jEt8woUvGCsUbJFMJjYMOlMfW8hxeGye3jAVgQDo+wlYW7/xF8vrNr4dQb7MMM3HEGEklUwowWDQJ5ZgiU847zMFpuu6VFX146cGjqyGBdptzOb5TVP5Zgrq7OQr6q8/tLxu4yMuwA3ZvP4XnvAOxWMxHo2GuZREPsu4MFs/SJambs/kcUsA8Hw+w6PFR3kzx3EpFovGCp73t8WwsGvezcCCpX73+PP0yxzGMQD4L729vf+IZL8RQH4wHA6+OqAGeF7XQUryAGhe6w8UzlxC8k4XtJQJPxIJM7VIcwMCglUogG3bpcnbbDG0nzPGeC6XF6GQ9vaR/p6vIjb9cr53FykLr8qKXHapZWz9+vUFAPhnAPjn8eEjba7rPcQYuz8ejwZ0XQfX9QTi6WmaC6IYYtEoMy3zl4ZpPgUEeQC8hTP22nAotFbTNGYVClAoFAgQxdUGg5QSFEVlhULhS0T0yq6ursrQADP5Cb7KLXUJS0RMA0D61PDRFsMwPoAIb61JJZdZBQsKBVsAzC8QpJQyHo8x07T+28r6pg+WsW1fHxwcDDNhvdw1vAclyTuDQW1TMBhUbNsBy7IIAEXZ3AG8gs+N67oukonkbUMnDr11z549T85nWHjFq3/K5+WXWK5ldRv3A8BHjh9/8VEk808lyfcm4vFGT3hgGKYsecaXSxqEQkGW1/XeutUjDyE2kd9DWPr9JgD8DAB+1tvbG4ygc3M259yHAPcEVHVLJBpRHNsB07KACPx6SWCIVwQMWCgUiDP83Ojo6L8CgDlfy62vavnXDH7CMAA8Ojz83N/bDn+TEPLDkXD45UIKsKwCMTb3/QaIKEKhECsU7GcQ27xidW2xmbRkouDM/IICADwLAM+m0+m/2nb9mhvzOeMuQLoHEXclk3HFcVywLAskkQcEuJBTSRCRWQVbLKtJrZmcnHgEsdaf+H35kdSiqP+b7ifU1e0wAODbAPDt8YGe+5Cxx8LhUJNlFS57NtBs+fVyzVS+6cNvOP21/7V3bKDnZdmp7L0AcA8g7kwl4orrCbAsC8SZ8aXzDgZEYLl8XiqK8heTw71PAMCJ+dhrvKgKQGfwEwgR9/UePPhCNAHdiqLUeJ4316kfzLIsIKA7SrX13d3d6r59+8T0UWozgWH3ihWIbW3eyoam3wPA7wHgb4aGDm/J6+brAeQDAHBLMpEICVnsmppvMPjLq0QyGY9MTmYfTSH+CVEnqwoNcP7buD+AuOX44PEXO2tSqQ/7TSqKzz6CBNIAAC7kHBMRs6yCjMdj68cGVn0FAD68y58nMNtQi+nvpfR7ypplDwLAQQD48sjI4Q2Gbr5OkHgQAF6ZSMQjQACmaYLrefMCBkRQcrm8CIeDbxnqO/xVxM3PXm5YuOhLwDOZcX9N3MEjVDS2057KxZNZjDGm64aMRMIfGh86uh0AviOY+LGf1PJO+wKZDIcZwFBmQuRp3+VME+1LAPA1APjaxOCxNZZl/REB3EsArfF4bBlicTCG63qlyuu5DMUAKSVwzoGkeKyzs/NWH/gIc6zmrogeAESkwROH5ostLIHgNlVVb8vn89ZI/+FfI8IPpRRPI+L+EhgAANLptNJa3FNwTh/+2WA4a2BGHwB8CwC+NTJyrNYyzdslwP0kZGs0ElnJFQ6maYHjj8YhAIYXCYZittAQqWTypttuan5Xw/rmb15oHnDFA2AhvGo/vCTOeSgcDr1GVZTXZHP5z40NHPkV57gPGftRTe2G58sfbDqdVsbHx8nvoJ4GhjMDM0ojc8bHx+m66xpHAeBJAHhyqm9/jVEovJoju5+Abg+Hw6sDAZVZls9CAp53Ilq5P2AVLOJc+ZuJiWP/kkp9Oz/XsLA6AdDRUVSXwhPI+WxePwMAEEKQrhsSEIghKsFg8BVqQH1FLpf//Ej/oeeI2A8R4d9qGzZ1l/fj+2EYwAzjWfbu3StLjmXJoe3q6oLkmpYJAPg+AHx/fHw8JqT+Cl03HpCS7gyFQuuCmsYKtj2deGIzRQQF2xbLUjWrJiYmP4E1e/+KqGNOYWFVAqDD/y5UVXCS8nx+l++U8aJ9JTJMU5IBhAhKKBTaoQUCO3TD+OvxoWMHTg4ffRqZ8v2alfpvENG5GDBMjyjKuIY8APwIAH40PPxcxHboViG8O6WEO7WA1hwOhxTbscGyCkAE3nQwMGQsm8vJgKZ+dKz/6DcB4OhcwsKlPsCzbxYCAPfxQqZpkmlaEoB4KBRqDga1Zsu0Hh4bChwZ7T/8DAL9gALezxFRv0wwGADwUwD4KRF9fGzo2Mvzef0+AnkXZ2x7LB5TCgUbLMsq50HQE0JGo9FQdmryC4j4xrmEhUsAOL+p9YWEYFmWtKyCBCAeDAY3BYPaJsdxP+Q49vHxoaM/AZT7lIL6c0ScKg8ZfQ/9IsDQxTKZFeibmV8AwC/a29s/+WfvecuN2Vz+Hob4hmg0eoOu66d5EIbIc7mcCEeibxgZOPRaxOufudQ8wRIALsFxLIGhUChI27YlETFN09aFQsH3e554v+mZI6P9h38mkX7AXO//IOLIufxBacLaxbGQe/fu7QaAbiL67OjA4UejkcjDetnAbKLidjIp6DGi9E1QLBzBRT0sulrAgIjgOI50HEcSEQsE1OtCodBbpaS3GqY5MT54JANI3wtx9ac+GOSlEE9UzDFg0eSjBwSPjPQffnk0EnmlYZrCN1dc1w1Rk0ruGO6D965ai4/7OxYuKixcmrk/h0P+KXuGCiIyx3Epl8t7+XxecIY1oXD4jeFQ5DuG6x4cHej5X6MDPQ+NnDi8odRz4XdiIaXTSpm5KPdJyC/A9bp/060SEQpJ/6KqKlDZcCxEYIZpEmdsb1/f/prW1lbZ3t7OlgCwMMIXnHMsFrkSlRe6lraEIiJ3XY9yuZzI5nICEZPhcPiuWDT6D8jghbHBIz8ZGzz60ezYQBMiEvpgAABKzwKGnfk8AQByhmZR9meqhBERbduWiUS8VpH4KUSUHR0duASA+RU8AAAkEnEuhHQ815vQNA1TqYQSCoXYNDAUV4AjckTknudRPp8X2VzOA8RwKBi8PRqNfNl2rRdGB448O9p/6BMDvQdeBgDQdi4YeHFGwApW7BuRrUCnTcVZNHc2l5dqQHvo5NDhLWV9ntXrA/j7QQIAALt376YFFD5xzokxhqZhfI4j/5Z0jJwjqdlznXskwV2qqm6NRiOlCiIgAM8vJ8NyrkEIQXndkAQEnLFAOBx6laqor8rmco+ODvT8FhnsU5XAvuSKtb+fNghSjPQdelANBHbn8nlZ+n3lFkMIIaPRSGBqcuqLAHAvQFd1A8D/3GyBbz5xzkUoFFIMQ39P3ZotT5T99xgApIno46cGenbphnkPEN2NiDcm43HFcR0wzRIYzioa4QgIUkoyDFNSUZ8rwWBwpxYI7Mzresf40NEXRvoPPy09yoAigIF6D2P4ISEEl1LOmBJHRJ7L5UUsFrtnqP/QXYjXP32hsHApCriA/BFRJOJx5eTEqUca1jU/QUSq76UTdHWxzIrTsfuv/K9Pjw4c3pHN5+4FgvsBYGcqkVA8zwPDNEFKOT01zEuSNE1TmqYliyxkcJsW0LbZjv2XAAABNQC5fB78hZl4Pq0oiQAk/Gfav/8Z8OsrZgsLq9IH8HvrIRBQPYDL6EQiEMlkQpmYmvxCw7rmx4hIAUDP98wJ9+wRpQ7qzs5OTsXwC2obNj93XcPmv71u9eabAyrfbujGx2y78DPGsJBMJngsFvVb60mU90UgIvPH84FpWnIym/VM05KmaclsLuf5N/9CbCY3DEOkUomWoTD/ECLKTCbDr0kNIIRbWp82l5e7yVRCzWaz31q1ZssnSjV4M83rma1opK2tzVtWt+kAABwAgC9nx45uyuvGnURwL0h6RTKRiJQmrHvTikZOE09n3ju72M9RynYqKv/U0FDPf3/88SdPzaYFKkYDXMlFkVKSl0om1exU9oe1DZvf41cvX/RSBkSU5csr/DgfEys3Hqmt3/SV6xo2vT7Ala26ob/PtAo/AKDJeDzGE/G430NZ7FaCOXYr+WEhxROx5eS4HcXM5MwOYSWtj/eu1N9JJuNKLpf/d1ILbwYAOHDgwJyXMiCi9ON8IiJWDO3aWU19Y9/K+qZvrFy18QFS1K2Wab8tb+hPCSFOxWIxnojHFb9zSc4FDIwxls3mpKYFPzDQu38H4h4xU1hYMSYAEeyFv/lSRKMRxTSsg64u3lB//Q6DiC64f/dSwFAS5LQ9SyPgd0sNHz260ub2qwnkPURwezQaaVAU5UzRyMW3rqGQUsZCQcVxnQ4AeLCr69zewkryAXCBhS/D4RB3HXfYte276q9vPtlZHMu+IF3MsxWN1G3cOAYATwHAUydP9sRtx32NVbAeJAnntq6dp2jEf2DMNC1CgtsmJo4lamoas9N9gaUwEEq7eDQmBGULun1PQ1PziYWcynE+J3JanUAOAPYBwL7h4eGI5+RudT1xH4C8MxjUmkKhUKlOYMbWNb9tH4Ax17bD3hIPMPPNJ1VVgTFm57P6nrVN235/OWvYFhAMp4tGenp6tOURujmfz98npbwnEFC3RiJnt64VX0MilUxqo+PjP15VV2cUS8jPBrVSJTcY5/g6UhRFaJqm5HP5d65t2vbj7u5utdQvcPX9nnPBkMlksKmpyQaAnwPAz4nSnxwdbLhJz+t3E9GdjLEb4/GYQkTAGVdOTkz8hgXUTxARlviRqgIAIfgDrs8GARHh8PARkHLmhAgREWNMxKJRZWJy6j80bGju9Eezuovxc85WNOJvD/l//tenRvsP36DnjTvVgFLruu7vX+wZ6GpraysQEc7kzFYsAPxYFxCxeXCwOwwABaK0AtAqjxw5ojY1NdmDxw5cH46GYrbtnNNTiIgiHo8pk1PZzzSs3/qPV1PtzwcYSq1rtas3Pw8Az0+/DLOFsZWsAZjjOCIej9XpOu1FxEfKYmW7p6dH40H6vD/NVJaTaATgLkul1InJia/Wr93SfjmNFYsJDCXiCTIZBgCQAQC/hW1WDqOiTUCxS0aXoVDw4eH+Q3VCiCcUzseloCZFxUc0LXizruvEGOPlLN/yZTXq5FS2s27Nlof8zp+qGVhVzjVczKkGJ5CZpkXxeOxtruu+zbYdiMYiIKUEwzAkY4yVs3ypZEKZymWfsTz1XdTeXurru2ZnHStVgnrM5fLCz5MywzCEb/dYOcsXj8UUwzSe1wu5NzU27ir4jRTX9KDrquEBpu0z5OWZM0kkopEIL9j2cdP17m5s3JWdj+EK1XCqviZQSimDmsY9IcY917537dotQz7LtzSxtNoBUJy8HQDG0NQN6011a5sP+OHe0pTSajMBMxE9qqJIReEsm9ffvK5x28/ne+3qkgZYxMJnjMlQOMQNw3zfusZt/1bcvbck/GtCAyCiiMdiymR26pMN65u/6VO8S8KvZA0gpbzYhI9bU5NSJrNTX6pfu/XR7u7H1SXhV4UJYBesCCIiryaVUicnJv+pfu3Wh9PptLJz5weWhF8NJoBd4BYXa/kSymQ2+3TtseH3+fVv4loneqpHA5ynJlpKKeLxmJLP678ZGMn9MbS2io6ODlgSfrVFAQTnbJaQUopYLMpN0zosC+zeXbt2mQCA81XIuQSAq3z8GX0ghPN8wbaRFTeeSyr+40UiYe467nC+YNxft3HjGBULOZeEX2VxPQMAGOw7+CVbH6WTw8dodKCH9MkBOjXy0skTR/+wy/85vvS0qhMAWJp4Mdx36C/HBo+8ODZ0dODU6EvfO3bot9uXhD/38/8Bu+ECX8bI/GgAAAAASUVORK5CYII=';
 const KINDS = { issue: { label: 'Замечание', color: '#e0604a' }, question: { label: 'Вопрос', color: '#d8a33f' }, idea: { label: 'Идея', color: '#4fae7f' } };
@@ -1330,6 +1330,11 @@ function updateCursor() {
   cursor.scale.setScalar(Math.max(d * k, 0.004));
 }
 function hoverCursor(wr) {
+  if (state.tool === 'erase' && isReady()) {
+    const tol = (7 / Math.max(canvas.clientHeight, 1)) * THREE.MathUtils.degToRad(camera.fov); const ids = new Set();
+    for (const r of coneRays(wr, tol)) { const p = pickNote(r); if (p) ids.add(p.id); }
+    setHot([...ids]); hideCursor(); return;
+  }
   if (state.tool === 'nav' || state.tool === 'erase' || !isReady()) { hideCursor(); return; }
   const h = toolHit(wr); if (h) setCursor(h.world, !!h.snapped); else hideCursor();
 }
@@ -1359,9 +1364,9 @@ function setPreviewLabel(text, pos) {
 function cancelTool() { if (tool.erasing) eraseEnd(); tool.phase = 'idle'; tool.pen = null; clearPreview(); updateTip(); }
 function setTool(id) {
   if (!TOOLS.some(t => t[0] === id)) return;
-  cancelTool(); state.tool = id; marker.visible = false; hideCursor(); renderToolbar(); updateTip(); drawPalette(); updateCanvasCursor();
+  cancelTool(); setHot([]); state.tool = id; marker.visible = false; hideCursor(); renderToolbar(); updateTip(); drawPalette(); updateCanvasCursor(); drawToolTag();
 }
-function setColor(i) { const c = allColors(); state.color = Math.min(Math.max(0, i), c.length - 1); lsSet('vrtrip-color', c[state.color]); renderToolbar(); drawPalette(); }
+function setColor(i) { const c = allColors(); state.color = Math.min(Math.max(0, i), c.length - 1); lsSet('vrtrip-color', c[state.color]); renderToolbar(); drawPalette(); drawToolTag(); }
 const curColor = () => allColors()[state.color] || BASE_COLORS[0];
 function addCustomColor(hex) {
   hex = String(hex).toLowerCase(); if (!/^#[0-9a-f]{6}$/.test(hex)) return;
@@ -1536,15 +1541,15 @@ const TIPS = {
   pin: { idle: 'Метка: щёлкните по поверхности, чтобы оставить комментарий. Зелёная точка — привязка к углу' },
   measure: { idle: 'Рулетка: щёлкните первую точку. Зелёная точка — привязка к вершине', m: 'Щёлкните вторую точку. Esc — отмена' },
   pen: { idle: 'Карандаш: нажмите на модель и рисуйте — линия ляжет в плоскость перед вами' },
-  erase: { idle: 'Ластик: щёлкните по метке, размеру или линии' },
+  erase: { idle: 'Ластик: ведите с зажатой кнопкой — стирается всё, что подсветилось красным' },
 };
 const VR_TIPS = {
   nav: 'Курок на пол — телепорт. Два грипа — масштаб.',
   box: { idle: 'Курок — первый угол основания', foot: 'Курок — второй угол', height: 'Поднимите и нажмите курок' },
   pin: 'Курок по поверхности — метка с комментарием',
   measure: { idle: 'Курок — первая точка', m: 'Курок — вторая точка' },
-  pen: 'Держите курок и рисуйте в воздухе',
-  erase: 'Курок по объекту — удалить',
+  pen: 'Держите курок — рисует кружок на конце палочки',
+  erase: 'Коснитесь шаром ластика и держите курок',
 };
 function updateTip() {
   const tip = $('#tip'); if (state.view === 'xr') { drawPalette(); return; }
@@ -1862,7 +1867,8 @@ function layoutPalette() {
     row3(Y + 108, [['grav', 'Гравитация'], ['coll', 'Стены'], ['place', 'Макет передо мной']]);
     row3(Y + 216, [['env:sky', 'Небо'], ['env:studio', 'Студия'], ['env:evening', 'Вечер']]);
     row3(Y + 324, [['next', 'Следующая модель'], ['hud', 'Скрыть меню']]);
-    B.push({ id: 'info', label: 'Меню снова: клик левым стиком', x: 24, y: Y + 440, w: 976, h: 70, kind: 'text' });
+    B.push({ id: 'tilt:-', label: 'Наклон −', x: 684, y: Y + 324, w: 153, h: 96 }); B.push({ id: 'tilt:+', label: 'Наклон +', x: 847, y: Y + 324, w: 153, h: 96 });
+    B.push({ id: 'info', label: 'Меню: кнопка X на левом контроллере', x: 24, y: Y + 440, w: 976, h: 70, kind: 'text' });
   } else if (tab === 'notes') {
     const list = sortedNotes(), per = 5, { page } = pageOf('notes', list.length, per);
     list.slice(page * per, page * per + per).forEach((n, k) => {
@@ -1881,7 +1887,8 @@ function drawPalette() {
   c.clearRect(0, 0, W, H);
   rr(c, 4, 4, W - 8, H - 8, 30); c.fillStyle = 'rgba(20,23,26,0.94)'; c.fill();
   const head = state.mode === 'table' ? `Макет 1:${Math.round(1 / holder.scale.x)}` : 'Прогулка 1:1';
-  fitText(c, `${head}  ·  ${rec ? rec.name : 'нет модели'}${state.models.length > 1 ? `  (${state.active + 1}/${state.models.length})` : ''}`, 28, 46, W - 56, 36, 600, '#d8a33f');
+  fitText(c, `${head}  ·  ${rec ? rec.name : 'нет модели'}${state.models.length > 1 ? `  (${state.active + 1}/${state.models.length})` : ''}`, 28, 46, W - 200, 36, 600, '#d8a33f');
+  fitText(c, clockText(), W - 28, 46, 150, 38, 600, '#efeae0', 'right');
   for (const b of pal.buttons) {
     const hover = pal.hover === b.id;
     if (b.kind === 'text') { fitText(c, b.label, b.x + b.w / 2, b.y + b.h / 2, b.w - 20, 28, 500, '#9aa0a6', 'center'); continue; }
@@ -1960,7 +1967,8 @@ function palClick(id) {
   else if (id === 'start') { if (state.mode === 'table') setMode('walk'); toStart(); }
   else if (id === 'place') { if (state.mode === 'walk') setMode('table'); placeTable(); state.tableRel = null; }
   else if (id === 'next') { if (state.models.length > 1) activate((state.active + 1) % state.models.length); }
-  else if (id === 'hud') { state.hud = false; palMesh.visible = false; }
+  else if (id === 'hud') { toggleMenu(false); return; }
+  else if (id.startsWith('tilt:')) { palTilt = THREE.MathUtils.clamp(palTilt + (id.endsWith('+') ? 0.17 : -0.17), 0.2, 1.7); lsSet('vrtrip-tilt', String(palTilt)); applyPalTilt(); }
   else if (id.startsWith('m:')) { const i = +id.slice(2); if (i !== state.active) activate(i); }
   else if (id === 'mp:prev') state.palPage.models--; else if (id === 'mp:next') state.palPage.models++;
   else if (id === 'np:prev') state.palPage.notes--; else if (id === 'np:next') state.palPage.notes++;
@@ -1972,7 +1980,14 @@ function palClick(id) {
   layoutPalette();
 }
 palReady = true; layoutPalette();
-const palMesh = pal.mesh; palMesh.position.set(0, 0.155, -0.02); palMesh.rotation.x = -0.55;   // floats above the left controller, tilted toward the face
+const palMesh = pal.mesh;
+let palTilt = (() => { const v = parseFloat(lsGet('vrtrip-tilt')); return isFinite(v) ? v : 1.3; })();
+/* the menu leans back toward the face (about 45° to the thumbstick plane by default) and sits just above the left controller */
+function applyPalTilt() {
+  palMesh.rotation.set(-palTilt, 0, 0);
+  palMesh.position.set(0, 0.03, -0.01).addScaledVector(new V3(0, Math.cos(palTilt), -Math.sin(palTilt)), 0.135);
+}
+applyPalTilt();
 
 /* haptics */
 function buzz(hand, v = 0.2, ms = 20) {
@@ -2051,12 +2066,107 @@ const factory = new XRControllerModelFactory();
 const rayGeo = new THREE.BufferGeometry().setFromPoints([new V3(0, 0, 0), new V3(0, 0, -1)]);
 const marker = new THREE.Mesh(new THREE.RingGeometry(0.17, 0.24, 40).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xd8a33f, transparent: true, opacity: 0.95, depthTest: false }));
 marker.renderOrder = 11; marker.visible = false; scene.add(marker);
+/* right controller: a short stick with the brush tip (pen) or an eraser ball, instead of a long laser */
+const TIP = 0.12, ERASE_R = 0.045;
+const tipRig = new THREE.Group();
+const tipStick = new THREE.Mesh(new THREE.CylinderGeometry(0.0022, 0.0022, TIP, 8).rotateX(Math.PI / 2).translate(0, 0, -TIP / 2), new THREE.MeshBasicMaterial({ color: 0xe7e2d8 }));
+const penBall = new THREE.Mesh(new THREE.SphereGeometry(0.008, 16, 12), new THREE.MeshBasicMaterial({ color: 0xd8a33f }));
+const penRing = new THREE.Mesh(new THREE.TorusGeometry(0.016, 0.0016, 8, 32), new THREE.MeshBasicMaterial({ color: 0xffffff }));
+penBall.position.z = penRing.position.z = -TIP;
+const eraseBall = new THREE.Mesh(new THREE.SphereGeometry(ERASE_R, 24, 16), new THREE.MeshBasicMaterial({ color: 0xe3826f, transparent: true, opacity: 0.28, depthWrite: false }));
+eraseBall.add(new THREE.LineSegments(new THREE.WireframeGeometry(new THREE.IcosahedronGeometry(ERASE_R, 1)), new THREE.LineBasicMaterial({ color: 0xe3826f, transparent: true, opacity: 0.6 })));
+eraseBall.position.z = -TIP;
+tipRig.add(tipStick, penBall, penRing, eraseBall); tipRig.visible = false;
+function updateTipRig() {
+  const pen = state.tool === 'pen', er = state.tool === 'erase';
+  tipRig.visible = state.view === 'xr' && (pen || er);
+  penBall.visible = penRing.visible = pen; eraseBall.visible = er;
+  penBall.material.color.set(curColor());
+}
+const tipWorld = c => c.localToWorld(new V3(0, 0, -TIP));
+/* small tag above the right controller naming the current tool */
+var toolTagReady = false;
+const toolTag = makePanel(320, 96, 0.075, drawToolTag, () => {}); toolTagReady = true;
+toolTag.mesh.position.set(0, 0.045, 0.035); toolTag.mesh.rotation.x = -0.9; toolTag.mesh.renderOrder = 19;
+/* when the menu is hidden, a tag over the X button says where it is (with the time) */
+function clockText() { return new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }); }
+var menuTagReady = false;
+const menuTag = makePanel(360, 96, 0.085, drawMenuTag, () => {}); menuTagReady = true;
+menuTag.mesh.position.set(0.012, 0.05, 0.03); menuTag.mesh.rotation.x = -0.9; menuTag.mesh.renderOrder = 19; menuTag.mesh.visible = false;
+drawMenuTag(); drawToolTag();
+function drawMenuTag() {
+  if (!menuTagReady) return;
+  const c = menuTag.ctx; c.clearRect(0, 0, 360, 96);
+  rr(c, 2, 2, 356, 92, 22); c.fillStyle = 'rgba(20,23,26,0.92)'; c.fill(); c.lineWidth = 3; c.strokeStyle = '#d8a33f'; c.stroke();
+  c.beginPath(); c.arc(44, 48, 24, 0, Math.PI * 2); c.fillStyle = '#efeae0'; c.fill();
+  fitText(c, 'X', 44, 50, 30, 30, 700, '#15181b', 'center');
+  fitText(c, 'Меню', 82, 50, 130, 34, 600, '#efeae0');
+  fitText(c, clockText(), 340, 50, 120, 34, 600, '#d8a33f', 'right');
+  menuTag.tex.needsUpdate = true;
+}
+function toggleMenu(show = !state.hud) {
+  state.hud = show; palMesh.visible = show; menuTag.mesh.visible = !show;
+  if (show) layoutPalette(); else drawMenuTag();
+  buzz('left', 0.25, 20);
+}
+let lastClock = '';
+setInterval(() => { const t = clockText(); if (t !== lastClock) { lastClock = t; if (state.view === 'xr') { drawPalette(); drawMenuTag(); } } }, 5000);
+function drawToolTag() {
+  if (!toolTagReady) return;
+  const c = toolTag.ctx; c.clearRect(0, 0, 320, 96);
+  rr(c, 2, 2, 316, 92, 22); c.fillStyle = 'rgba(20,23,26,0.92)'; c.fill();
+  c.fillStyle = state.tool === 'erase' ? '#e3826f' : curColor(); c.beginPath(); c.arc(46, 48, 18, 0, Math.PI * 2); c.fill();
+  fitText(c, (TOOLS.find(t => t[0] === state.tool) || [, ''])[1], 80, 50, 225, 40, 600, '#efeae0');
+  toolTag.tex.needsUpdate = true;
+}
+/* notes touching the eraser ball (world space) */
+const _ew = new V3(), _ea = new V3(), _eb = new V3();
+function segDist(p, a, b) { const ab = _eb.copy(b).sub(a), t = THREE.MathUtils.clamp(_ea.copy(p).sub(a).dot(ab) / Math.max(ab.lengthSq(), 1e-9), 0, 1); return p.distanceTo(_ea.copy(a).addScaledVector(ab, t)); }
+function notesInSphere(cw, r) {
+  const rec = activeRec(); if (!rec?.built) return [];
+  holder.updateMatrixWorld(); const out = [], sc = holder.scale.x;
+  const W = v => holder.localToWorld(_ew.copy(v));
+  for (const n of rec.notes) {
+    const o = rec.noteObjs.get(n.id); if (!o) continue;
+    let hit = false;
+    if (n.type === 'pin') hit = W(vec(n.p)).distanceTo(cw) <= r + 0.02;
+    else if (n.type === 'measure') { const a = W(vec(n.a)).clone(), b = W(vec(n.b)).clone(); hit = segDist(cw, a, b) <= r; }
+    else if (n.type === 'box') { const cl = holder.worldToLocal(cw.clone()); const bx = new THREE.Box3(vec(n.min), vec(n.max)); hit = bx.distanceToPoint(cl) * sc <= r; }
+    else if (n.type === 'line') {
+      o.updateMatrixWorld(); const lim = r + (n.w || 0.02) * sc / 2;
+      if (n.p2) { for (const [x, y] of n.p2) if (o.localToWorld(_ew.set(x, y, 0)).distanceTo(cw) <= lim) { hit = true; break; } }
+      else if (n.pts) { for (const q of n.pts) if (W(vec(q)).distanceTo(cw) <= lim) { hit = true; break; } }
+    }
+    if (hit) out.push(n.id);
+  }
+  return out;
+}
+/* red highlight on whatever the eraser is about to remove */
+let hotIds = new Set();
+function tintNote(id, on) {
+  const o = activeRec()?.noteObjs?.get(id); if (!o) return;
+  o.traverse(x => {
+    const m = x.material; if (!m || x.userData.sharedMat || !m.color) return;
+    if (on) { if (m.userData.c0 === undefined) m.userData.c0 = m.color.getHex(); m.color.set(0xff3b30); }
+    else if (m.userData.c0 !== undefined) { m.color.setHex(m.userData.c0); delete m.userData.c0; }
+  });
+}
+function setHot(ids) {
+  const next = new Set(ids);
+  for (const id of hotIds) if (!next.has(id)) tintNote(id, false);
+  for (const id of next) if (!hotIds.has(id)) tintNote(id, true);
+  hotIds = next;
+}
 const ctrls = [0, 1].map(i => {
   const c = renderer.xr.getController(i); rig.add(c);
   const g = renderer.xr.getControllerGrip(i); g.add(factory.createControllerModel(g)); rig.add(g);
   const ray = new THREE.Line(rayGeo, new THREE.LineBasicMaterial({ color: 0xd8a33f, transparent: true, opacity: 0.85 })); ray.visible = false; c.add(ray);
   const entry = { c, g, ray, hand: null };
-  c.addEventListener('connected', e => { entry.hand = e.data.handedness; if (entry.hand === 'left') { g.add(palMesh); palMesh.visible = state.hud; drawPalette(); } });
+  c.addEventListener('connected', e => {
+    entry.hand = e.data.handedness;
+    if (entry.hand === 'left') { g.add(palMesh, menuTag.mesh); palMesh.visible = state.hud; menuTag.mesh.visible = !state.hud; drawPalette(); drawMenuTag(); }
+    if (entry.hand === 'right') { c.add(tipRig); g.add(toolTag.mesh); drawToolTag(); }
+  });
   c.addEventListener('disconnected', () => { entry.hand = null; ray.visible = false; if (palMesh.parent === g) g.remove(palMesh); });
   return entry;
 });
@@ -2139,9 +2249,9 @@ function pollInput(dt) {
 
   if (edge('right', 4)) setMode(state.mode === 'walk' ? 'table' : 'walk');
   if (edge('right', 5)) togglePassthrough();
-  if (edge('left', 4)) { if (state.mode === 'walk') toStart(); else { placeTable(); state.tableRel = null; } }
+  if (edge('left', 4)) toggleMenu();
   if (edge('left', 5) && state.models.length > 1) activate((state.active + 1) % state.models.length);
-  if (edge('left', 3)) { state.hud = !state.hud; palMesh.visible = state.hud; }
+  if (edge('left', 3)) toggleMenu();
 
   /* grips: two hands scale/rotate/move; one hand moves the maquette */
   const gl = pressed('left', 1), gr = pressed('right', 1);
@@ -2195,8 +2305,10 @@ function handleRightPointer(pads) {
   const trig = !!pads.right?.buttons[0]?.pressed; const down = trig && !state.prevTrig, up = !trig && state.prevTrig; state.prevTrig = trig;
   r.c.getWorldPosition(_o); _d.set(0, 0, -1).applyQuaternion(r.c.getWorldQuaternion(_q));
   const wr = new THREE.Ray(_o.clone(), _d.clone());
+  const stickTool = state.tool === 'pen' || state.tool === 'erase';
+  updateTipRig();
   r.ray.visible = true; let len = 4;
-  r.ray.material.color.set(state.tool === 'erase' ? 0xe3826f : state.tool === 'pen' ? curColor() : 0xd8a33f);
+  r.ray.material.color.set(0xd8a33f);
 
   const panels = []; if (palMesh.parent && palMesh.visible) panels.push(palMesh); if (kbd.open) panels.push(kb.mesh);
   panelHits.set(wr.origin, wr.direction); panelHits.far = 3;
@@ -2209,16 +2321,26 @@ function handleRightPointer(pads) {
   } else if (state.uiCapture || kbd.open || state.grab) {
     if (!trig) state.uiCapture = false;
   } else if (state.tool === 'nav') {
+    if (!trig) { const h = hitScene(wr); if (h) { len = h.dist; setCursor(h.world); } }
     if (state.mode === 'walk' && trig) {
       lastHit = hitScene(wr, { notes: true });
       if (lastHit) { lastHit.ok = lastHit.normal.y > 0.7 && wr.direction.y < 0.05; marker.visible = true; marker.position.copy(lastHit.world).y += 0.01; marker.material.color.set(lastHit.ok ? 0xd8a33f : 0xe3826f); len = lastHit.dist; }
       else marker.visible = false;
     }
     if (up) { if (lastHit?.ok && state.mode === 'walk') teleport(lastHit.world); marker.visible = false; lastHit = null; }
+  } else if (state.tool === 'erase') {
+    const cw = tipWorld(r.c); const ids = notesInSphere(cw, ERASE_R);
+    setHot(ids);
+    if (down) { tool.erasing = true; tool.erased = []; }
+    if (trig && tool.erasing && ids.length) {
+      const rec = activeRec();
+      for (const id of ids) { const i = rec.notes.findIndex(n => n.id === id); if (i < 0) continue; const note = rec.notes[i]; hotIds.delete(id); removeNote(id, false); (tool.erased ||= []).push({ note, index: i }); }
+      buzz('right', 0.5, 25);
+    }
+    if (up && tool.erasing) eraseEnd();
   } else if (state.tool === 'pen') {
-    const tip = _o.clone().addScaledVector(_d, 0.03); holder.updateMatrixWorld();
+    const tip = tipWorld(r.c); holder.updateMatrixWorld();
     const lp = holder.worldToLocal(tip.clone());
-    setCursor(tip); len = 0.03;
     if (down) { const hl = holder.worldToLocal(headPos(new V3())); penStart(lp, 0.008 / holder.scale.x, hl.sub(lp)); } else if (trig && tool.pen) penAdd(lp);
     if (up && tool.pen) penEnd();
   } else {
@@ -2228,6 +2350,7 @@ function handleRightPointer(pads) {
     if (up) toolUp(wr);
   }
   r.ray.scale.z = len;
+  if (stickTool && !ui) r.ray.visible = false;          // pen and eraser work with the stick tip, the laser only shows over the menu
 }
 
 /* ================= XR: enter / exit ================= */
@@ -2252,7 +2375,7 @@ function onEnd() {
   if (kbd.open) closeKeyboard(null);
   state.view = 'orbit'; state.sessionMode = null; state.grab = null; state.mode = 'walk'; state.uiCapture = false; cancelTool();
   rig.position.set(0, 0, 0); rig.rotation.set(0, 0, 0); resetHolder();
-  marker.visible = false; hideCursor();
+  marker.visible = false; hideCursor(); tipRig.visible = false; setHot([]);
   controls.enabled = true; applyEnv(); frame(activeRec()); onResize(); updateTip();
 }
 $('#m-mr').addEventListener('click', () => enter(true));
