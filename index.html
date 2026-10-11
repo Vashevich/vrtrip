@@ -365,13 +365,8 @@ h2{display:flex;align-items:center;gap:10px;margin:0;font:600 16px/1.2 var(--f-b
   <div class="tip" id="tip" hidden></div>
   <form class="dialog" id="dlg" hidden>
     <h3 id="dlg-title">Метка</h3>
-    <div class="seg" id="dlg-kind" role="group" aria-label="Тип метки">
-      <button type="button" data-val="issue">Замечание</button>
-      <button type="button" data-val="question">Вопрос</button>
-      <button type="button" data-val="idea">Идея</button>
-    </div>
+    <textarea id="dlg-text" rows="3" placeholder="Текст комментария" aria-label="Текст комментария"></textarea>
     <div class="dlg-colors" id="dlg-colors" role="group" aria-label="Цвет облачка"></div>
-    <textarea id="dlg-text" rows="3" placeholder="Комментарий: что здесь не так, что изменить" aria-label="Текст комментария"></textarea>
     <div class="dlg-actions">
       <button type="button" class="btn" id="dlg-cancel">Отмена</button>
       <button type="submit" class="btn primary">Сохранить</button>
@@ -400,7 +395,7 @@ const UP = new V3(0, 1, 0), DOWN = new V3(0, -1, 0);
 const UNITS = { mm: 0.001, cm: 0.01, m: 1, in: 0.0254, ft: 0.3048 };
 const TABLE_STEPS = [20, 50, 100, 200, 500, 1000];
 const EYE = 1.65, STEP = 0.45, RADIUS = 0.3, GRAV = 9.8;
-const APP_VERSION = '1.6';
+const APP_VERSION = '1.7';
 const BASE_COLORS = ['#f2efe8', '#d8a33f', '#e0604a', '#3f86c9'];
 const STAR_LOGO = 'data:image/png;base64,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';
 const KINDS = { issue: { label: 'Замечание', color: '#e0604a' }, question: { label: 'Вопрос', color: '#d8a33f' }, idea: { label: 'Идея', color: '#4fae7f' } };
@@ -1031,7 +1026,7 @@ function makeNoteObj(n) {
     const dot = new THREE.Sprite(new THREE.SpriteMaterial({ map: pinDotTexture(col), depthTest: false, transparent: true }));
     dot.position.copy(p); dot.renderOrder = 13; dot.userData.aspect = 1; dot.userData.hk = 0.62; labels.add(dot);
     const pk = shared(new THREE.Mesh(PICK_UNIT, PICK_MAT)); pk.position.copy(p); dot.userData.pickMesh = pk;
-    const lab = makeLabel(`${n.num}. ${n.text || KINDS[n.kind]?.label || 'Метка'}`, null, { bg: col, depthTest: false });
+    const lab = makeLabel(n.text ? `${n.num}. ${n.text}` : `${n.num}`, null, { bg: col, depthTest: false });
     lab.center.set(0.5, -0.28); lab.position.copy(p);
     g.add(dot, pk, lab); pick.push(pk);
   } else if (n.type === 'measure') {
@@ -1097,7 +1092,7 @@ function nextPinNum(rec) { return rec.notes.filter(n => n.type === 'pin').reduce
 function flash(msg) { if (state.view === 'xr') { palMessage = msg; drawPalette(); clearTimeout(flash.t); flash.t = setTimeout(() => { palMessage = ''; drawPalette(); }, 1800); } else toast(msg); }
 
 function noteSummary(n) {
-  if (n.type === 'pin') return { badge: String(n.num), color: pinColor(n), title: n.text || 'Без текста', sub: KINDS[n.kind]?.label || 'Метка' };
+  if (n.type === 'pin') return { badge: String(n.num), color: pinColor(n), title: n.text || 'Без текста', sub: 'Метка' };
   if (n.type === 'measure') {
     const a = vec(n.a), b = vec(n.b); const d = a.distanceTo(b), hz = Math.hypot(a.x - b.x, a.z - b.z), vt = Math.abs(a.y - b.y);
     return { badge: '↔', ghost: true, title: `Размер ${fmt2(d)} м`, sub: `гор. ${fmt2(hz)} · верт. ${fmt2(vt)} м` };
@@ -1122,7 +1117,7 @@ function renderNotes() {
     const act = document.createElement('span'); act.className = 'nact';
     const mk = (txt, label, fn) => { const x = document.createElement('button'); x.type = 'button'; x.textContent = txt; x.title = label; x.setAttribute('aria-label', label); x.addEventListener('click', fn); act.append(x); };
     mk('Показать', 'Показать на модели', () => goToNote(n));
-    if (n.type === 'pin') mk('✎', 'Изменить текст', async () => { const r = await openNoteDialog(n, false); if (r) { n.text = r.text; n.kind = r.kind; n.color = r.color; updateNote(n); } });
+    if (n.type === 'pin') mk('✎', 'Изменить текст', async () => { const r = await openNoteDialog(n, false); if (r) { n.text = r.text; n.color = r.color; updateNote(n); } });
     mk('×', 'Удалить', () => removeNote(n.id));
     li.append(bd, nt, act); ul.append(li);
   }
@@ -1169,11 +1164,11 @@ async function exportPackage() {
     for (const n of rec.notes) {
       if (n.type === 'pin') {
         const col = pinColor(n), head = pinHead(n), r = 0.06;
-        parts.push(`# ${n.num}. ${KINDS[n.kind]?.label || 'Метка'}: ${(n.text || '').replace(/\n/g, ' ')}\no VRtrip_Метка_${n.num}_${slug(n.text)}\nusemtl ${mname(col)}\n`);
+        parts.push(`# ${n.num}. ${(n.text || '').replace(/\n/g, ' ')}\no VRtrip_Метка_${n.num}_${slug(n.text)}\nusemtl ${mname(col)}\n`);
         const ids = [[r, 0, 0], [-r, 0, 0], [0, r, 0], [0, -r, 0], [0, 0, r], [0, 0, -r]].map(d => V(head.clone().add(new V3(...d))));
         const [px, nx, py, ny, pz, nz] = ids;
         for (const [a, b, c] of [[px, py, pz], [py, nx, pz], [nx, ny, pz], [ny, px, pz], [py, px, nz], [nx, py, nz], [ny, nx, nz], [px, ny, nz]]) parts.push(`f ${a} ${b} ${c}\n`);
-        txt.push(`${n.num}. [${KINDS[n.kind]?.label || 'Метка'}] ${n.text || '(без текста)'}`);
+        txt.push(`${n.num}. ${n.text || '(без текста)'}`);
       } else if (n.type === 'measure') {
         const A = vec(n.a), B = vec(n.b), d = A.distanceTo(B);
         parts.push(`o VRtrip_Размер_${fmt2(d).replace(',', '.')}м\nusemtl ${mname(MEASURE_COLOR)}\n`);
@@ -1235,7 +1230,7 @@ $('#n-clear').addEventListener('click', e => {
 });
 
 /* desktop note dialog */
-let dlgResolve = null, dlgKind = 'issue', dlgColor = '#e0604a';
+let dlgResolve = null, dlgColor = '#e0604a';
 function paintDlgColors() {
   const box = $('#dlg-colors'); box.textContent = '';
   for (const c of allColors()) { const b = document.createElement('button'); b.type = 'button'; b.className = 'sw'; b.style.setProperty('--sw', c); b.dataset.c = c; b.setAttribute('aria-label', 'Цвет ' + c); b.setAttribute('aria-pressed', String(c === dlgColor)); box.append(b); }
@@ -1243,14 +1238,12 @@ function paintDlgColors() {
 $('#dlg-colors').addEventListener('click', e => { const b = e.target.closest('[data-c]'); if (b) { dlgColor = b.dataset.c; paintDlgColors(); } });
 function openNoteDialog(n, isNew) {
   $('#dlg-title').textContent = `${isNew ? 'Новая метка' : 'Метка'} ${n.num}`;
-  $('#dlg-text').value = n.text || ''; dlgKind = n.kind || 'issue'; paintKind(); dlgColor = pinColor(n); paintDlgColors();
+  $('#dlg-text').value = n.text || ''; dlgColor = pinColor(n); paintDlgColors();
   $('#dlg').hidden = false; setTimeout(() => $('#dlg-text').focus(), 30);
   return new Promise(r => { dlgResolve = r; });
 }
-function paintKind() { $('#dlg-kind').querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.val === dlgKind))); }
 function closeDialog(result) { $('#dlg').hidden = true; const r = dlgResolve; dlgResolve = null; r?.(result); canvas.focus({ preventScroll: true }); }
-$('#dlg-kind').addEventListener('click', e => { const b = e.target.closest('button'); if (b) { dlgKind = b.dataset.val; paintKind(); } });
-$('#dlg').addEventListener('submit', e => { e.preventDefault(); closeDialog({ text: $('#dlg-text').value.trim(), kind: dlgKind, color: dlgColor }); });
+$('#dlg').addEventListener('submit', e => { e.preventDefault(); closeDialog({ text: $('#dlg-text').value.trim(), color: dlgColor }); });
 $('#dlg-cancel').addEventListener('click', () => closeDialog(null));
 $('#dlg-text').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); $('#dlg').requestSubmit(); } if (e.key === 'Escape') closeDialog(null); });
 
@@ -1449,11 +1442,11 @@ function penBegin(wr) {
 
 async function createPin(hit) {
   const rec = activeRec();
-  const n = addNote({ type: 'pin', p: arr(hit.local), n: arr(hit.normal), kind: 'issue', text: '', num: nextPinNum(rec), color: curColor() });
+  const n = addNote({ type: 'pin', p: arr(hit.local), n: arr(hit.normal), text: '', num: nextPinNum(rec), color: curColor() });
   if (!n) return;
   const res = state.view === 'xr' ? await openKeyboard(n) : await openNoteDialog(n, true);
   if (!res) { removeNote(n.id, false); undoStack.pop(); return; }
-  n.text = res.text; n.kind = res.kind; if (res.color) n.color = res.color; updateNote(n);
+  n.text = res.text; if (res.color) n.color = res.color; updateNote(n);
 }
 
 function toolDown(wr) {
@@ -2004,19 +1997,18 @@ const KB_ROWS = {
   ru: ['1234567890', 'йцукенгшщзхъ', 'фывапролджэ', 'ячсмитьбю.,'],
   en: ['1234567890', 'qwertyuiop', 'asdfghjkl', 'zxcvbnm.,-?'],
 };
-const kbd = { open: false, text: '', kind: 'issue', lang: 'ru', resolve: null, note: null };
-const kb = makePanel(1024, 600, 0.62, drawKeyboard, kbClick);
+const kbd = { open: false, text: '', lang: 'ru', resolve: null, note: null };
+const kb = makePanel(1024, 520, 0.62, drawKeyboard, kbClick);
 function layoutKeyboard() {
   const B = kb.buttons = [];
-  Object.entries(KINDS).forEach(([k, v], i) => B.push({ id: 'k:' + k, label: v.label, x: 24 + i * 330, y: 112, w: 316, h: 64 }));
   const rows = KB_ROWS[kbd.lang]; const kw = 76, gap = 6;
   rows.forEach((row, r) => {
     const chars = [...row]; const extra = r === 0 ? 1 : 0;
-    const total = (chars.length + extra * 1.6) * (kw + gap) - gap; let x = (1024 - total) / 2; const y = 190 + r * 74;
+    const total = (chars.length + extra * 1.6) * (kw + gap) - gap; let x = (1024 - total) / 2; const y = 114 + r * 74;
     for (const ch of chars) { B.push({ id: 'ch:' + ch, label: ch, x, y, w: kw, h: 66 }); x += kw + gap; }
     if (r === 0) B.push({ id: 'bs', label: '⌫', x, y, w: kw * 1.6 + gap * 0.6, h: 66 });
   });
-  const y = 190 + 4 * 74;
+  const y = 114 + 4 * 74;
   B.push({ id: 'lang', label: kbd.lang === 'ru' ? 'EN' : 'RU', x: 24, y, w: 130, h: 70 });
   B.push({ id: 'sp', label: 'пробел', x: 166, y, w: 420, h: 70 });
   B.push({ id: 'cancel', label: 'Отмена', x: 598, y, w: 180, h: 70 });
@@ -2031,23 +2023,21 @@ function drawKeyboard() {
   fitText(c, t, 44, 60, W - 90, 36, 500, kbd.text ? '#efeae0' : '#7d848b');
   for (const b of kb.buttons) {
     const hover = kb.hover === b.id;
-    if (b.id.startsWith('k:')) { const k = b.id.slice(2); const on = kbd.kind === k; drawBtn(c, b, { hover, fill: on ? KINDS[k].color : null, active: false, label: b.label, size: 30 }); continue; }
     drawBtn(c, b, { hover, active: b.id === 'ok', size: b.id.startsWith('ch:') ? 36 : 30 });
   }
   kb.tex.needsUpdate = true;
 }
 function kbClick(id) {
   if (id.startsWith('ch:')) { let ch = id.slice(3); if (!kbd.text) ch = ch.toUpperCase(); if (kbd.text.length < 200) kbd.text += ch; }
-  else if (id.startsWith('k:')) kbd.kind = id.slice(2);
   else if (id === 'bs') kbd.text = kbd.text.slice(0, -1);
   else if (id === 'sp') { if (kbd.text && !kbd.text.endsWith(' ')) kbd.text += ' '; }
   else if (id === 'lang') { kbd.lang = kbd.lang === 'ru' ? 'en' : 'ru'; layoutKeyboard(); }
-  else if (id === 'ok') return closeKeyboard({ text: kbd.text.trim(), kind: kbd.kind });
+  else if (id === 'ok') return closeKeyboard({ text: kbd.text.trim() });
   else if (id === 'cancel') return closeKeyboard(null);
   drawKeyboard();
 }
 function openKeyboard(n) {
-  kbd.open = true; kbd.text = n.text || ''; kbd.kind = n.kind || 'issue'; kbd.note = n; layoutKeyboard(); drawKeyboard();
+  kbd.open = true; kbd.text = n.text || ''; kbd.note = n; layoutKeyboard(); drawKeyboard();
   const h = camera.getWorldPosition(new V3()); const f = flatForward();
   kb.mesh.position.copy(h).addScaledVector(f, 0.55); kb.mesh.position.y -= 0.22;
   kb.mesh.lookAt(h); scene.add(kb.mesh);
