@@ -52,7 +52,15 @@ button,input,textarea{font:inherit}
 .dlg-colors{display:flex;flex-wrap:wrap;gap:6px}
 .dlg-colors .sw{width:30px;height:30px}
 
-.sec{display:flex;flex-direction:column;gap:12px;padding-top:18px;border-top:1px solid var(--line)}
+.sec{padding-top:16px;border-top:1px solid var(--line)}
+.sec > summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:10px;border-radius:8px}
+.sec > summary::-webkit-details-marker{display:none}
+.sec > summary::after{content:"";width:9px;height:9px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(45deg);margin:0 6px 4px 0;transition:transform .15s}
+.sec:not([open]) > summary::after{transform:rotate(-45deg);margin:0 8px 0 0}
+.sec > summary:hover h2{color:var(--accent)}
+.sec-body{display:flex;flex-direction:column;gap:12px;margin-top:12px}
+.clear-row{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.clear-row .lbl{margin-right:2px}
 .sec.off .field,.sec.off .dims{opacity:.45}
 h2{display:flex;align-items:center;gap:10px;margin:0;font:600 16px/1.2 var(--f-body);text-wrap:balance}
 .step{font:500 12px/1 var(--f-mono);color:var(--accent);border:1px solid var(--line-strong);padding:4px 6px;border-radius:3px}
@@ -102,12 +110,13 @@ h2{display:flex;align-items:center;gap:10px;margin:0;font:600 16px/1.2 var(--f-b
 .note{margin:0;font-size:13px;color:var(--muted);text-wrap:pretty}
 .note.warn{color:var(--accent)}
 
-.modes{display:flex;flex-direction:column;gap:8px}
-.mode{display:grid;grid-template-columns:40px minmax(0,1fr);gap:2px 12px;align-items:center;text-align:left;padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:var(--raise);color:var(--fg);cursor:pointer;transition:border-color .15s,background-color .15s}
+.modes{display:grid;grid-template-columns:repeat(auto-fit,minmax(72px,1fr));gap:8px}
+.mode{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;min-height:84px;padding:10px 6px;text-align:center;border:1px solid var(--line);border-radius:10px;background:var(--raise);color:var(--fg);cursor:pointer;transition:border-color .15s,background-color .15s}
+.mode[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-wash)}
 .mode:hover:not(:disabled){border-color:var(--accent);background:var(--accent-wash)}
 .mode:disabled{opacity:.42;cursor:not-allowed}
-.mode svg{grid-row:span 2;width:32px;height:32px;stroke:var(--accent);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
-.mode-t{font-weight:600;font-size:15.5px}
+.mode svg{width:30px;height:30px;stroke:var(--accent);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.mode-t{font-weight:600;font-size:13px;line-height:1.2}
 .mode-d{font-size:13px;color:var(--muted);text-wrap:pretty}
 .checks{display:flex;flex-direction:column;gap:6px}
 .check{display:flex;gap:10px;align-items:flex-start;font-size:14px;cursor:pointer;padding:4px 0}
@@ -210,8 +219,49 @@ h2{display:flex;align-items:center;gap:10px;margin:0;font:600 16px/1.2 var(--f-b
     <p class="lede">Архитектурные 3D-модели в Meta Quest&nbsp;3 и в браузере: прогулка от первого лица, макет на столе, сквозной режим, разметка и комментарии.</p>
   </header>
 
-  <section class="sec" id="sec-load">
-    <h2><span class="step">01</span>Загрузите модель</h2>
+
+
+  <details class="sec" id="sec-mode" open>
+    <summary><h2><span class="step">01</span>Режим</h2></summary>
+    <div class="sec-body">
+    <div class="modes">
+      <button class="mode" id="m-walk" type="button" disabled aria-pressed="false" title="Прогулка от первого лица на этом экране: компьютер, телефон или окно браузера Quest">
+        <svg viewBox="0 0 32 32" aria-hidden="true"><rect x="3" y="6" width="26" height="17" rx="2"/><path d="M11 27h10M16 23v4"/><circle cx="16" cy="11" r="2"/><path d="M16 13v4l-2 3M16 17l2 3M13.5 15h5"/></svg>
+        <span class="mode-t">Прогулка</span>
+      </button>
+      <button class="mode" id="m-mr" type="button" disabled hidden title="VR со сквозным режимом: модель в вашей реальной комнате. Quest 3">
+        <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M4 12c0-2 1.5-3.5 3.5-3.5h17c2 0 3.5 1.5 3.5 3.5v7c0 2-1.5 3.5-3.5 3.5h-4l-2-3h-5l-2 3h-4C5.5 22.5 4 21 4 19z"/><path d="M9 27l3-3M23 27l-3-3" stroke-dasharray="2 2"/></svg>
+        <span class="mode-t">VR сквозной</span>
+      </button>
+      <button class="mode" id="m-vr" type="button" disabled hidden title="VR с окружением: полное погружение, небо и земля вокруг здания">
+        <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M4 12c0-2 1.5-3.5 3.5-3.5h17c2 0 3.5 1.5 3.5 3.5v7c0 2-1.5 3.5-3.5 3.5h-4l-2-3h-5l-2 3h-4C5.5 22.5 4 21 4 19z"/><path d="M3 28h26M8 28c2-3 5-4 8-4s6 1 8 4"/></svg>
+        <span class="mode-t">VR мир</span>
+      </button>
+      <button class="mode" id="m-phone" type="button" disabled hidden title="AR через камеру телефона">
+        <svg viewBox="0 0 32 32" aria-hidden="true"><rect x="9" y="3" width="14" height="26" rx="3"/><path d="M14 25.5h4"/><path d="M12 15l4-4 4 4M12.5 14.5V19h7v-4.5"/></svg>
+        <span class="mode-t">AR</span>
+      </button>
+    </div>
+    <p class="note" id="xrnote">Проверяю поддержку VR и AR…</p>
+    <div class="field">
+      <span class="lbl" id="l-env">Окружение</span>
+      <div class="seg" id="envseg" role="group" aria-labelledby="l-env">
+        <button type="button" data-val="graphite">Графит</button>
+        <button type="button" data-val="sky">Небо</button>
+        <button type="button" data-val="studio">Студия</button>
+        <button type="button" data-val="evening">Вечер</button>
+      </div>
+    </div>
+    <div class="checks" id="walkprefs">
+      <label class="check"><input type="checkbox" id="p-gravity"><span>Гравитация<small>Ходить по полу и лестницам, а не летать</small></span></label>
+      <label class="check"><input type="checkbox" id="p-collide"><span>Стены не пропускают<small>При ходьбе стиком и клавишами; телепорт работает всегда</small></span></label>
+    </div>
+    </div>
+  </details>
+
+  <details class="sec" id="sec-load" open>
+    <summary><h2><span class="step">02</span>Модель</h2></summary>
+    <div class="sec-body">
     <label class="drop" id="drop" for="file">
       <input type="file" id="file" multiple class="sr">
       <span class="drop-title">Выбрать файлы</span>
@@ -224,10 +274,12 @@ h2{display:flex;align-items:center;gap:10px;margin:0;font:600 16px/1.2 var(--f-b
     <button class="link" id="sample" type="button">Добавить пример — двухэтажный павильон</button>
     <h3 class="sub">Экспозиция</h3>
     <ul id="models" class="models"></ul>
-  </section>
+    </div>
+  </details>
 
-  <section class="sec off" id="sec-set">
-    <h2><span class="step">02</span>Проверьте масштаб</h2>
+  <details class="sec off" id="sec-set" open>
+    <summary><h2><span class="step">03</span>Масштаб</h2></summary>
+    <div class="sec-body">
     <div class="dims">
       <b id="dims">—</b>
       <small>ширина × глубина × высота</small>
@@ -258,7 +310,7 @@ h2{display:flex;align-items:center;gap:10px;margin:0;font:600 16px/1.2 var(--f-b
         <button type="button" data-val="true">Белый макет</button>
       </div>
     </div>
-    <div class="field">
+    <div class="field" id="tablefield" hidden>
       <span class="lbl" id="l-table">Масштаб макета при первом переключении (дальше — двумя грипами)</span>
       <div class="seg" id="tablescale" role="group" aria-labelledby="l-table">
         <button type="button" data-val="20">1:20</button>
@@ -269,63 +321,37 @@ h2{display:flex;align-items:center;gap:10px;margin:0;font:600 16px/1.2 var(--f-b
         <button type="button" data-val="1000">1:1000</button>
       </div>
     </div>
-  </section>
+    </div>
+  </details>
 
-  <section class="sec" id="sec-mode">
-    <h2><span class="step">03</span>Выберите режим</h2>
-    <div class="modes">
-      <button class="mode" id="m-walk" type="button" disabled>
-        <svg viewBox="0 0 32 32" aria-hidden="true"><rect x="3" y="6" width="26" height="17" rx="2"/><path d="M11 27h10M16 23v4"/><circle cx="16" cy="11" r="2"/><path d="M16 13v4l-2 3M16 17l2 3M13.5 15h5"/></svg>
-        <span class="mode-t">Прогулка в браузере</span>
-        <span class="mode-d">От первого лица на этом экране: компьютер, телефон или окно браузера Quest.</span>
-      </button>
-      <button class="mode" id="m-mr" type="button" disabled>
-        <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M4 12c0-2 1.5-3.5 3.5-3.5h17c2 0 3.5 1.5 3.5 3.5v7c0 2-1.5 3.5-3.5 3.5h-4l-2-3h-5l-2 3h-4C5.5 22.5 4 21 4 19z"/><path d="M9 27l3-3M23 27l-3-3" stroke-dasharray="2 2"/></svg>
-        <span class="mode-t">VR · сквозной режим</span>
-        <span class="mode-d">Модель в вашей реальной комнате, видно пространство вокруг. Quest 3.</span>
-      </button>
-      <button class="mode" id="m-vr" type="button" disabled>
-        <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M4 12c0-2 1.5-3.5 3.5-3.5h17c2 0 3.5 1.5 3.5 3.5v7c0 2-1.5 3.5-3.5 3.5h-4l-2-3h-5l-2 3h-4C5.5 22.5 4 21 4 19z"/><path d="M3 28h26M8 28c2-3 5-4 8-4s6 1 8 4"/></svg>
-        <span class="mode-t">VR · с окружением</span>
-        <span class="mode-d">Полное погружение: небо, земля, горизонт вокруг здания.</span>
-      </button>
-      <button class="mode" id="m-phone" type="button" disabled>
-        <svg viewBox="0 0 32 32" aria-hidden="true"><rect x="9" y="3" width="14" height="26" rx="3"/><path d="M14 25.5h4"/><path d="M12 15l4-4 4 4M12.5 14.5V19h7v-4.5"/></svg>
-        <span class="mode-t">AR на телефоне</span>
-        <span class="mode-d" id="phone-d">Через камеру: поставьте модель на пол или стол и обойдите её. Android и iPhone.</span>
-      </button>
-    </div>
-    <p class="note" id="xrnote">Проверяю поддержку WebXR…</p>
-    <div class="field">
-      <span class="lbl" id="l-env">Окружение для прогулки и VR</span>
-      <div class="seg" id="envseg" role="group" aria-labelledby="l-env">
-        <button type="button" data-val="sky">Небо</button>
-        <button type="button" data-val="studio">Студия</button>
-        <button type="button" data-val="evening">Вечер</button>
-      </div>
-    </div>
-    <div class="checks">
-      <label class="check"><input type="checkbox" id="p-gravity"><span>Гравитация<small>Ходить по полу и лестницам, а не летать</small></span></label>
-      <label class="check"><input type="checkbox" id="p-collide"><span>Стены не пропускают<small>При ходьбе стиком и клавишами; телепорт работает всегда</small></span></label>
-    </div>
-  </section>
-
-  <section class="sec" id="sec-notes">
-    <h2><span class="step">04</span>Разметка и комментарии</h2>
+  <details class="sec" id="sec-notes" open>
+    <summary><h2><span class="step">04</span>Разметка и комментарии</h2></summary>
+    <div class="sec-body">
     <p class="note">Инструменты — на панели над моделью, в шлеме — на левой руке. Всё сохраняется в этом браузере отдельно для каждой модели.</p>
     <ul id="notes" class="notes"></ul>
+    <div class="clear-row" id="clear-row">
+      <span class="lbl">Очистить:</span>
+      <button type="button" class="btn small" data-clear="pin">Метки</button>
+      <button type="button" class="btn small" data-clear="measure">Размеры</button>
+      <button type="button" class="btn small" data-clear="line">Эскизы</button>
+      <button type="button" class="btn small" data-clear="box">Кубы</button>
+      <button type="button" class="btn small" data-clear="section">Сечение</button>
+      <button type="button" class="btn small" data-clear="all">Всё</button>
+    </div>
     <div class="row-btns">
       <button type="button" class="btn small primary" id="n-obj">Скачать OBJ с разметкой</button>
       <button type="button" class="btn small" id="n-export">Скачать заметки</button>
       <label class="btn small" for="n-import">Загрузить заметки</label>
       <input type="file" id="n-import" accept=".json,application/json" class="sr">
-      <button type="button" class="btn small" id="n-clear">Очистить</button>
     </div>
     <p class="note">Чтобы показать отметки другому человеку, скачайте OBJ с разметкой и отправьте архив. Он перетащит его в VRtrip и увидит модель со всеми метками, размерами и линиями. Тот же OBJ открывается в Rhino: разметка лежит в объектах VRtrip_*.</p>
-  </section>
+    </div>
+  </details>
+
 
   <details class="help">
     <summary>Управление</summary>
+    <div id="help-quest" hidden>
     <h3>Quest 3 · контроллеры</h3>
     <dl>
       <dt>Левый стик</dt><dd>Идти. С зажатым левым курком — быстрее.</dd>
@@ -340,6 +366,7 @@ h2{display:flex;align-items:center;gap:10px;margin:0;font:600 16px/1.2 var(--f-b
       <dt>Y</dt><dd>Следующая модель экспозиции.</dd>
       <dt>Клик левым стиком</dt><dd>Тоже показывает или скрывает меню.</dd>
     </dl>
+    </div>
     <h3>Браузер</h3>
     <dl>
       <dt>W A S D</dt><dd>Идти, Shift — бегом. На телефоне и в Quest — джойстик в углу.</dd>
@@ -437,7 +464,7 @@ const UP = new V3(0, 1, 0), DOWN = new V3(0, -1, 0);
 const UNITS = { mm: 0.001, cm: 0.01, m: 1, in: 0.0254, ft: 0.3048 };
 const TABLE_STEPS = [20, 50, 100, 200, 500, 1000];
 const EYE = 1.65, STEP = 0.45, RADIUS = 0.3, GRAV = 9.8;
-const APP_VERSION = '2.1';
+const APP_VERSION = '2.2';
 const BASE_COLORS = ['#f2efe8', '#d8a33f', '#e0604a', '#3f86c9'];
 const STAR_LOGO = 'data:image/png;base64,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';
 const KINDS = { issue: { label: 'Замечание', color: '#e0604a' }, question: { label: 'Вопрос', color: '#d8a33f' }, idea: { label: 'Идея', color: '#4fae7f' } };
@@ -495,7 +522,7 @@ const loadAll = () => idb('readonly', s => s.getAll());
 const lsGet = k => { try { return localStorage.getItem(k); } catch { return null; } };
 const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch {} };
 
-const prefs = { gravity: lsGet('vrtrip-gravity') !== '0', collide: lsGet('vrtrip-collide') !== '0', env: lsGet('vrtrip-env') || 'sky' };
+const prefs = { gravity: lsGet('vrtrip-gravity') !== '0', collide: lsGet('vrtrip-collide') !== '0', env: lsGet('vrtrip-env') || 'graphite' };
 let customColors = (() => { try { const a = JSON.parse(lsGet('vrtrip-colors') || '[]'); return Array.isArray(a) ? a.filter(c => /^#[0-9a-f]{6}$/i.test(c)).slice(-8) : []; } catch { return []; } })();
 const allColors = () => [...BASE_COLORS, ...customColors];
 function savePrefs() { lsSet('vrtrip-gravity', prefs.gravity ? '1' : '0'); lsSet('vrtrip-collide', prefs.collide ? '1' : '0'); lsSet('vrtrip-env', prefs.env); }
@@ -525,6 +552,7 @@ const hemi = new THREE.HemisphereLight(0xffffff, 0x7f8589, 2.1); scene.add(hemi)
 const sun = new THREE.DirectionalLight(0xfff6ea, 2.2); sun.position.set(40, 70, 25); scene.add(sun);
 
 const ENV = {
+  graphite: { top: '#1b2024', bottom: '#1b2024', ground: '#20262b', grid: 0.22, hemiSky: '#ffffff', hemiGround: '#7f8589', hemi: 2.1, sun: '#fff6ea', sunI: 2.2, sunPos: [40, 70, 25], fog: null, flat: true },
   sky: { top: '#5f93cc', bottom: '#dfe7ea', ground: '#9ea38f', grid: 0.18, hemiSky: '#ffffff', hemiGround: '#7f8589', hemi: 2.0, sun: '#fff4e6', sunI: 2.4, sunPos: [40, 70, 25], fog: [120, 1000] },
   studio: { top: '#eceded', bottom: '#d6d8d9', ground: '#cdd0d1', grid: 0.35, hemiSky: '#ffffff', hemiGround: '#9aa0a4', hemi: 2.5, sun: '#ffffff', sunI: 1.5, sunPos: [30, 60, 40], fog: [150, 900] },
   evening: { top: '#1c2638', bottom: '#d29b70', ground: '#55534d', grid: 0.12, hemiSky: '#ffd9b8', hemiGround: '#3a3c44', hemi: 1.0, sun: '#ffb27a', sunI: 2.2, sunPos: [-60, 16, -40], fog: [90, 800] },
@@ -1023,20 +1051,24 @@ window.addEventListener('drop', e => {
 });
 
 /* ================= environment ================= */
+/* the chosen environment applies to every mode that draws its own world (not to passthrough or phone AR) */
 function applyEnv() {
-  const p = ENV[prefs.env] || ENV.sky;
-  const immersive = state.view === 'walk' || (state.view === 'xr' && !state.passthrough);
-  sky.visible = ground.visible = immersive;
-  previewGrid.visible = state.view === 'orbit';
-  scene.background = state.view === 'orbit' ? PREVIEW_BG : null;
-  const L = immersive ? p : ENV.sky;
+  const p = ENV[prefs.env] || ENV.graphite;
+  const world = state.view === 'orbit' || state.view === 'walk' || (state.view === 'xr' && !state.passthrough);
+  const L = world ? p : ENV.graphite;
   hemi.color.set(L.hemiSky); hemi.groundColor.set(L.hemiGround); hemi.intensity = L.hemi;
   sun.color.set(L.sun); sun.intensity = L.sunI; sun.position.set(...L.sunPos);
-  if (immersive) {
-    skyMat.uniforms.top.value.set(p.top); skyMat.uniforms.bottom.value.set(p.bottom);
+  if (!world) { sky.visible = ground.visible = previewGrid.visible = false; scene.background = null; scene.fog = null; return; }
+  if (p.flat) {                                     // graphite: plain dark backdrop, the fitted grid in the overview
+    sky.visible = false; scene.background = PREVIEW_BG; scene.fog = null;
+    previewGrid.visible = state.view === 'orbit'; ground.visible = state.view !== 'orbit';
     groundMesh.material.color.set(p.ground); vrGrid.material.opacity = p.grid;
-    fog.color.set(p.bottom); fog.near = p.fog[0]; fog.far = p.fog[1]; scene.fog = fog;
-  } else scene.fog = null;
+    return;
+  }
+  sky.visible = ground.visible = true; previewGrid.visible = false; scene.background = null;
+  skyMat.uniforms.top.value.set(p.top); skyMat.uniforms.bottom.value.set(p.bottom);
+  groundMesh.material.color.set(p.ground); vrGrid.material.opacity = p.grid;
+  fog.color.set(p.bottom); fog.near = p.fog[0]; fog.far = p.fog[1]; scene.fog = state.view === 'orbit' ? null : fog;
 }
 
 /* ================= labels ================= */
@@ -1079,7 +1111,7 @@ function updateLabels() {
     if (!s.parent || !s.visible) continue;
     s.getWorldPosition(_lp);
     const d = _cam.distanceTo(_lp);
-    const h = THREE.MathUtils.clamp(d * 0.034, 0.035, 3) * (s.userData.world ? 1 : inv) * (s.userData.hk || 1);
+    const h = THREE.MathUtils.clamp(d * 0.034, state.view === 'xr' ? 0.035 : 0.0005, 3) * (s.userData.world ? 1 : inv) * (s.userData.hk || 1);
     s.scale.set(h * s.userData.aspect, h, 1);
     if (s.userData.pickMesh) s.userData.pickMesh.scale.setScalar(h * 1.2);
   }
@@ -1163,8 +1195,9 @@ function makeNoteObj(n) {
     const mat = new THREE.LineBasicMaterial({ color: MEASURE_COLOR, depthTest: false, transparent: true });
     const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints([a, b]), mat); line.renderOrder = 11;
     const endMat = new THREE.MeshBasicMaterial({ color: MEASURE_COLOR, depthTest: false, transparent: true });
-    for (const p of [a, b]) { const e = shared(new THREE.Mesh(END_GEO, endMat), true, false); e.position.copy(p); e.renderOrder = 11; g.add(e); }
-    const cyl = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, Math.max(d, 0.01), 6), PICK_MAT); cyl.userData.sharedMat = true;
+    const ek = Math.min(1, d * 0.6);                 // end dots shrink on small models
+    for (const p of [a, b]) { const e = shared(new THREE.Mesh(END_GEO, endMat), true, false); e.position.copy(p); e.scale.setScalar(ek); e.renderOrder = 11; g.add(e); }
+    const cyl = new THREE.Mesh(new THREE.CylinderGeometry(0.07 * ek, 0.07 * ek, Math.max(d, 0.01), 6), PICK_MAT); cyl.userData.sharedMat = true;
     cyl.position.copy(a).add(b).multiplyScalar(0.5); cyl.quaternion.setFromUnitVectors(UP, b.clone().sub(a).normalize());
     const lab = makeLabel(`${fmt2(d)} м`, null, { depthTest: false }); lab.position.copy(a).add(b).multiplyScalar(0.5);
     g.add(line, cyl, lab); pick.push(cyl);
@@ -1234,7 +1267,7 @@ function renderNotes() {
   if (state.view === 'xr' && (state.palTab === 'notes' || state.palTab === 'models')) layoutPalette();
   const ul = $('#notes'); ul.textContent = '';
   const rec = activeRec(); const list = rec?.built ? rec.notes : [];
-  $('#n-export').disabled = !list.length; $('#n-clear').disabled = !list.length; $('#n-obj').disabled = !rec?.built;
+  $('#n-export').disabled = !list.length; $('#n-obj').disabled = !rec?.built; renderClearRow();
   if (!list.length) { const li = document.createElement('li'); li.style.display = 'block'; li.innerHTML = '<p class="empty">Пока нет. Выберите «Метку», «Рулетку» или «Карандаш» на панели над моделью и щёлкните по модели.</p>'; ul.append(li); return; }
   const sorted = [...list].sort((a, b) => (a.type === 'pin' ? 0 : 1) - (b.type === 'pin' ? 0 : 1) || (a.num || 0) - (b.num || 0) || a.t - b.t);
   for (const n of sorted) {
@@ -1350,14 +1383,29 @@ async function importNotes(file) {
     toast(k ? `Загружено заметок: ${k}` : 'В файле нет заметок VRtrip.', k ? 'ok' : 'warn');
   } catch { toast('Не получилось прочитать файл. Нужен .json, скачанный из VRtrip.', 'bad'); }
 }
-$('#n-clear').addEventListener('click', e => {
-  const b = e.currentTarget; const rec = activeRec(); if (!rec?.built) return;
-  if (!b.classList.contains('armed')) { b.classList.add('armed'); b.textContent = 'Удалить все?'; setTimeout(() => { b.classList.remove('armed'); b.textContent = 'Очистить'; }, 3000); return; }
-  b.classList.remove('armed'); b.textContent = 'Очистить';
-  for (const n of [...rec.notes]) removeNote(n.id, false);
-  undoStack.length = 0; toast('Заметки удалены');
+const CLEAR_LABEL = { pin: 'Метки', measure: 'Размеры', line: 'Эскизы', box: 'Кубы', section: 'Сечение', all: 'Всё' };
+function clearCount(k) { const rec = activeRec(); const ns = rec?.built ? rec.notes : []; if (k === 'section') return sec.on ? 1 : 0; if (k === 'all') return ns.length + (sec.on ? 1 : 0); return ns.filter(n => n.type === k).length; }
+function renderClearRow() {
+  let any = false;
+  document.querySelectorAll('#clear-row [data-clear]').forEach(b => {
+    const k = b.dataset.clear, n = clearCount(k); b.hidden = !n;
+    if (!b.classList.contains('armed')) b.textContent = k === 'all' || k === 'section' ? CLEAR_LABEL[k] : `${CLEAR_LABEL[k]} · ${n}`;
+    any ||= !!n;
+  });
+  $('#clear-row').hidden = !any;
+}
+$('#clear-row').addEventListener('click', e => {
+  const b = e.target.closest('[data-clear]'); if (!b) return; const k = b.dataset.clear, rec = activeRec(); if (!rec?.built) return;
+  if (!b.classList.contains('armed')) { b.classList.add('armed'); b.textContent = 'Точно удалить?'; setTimeout(() => { b.classList.remove('armed'); renderClearRow(); }, 3000); return; }
+  b.classList.remove('armed');
+  if (k === 'section' || k === 'all') secOff();
+  if (k !== 'section') {
+    const items = []; rec.notes.forEach((n, index) => { if (k === 'all' || n.type === k) items.push({ note: n, index }); });
+    for (const it of items) removeNote(it.note.id, false);
+    if (items.length) undoStack.push({ op: 'delmany', items, recId: rec.id });
+  }
+  renderClearRow(); toast(k === 'all' ? 'Разметка очищена. Отменить — Ctrl+Z' : `Удалено: ${CLEAR_LABEL[k].toLowerCase()}. Отменить — Ctrl+Z`);
 });
-
 /* desktop note dialog */
 let dlgResolve = null, dlgColor = '#e0604a';
 function paintDlgColors() {
@@ -1890,13 +1938,13 @@ function enterWalk() {
   state.view = 'walk'; controls.enabled = false;
   document.body.classList.add('walking'); $('#walkui').hidden = false; updateCanvasCursor();
   camera.near = 0.05; camera.far = 3000; camera.fov = 70; camera.updateProjectionMatrix();
-  placeEntrance(); applyEnv(); updateTip(); onResize(); canvas.focus({ preventScroll: true });
+  placeEntrance(); applyEnv(); updateTip(); onResize(); updateModeButtons(); canvas.focus({ preventScroll: true });
 }
 function exitWalk() {
   state.view = 'orbit'; keys.clear(); joy.x = joy.y = 0; cancelTool();
   document.body.classList.remove('walking'); $('#walkui').hidden = true; updateCanvasCursor();
   camera.fov = 55; camera.rotation.set(0, 0, 0); controls.enabled = true;
-  applyEnv(); frame(activeRec()); updateTip(); onResize();
+  applyEnv(); frame(activeRec()); updateTip(); onResize(); updateModeButtons();
 }
 function walkUpdate(dt) {
   const k = c => keys.has(c);
@@ -1933,7 +1981,7 @@ function goToNote(n) {
     controls.target.copy(p); camera.position.copy(p).add(off); controls.update();
   }
 }
-$('#m-walk').addEventListener('click', enterWalk);
+$('#m-walk').addEventListener('click', () => { if (state.view === 'walk') exitWalk(); else enterWalk(); });
 $('#w-exit').addEventListener('click', exitWalk);
 $('#w-up').addEventListener('click', () => walkFloor(true));
 $('#w-down').addEventListener('click', () => walkFloor(false));
@@ -2039,7 +2087,7 @@ canvas.addEventListener('pointerleave', () => { if (!pd && state.view !== 'xr') 
 function frame(rec) {
   if (state.view !== 'orbit') return;
   const s = rec ? rec.size : new V3(10, 4, 10);
-  const r = Math.max(s.x, s.y, s.z, 0.5);
+  const r = Math.max(s.x, s.y, s.z, 0.005);
   controls.target.set(0, s.y * 0.35, 0);
   camera.position.set(r * 0.85, s.y * 0.35 + r * 0.55, r * 1.15);
   camera.near = Math.max(0.01, r / 2000); camera.far = r * 60 + 50; camera.updateProjectionMatrix();
@@ -2099,7 +2147,7 @@ function layoutPalette() {
     const cy = Y + 3 * 112;
     B.splice(B.findIndex(b => b.color), Infinity, ...B.filter(b => b.color).map(b => ({ ...b, y: cy })));
     if (state.tool === 'section') [['sec:new', 'Новое'], ['sec:plan', 'План'], ['sec:flip', 'Перевернуть'], ['sec:snap', SNAP_LABEL[sec.snap]], ['sec:off', 'Убрать']].forEach(([id, label], i) => B.push({ id, label, x: 24 + i * 197, y: cy + 108, w: 187, h: 96 }));
-    else row3(cy + 108, [['pt', 'Сквозной'], ['table', '1:1 ↔ макет'], ['grav', 'Гравитация']]);
+    else row3(cy + 108, [state.sessionMode === 'immersive-ar' && ['pt', 'Сквозной'], ['table', '1:1 ↔ макет'], state.mode === 'walk' && ['grav', 'Гравитация']].filter(Boolean));
   } else if (tab === 'models') {
     const per = 3, { page } = pageOf('models', state.models.length, per);
     state.models.slice(page * per, page * per + per).forEach((m, k) => B.push({ id: 'm:' + (page * per + k), label: m.name, sub: m.settings?.size ? sizeText(m.settings.size) : 'ещё не открывалась', x: 24, y: Y + k * 92, w: 780, h: 84, kind: 'row' }));
@@ -2107,8 +2155,8 @@ function layoutPalette() {
     [['mm', 'мм'], ['cm', 'см'], ['m', 'м'], ['in', 'дюйм'], ['ft', 'фут']].forEach(([u, l], i) => B.push({ id: 'u:' + u, label: l, x: 24 + i * 197, y: Y + 292, w: 187, h: 84 }));
     row3(Y + 390, [['up:false', 'Y вверх'], ['up:true', 'Z вверх'], ['clay', 'Белый макет']]);
   } else if (tab === 'view') {
-    row3(Y, [['pt', 'Сквозной'], ['table', '1:1 ↔ макет'], ['start', 'Ко входу']]);
-    row3(Y + 108, [['grav', 'Гравитация'], ['coll', 'Стены'], ['place', 'Макет передо мной']]);
+    row3(Y, [state.sessionMode === 'immersive-ar' && ['pt', 'Сквозной'], ['table', '1:1 ↔ макет'], ['start', 'Ко входу']].filter(Boolean));
+    row3(Y + 108, [state.mode === 'walk' && ['grav', 'Гравитация'], state.mode === 'walk' && ['coll', 'Стены'], ['place', 'Макет передо мной']].filter(Boolean));
     row3(Y + 216, [['env:sky', 'Небо'], ['env:studio', 'Студия'], ['env:evening', 'Вечер']]);
     row3(Y + 324, [['next', 'Следующая модель'], ['hud', 'Скрыть меню']]);
     B.push({ id: 'tilt:-', label: 'Наклон −', x: 684, y: Y + 324, w: 153, h: 96 }); B.push({ id: 'tilt:+', label: 'Наклон +', x: 847, y: Y + 324, w: 153, h: 96 });
@@ -2178,12 +2226,34 @@ function drawPalette() {
   fitText(c, `VRtrip ${APP_VERSION} · ${AUTHOR}`, 86, 820, W - 116, 24, 500, '#9aa0a6');
   pal.tex.needsUpdate = true;
 }
+const fileToLocal = rec => { rec.root.updateMatrix(); rec.xf.updateMatrix(); return new THREE.Matrix4().multiplyMatrices(rec.root.matrix, rec.xf.matrix); };
+/* when units or the up axis change, markup and the section move with the model: same file points, new metres */
+function transformNotes(rec, T) {
+  const r6 = v => Math.round(v * 1e6) / 1e6, A6 = v => [r6(v.x), r6(v.y), r6(v.z)];      // keep precision through repeated unit changes
+  const P = a => A6(vec(a).applyMatrix4(T)), D = a => A6(vec(a).transformDirection(T)), k = Math.cbrt(Math.abs(T.determinant())) || 1;
+  for (const n of rec.notes) {
+    if (n.type === 'pin') { n.p = P(n.p); if (n.n) n.n = D(n.n); }
+    else if (n.type === 'measure') { n.a = P(n.a); n.b = P(n.b); }
+    else if (n.type === 'box') { const bx = new THREE.Box3(vec(n.min), vec(n.max)).applyMatrix4(T); n.min = A6(bx.min); n.max = A6(bx.max); }
+    else if (n.type === 'line') {
+      if (n.c) { n.c = P(n.c); if (n.basis) n.basis = { r: D(n.basis.r), u: D(n.basis.u), n: D(n.basis.n) }; n.p2 = n.p2.map(([x, y]) => [r6(x * k), r6(y * k)]); if (n.w) n.w *= k; }
+      else if (n.pts) { n.pts = n.pts.map(P); if (n.r) n.r *= k; }
+    }
+  }
+  for (const o of rec.noteObjs.values()) disposeObj(o);
+  rec.noteObjs.clear(); for (const n of rec.notes) mountNote(rec, n);
+  if (sec.on) { sec.p.applyMatrix4(T); sec.n.transformDirection(T); }
+  renderNotes();
+}
 function changeModelSetting(k, v) {
   const rec = activeRec(); if (!rec?.built || rec.settings[k] === v) return;
+  const before = fileToLocal(rec);
   rec.settings[k] = v;
   if (k === 'units') rec.settings.autoUnits = false;
   if (k === 'units' || k === 'zUp') { rec.settings.table = null; state.tableRel = null; }
-  applySettings(rec); renderSettings(); renderList();
+  applySettings(rec);
+  if ((k === 'units' || k === 'zUp') && (rec.notes.length || sec.on)) transformNotes(rec, fileToLocal(rec).multiply(before.invert()));
+  renderSettings(); renderList();
   if (state.view === 'walk') placeEntrance(); else if (state.view === 'orbit') frame(rec);
   else if (state.view === 'xr') { if (state.mode === 'table') placeTable(); else toStart(); }
   persist(rec);
@@ -2448,7 +2518,7 @@ function setMode(m) {
   cancelTool(); state.grab = null; marker.visible = false;
   if (m === 'walk') { rememberTable(); resetHolder(); state.vy = 0; }
   else { if (state.tableRel) restoreTable(); else placeTable(); }
-  state.mode = m; drawPalette();
+  state.mode = m; layoutPalette();
 }
 function togglePassthrough() {
   if (state.sessionMode !== 'immersive-ar') { flash('Сквозной режим: войдите через «VR · сквозной режим»'); return; }
@@ -2642,7 +2712,7 @@ async function enter(passthrough) {
   await renderer.xr.setSession(session);
   state.mode = 'walk'; state.tableRel = null; resetHolder();      // always start at 1:1
   state.passthrough = passthrough && mode === 'immersive-ar';
-  applyEnv(); toStart(); drawPalette();
+  applyEnv(); toStart(); layoutPalette();
 }
 function onEnd() {
   if (kbd.open) closeKeyboard(null);
@@ -2660,14 +2730,18 @@ const isIOS = /iPad|iPhone|iPod/.test(UA) || (/Macintosh/.test(UA) && navigator.
 const isPhone = !isHeadset && (/Android|Mobi/i.test(UA) || isIOS);
 const quickLookOK = (() => { try { return document.createElement('a').relList.supports('ar'); } catch { return false; } })();
 function phoneARKind() { return isPhone && xrSupport.ar ? 'webxr' : quickLookOK ? 'quicklook' : null; }
+/* show only the modes and settings this device can actually use */
 function updateModeButtons() {
-  const ready = isReady(), headset = !isPhone;
-  $('#m-walk').disabled = !ready;
-  $('#m-mr').disabled = !(ready && headset && xrSupport.ar);
-  $('#m-vr').disabled = !(ready && headset && (xrSupport.ar || xrSupport.vr));
-  const k = phoneARKind();
-  $('#m-phone').disabled = !(ready && k);
-  $('#phone-d').textContent = k === 'webxr' ? 'Через камеру: поставьте модель на пол или стол, переключите 1:1 и ходите по зданию.'
+  const ready = isReady(), headset = !isPhone, k = phoneARKind();
+  const canMR = headset && xrSupport.ar, canVR = headset && (xrSupport.ar || xrSupport.vr), canXR = canMR || canVR || !!k;
+  $('#m-walk').disabled = !ready; $('#m-walk').setAttribute('aria-pressed', String(state.view === 'walk'));
+  $('#m-mr').hidden = !canMR; $('#m-mr').disabled = !ready;
+  $('#m-vr').hidden = !canVR; $('#m-vr').disabled = !ready;
+  $('#m-phone').hidden = !k; $('#m-phone').disabled = !ready;
+  $('#tablefield').hidden = !canXR;                         // maquette scale matters only in a headset or phone AR
+  $('#walkprefs').hidden = !(canVR || state.view === 'walk');
+  $('#help-quest').hidden = !canVR;
+  $('#m-phone').title = k === 'webxr' ? 'Через камеру: поставьте модель на пол или стол, переключите 1:1 и ходите по зданию.'
     : k === 'quicklook' ? 'Через камеру iPhone/iPad: модель откроется в AR от Apple — поставьте её на пол и обойдите.'
     : 'Через камеру: Android (Chrome) и iPhone/iPad. Откройте эту ссылку на телефоне.';
 }
@@ -2819,7 +2893,7 @@ renderer.setAnimationLoop((t, xrFrame) => {
   else if (state.view === 'xr') pollInput(dt);
   else if (state.view === 'walk') walkUpdate(dt);
   else controls.update();
-  if (sky.visible) sky.position.copy(camera.getWorldPosition(_v));
+  if (sky.visible) { sky.position.copy(camera.getWorldPosition(_v)); sky.scale.setScalar(Math.min(1, camera.far * 0.9 / 1000)); }
   updateSection(); updateBillboards(); updateLabels(); updateCursor();
   renderer.render(scene, camera);
 });
@@ -2827,6 +2901,10 @@ renderer.setAnimationLoop((t, xrFrame) => {
 (async () => {
   { const sc = allColors().indexOf(lsGet('vrtrip-color') || ''); state.color = sc >= 0 ? sc : 1; }
   renderPrefs(); updateCanvasCursor(); onResize(); frame(null); renderList(); renderSettings(); renderNotes(); renderToolbar(); updateTip(); applyEnv();
+  document.querySelectorAll('details.sec').forEach(d => {      // remember which panel sections are collapsed
+    if (lsGet('vrtrip-open-' + d.id) === '0') d.open = false;
+    d.addEventListener('toggle', () => lsSet('vrtrip-open-' + d.id, d.open ? '1' : '0'));
+  });
   checkXR(); $('#ver').textContent = APP_VERSION; checkForUpdate(); setInterval(checkForUpdate, 10 * 60 * 1000);
   if (document.fonts?.ready) document.fonts.ready.then(() => { drawPalette(); drawKeyboard(); });
   const recs = (await loadAll()) || [];
