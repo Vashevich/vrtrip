@@ -211,6 +211,9 @@ h2{display:flex;align-items:center;gap:10px;margin:0;font:600 16px/1.2 var(--f-b
 .sec-info{font:12.5px/1.2 var(--f-mono);color:var(--muted);padding:0 6px;font-variant-numeric:tabular-nums}
 .chip{position:absolute;left:14px;bottom:14px;font:12px/1.35 var(--f-mono);color:var(--muted);background:var(--glass);border:1px solid var(--line);padding:7px 9px;border-radius:6px;pointer-events:none;max-width:calc(100% - 28px)}
 .tip{position:absolute;left:0;right:0;margin-inline:auto;width:fit-content;bottom:14px;max-width:min(560px,calc(100% - 300px));text-align:center;font-size:13.5px;background:var(--glass);border:1px solid var(--line-strong);padding:8px 12px;border-radius:8px;pointer-events:none;text-wrap:balance}
+.xhair{position:absolute;left:50%;top:50%;width:18px;height:18px;margin:-9px 0 0 -9px;pointer-events:none;z-index:4}
+.xhair::before,.xhair::after{content:'';position:absolute;background:#fff;box-shadow:0 0 0 1px rgba(0,0,0,.55)}
+.xhair::before{left:8px;top:0;width:2px;height:18px}.xhair::after{top:8px;left:0;height:2px;width:18px}
 .tip.tool{border-color:var(--accent);color:var(--fg)}
 .joy{position:absolute;left:18px;bottom:18px;width:124px;height:124px;border-radius:50%;background:var(--glass);border:1px solid var(--line-strong);touch-action:none;cursor:grab}
 .knob{position:absolute;left:50%;top:50%;width:52px;height:52px;margin:-26px 0 0 -26px;border-radius:50%;background:var(--raise);border:2px solid var(--accent);pointer-events:none}
@@ -515,9 +518,9 @@ body.cardboard .topbar,body.cardboard .walkui,body.cardboard .chip,body.cardboar
     <h3>Браузер</h3>
     <dl>
       <dt>Мышь</dt><dd>В обзоре: левая кнопка — вращать, правая — двигать (лапка), колесо — ближе / дальше к курсору. С инструментом вращать — средней кнопкой.</dd>
-      <dt>W A S D</dt><dd>В обзоре — плавный полёт по сцене, Shift — быстрее, Q / E — вниз / вверх. В прогулке — идти, Shift — бегом. На телефоне и в Quest — джойстик в углу.</dd>
+      <dt>W A S D</dt><dd>В обзоре — плавный полёт по сцене, Shift — быстрее, Q / E — вниз / вверх. В прогулке — идти. На телефоне и в Quest — джойстик в углу.</dd>
       <dt>Выделение</dt><dd>Клик по части модели или по разметке — выделить, стрелки гизмо — передвинуть (вверх-вниз — зелёная). Delete — удалить разметку, Esc — снять выделение.</dd>
-      <dt>Прогулка</dt><dd>Тянуть мышью — осмотреться, клик по полу — перейти.</dd>
+      <dt>Прогулка</dt><dd>Как в игре: щёлкните по сцене — мышь станет обзором. WASD — идти, Shift — бег, Пробел — прыжок (без гравитации — вверх), C — присесть (без гравитации — вниз), клик по полу — перейти туда, R / F — этаж, Esc — вернуть курсор. Инструменты работают по прицелу в центре.</dd>
       <dt>VR очки</dt><dd>Телефон в очках Homido, Cardboard и похожих: смотрите головой. Взгляд на пол 1,5 с — переход туда. Касание экрана (кнопка очков) — перейти, удержание — идти вперёд. Bluetooth-джойстик: стик — идти, A — перейти. «Линзы» — пресет очков и подстройка, «По центру» — выровнять направление.</dd>
       <dt>R / F</dt><dd>Этаж выше / ниже. Q / E — вниз / вверх без гравитации.</dd>
       <dt>1–5</dt><dd>Инструменты. Ctrl+Z — отменить, Esc — прервать или выйти.</dd>
@@ -589,6 +592,7 @@ body.cardboard .topbar,body.cardboard .walkui,body.cardboard .chip,body.cardboar
     <button type="button" data-clear="all" class="all">Очистить всё <i></i></button>
     <small>Можно вернуть: «Отменить» или Ctrl+Z</small>
   </div>
+  <div class="xhair" id="xhair" hidden></div>
   <div class="chip" id="chip">Левая кнопка — вращать · правая — двигать · колесо — ближе / дальше · WASD — полёт, Shift — быстрее, Q / E — вниз / вверх</div>
   <div class="walkui" id="walkui" hidden>
     <div class="joy" id="joy" aria-label="Джойстик движения"><div class="knob" id="knob"></div></div>
@@ -690,7 +694,7 @@ const UP = new V3(0, 1, 0), DOWN = new V3(0, -1, 0);
 const UNITS = { mm: 0.001, cm: 0.01, m: 1, in: 0.0254, ft: 0.3048 };
 const TABLE_STEPS = [20, 50, 100, 200, 500, 1000];
 const EYE = 1.65, STEP = 0.45, RADIUS = 0.3, GRAV = 9.8;
-const APP_VERSION = '3.3';
+const APP_VERSION = '3.4';
 const BASE_COLORS = ['#f2efe8', '#d8a33f', '#e0604a', '#3f86c9'];
 const KINDS = { issue: { label: 'Замечание', color: '#e0604a' }, question: { label: 'Вопрос', color: '#d8a33f' }, idea: { label: 'Идея', color: '#4fae7f' } };
 const TOOLS = [['nav', 'Выделение'], ['pin', 'Метка'], ['measure', 'Рулетка'], ['pen', 'Карандаш'], ['erase', 'Ластик'], ['section', 'Сечение'], ['ref', 'Репер']];   // «Куб» временно скрыт: код инструмента сохранён
@@ -2467,7 +2471,7 @@ function pickSelectable(wr, tol = 0) {
 }
 
 const TIPS = {
-  nav: { walk: 'Клик по полу — перейти туда. Тянуть мышью — осмотреться.', orbit: '' },
+  nav: { walk: 'Щёлкните по сцене — мышь станет обзором (как в игре). WASD — идти, Shift — бег, Пробел — прыжок, C — присесть. Esc — вернуть курсор', lock: 'WASD — идти · Shift — бег · Пробел — прыжок · C — присесть · клик по полу — перейти · R / F — этаж · Esc — курсор', orbit: '' },
   box: { idle: 'Куб: щёлкните первый угол основания', foot: 'Задайте второй угол и щёлкните', height: 'Поднимите на нужную высоту и щёлкните. Esc — отмена' },
   ref: { idle: 'Репер: щёлкните точку, которую легко найти на месте — угол плиты, ось колонны, отметка на полу. Крупная цветная точка — привязка к вершине' },
   pin: { idle: 'Метка: щёлкните по поверхности, чтобы оставить комментарий. Крупная цветная точка — привязка к углу' },
@@ -2490,7 +2494,7 @@ function updateTip() {
   const tip = $('#tip'); if (state.view === 'xr') { drawPalette(); return; }
   let txt = '';
   if (state.tool === 'nav' && sel) txt = `Выделена ${selName()}. Тяните стрелку гизмо: зелёная — вверх-вниз. ${sel.kind === 'note' ? 'Delete — удалить, ' : ''}Esc — снять`;
-  else if (state.tool === 'nav') txt = state.view !== 'walk' ? '' : matchMedia('(pointer:coarse)').matches ? 'Джойстик — идти, тянуть пальцем — осмотреться, касание пола — перейти туда.' : TIPS.nav.walk + ' WASD — идти, R / F — этаж.';
+  else if (state.tool === 'nav') txt = state.view !== 'walk' ? '' : matchMedia('(pointer:coarse)').matches ? 'Джойстик — идти, тянуть пальцем — осмотреться, касание пола — перейти туда.' : (document.pointerLockElement === canvas ? TIPS.nav.lock : TIPS.nav.walk);
   else txt = TIPS[state.tool][tool.phase] || TIPS[state.tool].idle;
   if (txt && state.view === 'orbit' && state.tool !== 'nav' && !matchMedia('(pointer:coarse)').matches) txt += ' · средняя кнопка — вращать, правая — двигать';
   tip.textContent = txt; tip.hidden = !txt; tip.classList.toggle('tool', state.tool !== 'nav');
@@ -2740,24 +2744,36 @@ function enterWalk() {
 }
 function exitWalk() {
   if (cb.on) exitCardboard();
+  if (locked()) document.exitPointerLock();
   state.view = 'orbit'; keys.clear(); joy.x = joy.y = 0; cancelTool();
   document.body.classList.remove('walking'); $('#walkui').hidden = true; updateCanvasCursor();
   camera.fov = 55; camera.rotation.set(0, 0, 0); controls.enabled = true;
   applyEnv(); frame(); updateTip(); onResize(); updateModeButtons();
 }
+/* walking like in a shooter: momentum, Shift — run, Space — jump (or up when flying), C — crouch, mouse — look (pointer lock) */
+const walk = { v: new V3(), jump: false, eye: EYE };
 function walkUpdate(dt) {
   const k = c => keys.has(c);
   let fwd = (k('KeyW') || k('ArrowUp') ? 1 : 0) - (k('KeyS') || k('ArrowDown') ? 1 : 0) - joy.y;
   let str = (k('KeyD') || k('ArrowRight') ? 1 : 0) - (k('KeyA') || k('ArrowLeft') ? 1 : 0) + joy.x;
   const m = Math.hypot(fwd, str); if (m > 1) { fwd /= m; str /= m; }
-  const speed = (k('ShiftLeft') || k('ShiftRight') || Math.hypot(joy.x, joy.y) > 0.95) ? 4.5 : 1.6;
+  const crouch = k('KeyC') && prefs.gravity, run = (k('ShiftLeft') || k('ShiftRight') || Math.hypot(joy.x, joy.y) > 0.95) && !crouch;
+  const top = crouch ? 1.3 : run ? 6.2 : 2.8;
   const f = new V3(-Math.sin(player.yaw), 0, -Math.cos(player.yaw)), r = new V3(Math.cos(player.yaw), 0, -Math.sin(player.yaw));
-  let d = f.multiplyScalar(fwd * speed * dt).addScaledVector(r, str * speed * dt);
-  if (prefs.collide && d.lengthSq() > 0) d = collide(player, d);
+  const want = f.multiplyScalar(fwd * top).addScaledVector(r, str * top);
+  const fl = prefs.gravity ? floorBelow(player.x, player.y + STEP, player.z) : player.y;
+  const onGround = !prefs.gravity || (player.y - fl < 0.03 && player.vy >= 0);
+  walk.v.lerp(want, Math.min(1, dt * (onGround ? (want.lengthSq() ? 10 : 14) : 2.5)));       // quick to start and stop on the floor, little control in the air
+  let d = walk.v.clone().multiplyScalar(dt);
+  if (prefs.collide && d.lengthSq() > 0) { const c = collide(player, d); if (c.lengthSq() < d.lengthSq() * 0.25) walk.v.multiplyScalar(0.5); d = c; }
   player.x += d.x; player.z += d.z;
-  if (prefs.gravity) applyGravity(player, dt);
-  else player.y += ((k('KeyE') || k('Space') ? 1 : 0) - (k('KeyQ') || k('KeyC') ? 1 : 0)) * speed * dt;
-  camera.position.set(player.x, player.y + EYE, player.z);
+  if (prefs.gravity) {
+    if (walk.jump && onGround) { player.vy = -4.6; player.y += 0.03; }                       // about a metre high
+    walk.jump = false;
+    applyGravity(player, dt);
+  } else { walk.jump = false; player.y += ((k('KeyE') || k('Space') ? 1 : 0) - (k('KeyQ') || k('KeyC') ? 1 : 0)) * (run ? 6 : 2.5) * dt; }
+  walk.eye += ((crouch ? EYE * 0.62 : EYE) - walk.eye) * Math.min(1, dt * 12);
+  camera.position.set(player.x, player.y + walk.eye, player.z);
   camera.rotation.set(player.pitch, player.yaw, 0, 'YXZ');
 }
 function walkFloor(up) {
@@ -2968,6 +2984,7 @@ window.addEventListener('keydown', e => {
   if (e.code === 'KeyR' || e.code === 'PageUp') { walkFloor(true); e.preventDefault(); return; }
   if (e.code === 'KeyF' || e.code === 'PageDown') { walkFloor(false); e.preventDefault(); return; }
   if (e.code === 'KeyG') { prefs.gravity = !prefs.gravity; savePrefs(); renderPrefs(); toast(prefs.gravity ? 'Гравитация включена' : 'Гравитация выключена: Q / E — вниз / вверх'); return; }
+  if (e.code === 'Space' && !e.repeat) walk.jump = true;
   if (/^(Key[WASDQEC]|Arrow\w+|Space|Shift\w+)$/.test(e.code)) { keys.add(e.code); if (/^(Arrow|Space)/.test(e.code)) e.preventDefault(); }
 });
 window.addEventListener('keyup', e => keys.delete(e.code));
@@ -2991,7 +3008,11 @@ function rayAt(cx, cy) {
   ndc.set(((cx - r.left) / r.width) * 2 - 1, -((cy - r.top) / r.height) * 2 + 1);
   camera.updateMatrixWorld(); raycaster.setFromCamera(ndc, camera); return raycaster.ray.clone();
 }
-const rayFromEvent = e => rayAt(e.clientX, e.clientY);
+const locked = () => document.pointerLockElement === canvas;
+const centerRay = () => { const r = canvas.getBoundingClientRect(); return rayAt(r.left + r.width / 2, r.top + r.height / 2); };
+const rayFromEvent = e => (locked() ? centerRay() : rayAt(e.clientX, e.clientY));
+const fineMouse = matchMedia('(pointer:fine)');
+document.addEventListener('pointerlockchange', () => { $('#xhair').hidden = !locked(); updateTip(); if (!locked()) hideCursor(); });
 $('#view').addEventListener('pointerdown', e => {
   if (e.target !== canvas) return;
   controls.enabled = state.view === 'orbit' && (state.tool === 'nav' || e.button !== 0) && !gizmoHot();
@@ -3000,8 +3021,9 @@ let pd = null;
 canvas.addEventListener('contextmenu', e => e.preventDefault());
 canvas.addEventListener('pointerdown', e => {
   if (state.view === 'xr' || state.view === 'ar' || !$('#dlg').hidden || gizmoHot()) return;
+  if (state.view === 'walk' && !cb.on && !locked() && e.pointerType === 'mouse' && e.button === 0 && fineMouse.matches) { canvas.requestPointerLock?.(); return; }   // first click: the mouse becomes the look
   const useTool = state.tool !== 'nav' && e.button === 0;
-  pd = { x: e.clientX, y: e.clientY, lx: e.clientX, ly: e.clientY, id: e.pointerId, moved: false, tool: useTool, look: state.view === 'walk' && !useTool };
+  pd = { x: e.clientX, y: e.clientY, lx: e.clientX, ly: e.clientY, id: e.pointerId, moved: false, tool: useTool, look: state.view === 'walk' && !useTool && !locked() };
   try { canvas.setPointerCapture(e.pointerId); } catch {}
   if (useTool && state.tool === 'section') secPointerDown(e);
   else if (useTool) toolDown(rayFromEvent(e));
@@ -3009,6 +3031,13 @@ canvas.addEventListener('pointerdown', e => {
 });
 canvas.addEventListener('pointermove', e => {
   if (state.view === 'xr' || state.view === 'ar') return;
+  if (locked()) {
+    const k = 0.0022 * (lookSens || 1);
+    player.yaw -= e.movementX * k; player.pitch = THREE.MathUtils.clamp(player.pitch - e.movementY * k, -1.5, 1.5);
+    if (state.tool === 'erase' && pd?.tool && tool.erasing) { eraseAt(centerRay()); return; }
+    if (state.tool !== 'nav' && state.tool !== 'section') { const wr = centerRay(); toolMove(wr); hoverCursor(wr); }
+    return;
+  }
   if (pd && e.pointerId === pd.id) {
     const dx = e.clientX - pd.x, dy = e.clientY - pd.y;
     if (!pd.moved && Math.hypot(dx, dy) > 5) pd.moved = true;
@@ -3048,6 +3077,7 @@ canvas.addEventListener('pointerleave', () => { if (!pd && state.view !== 'xr') 
 /* ================= orbit preview ================= */
 /* WASD flight in the orbit view: camera and orbit centre move together, smoothly; Shift — faster, Q / E — down / up */
 const fly = { v: new V3() };
+let lookSens = +(lsGet('vrtrip-sens') || 1);
 function flyUpdate(dt) {
   const k = c => keys.has(c);
   const f = (k('KeyW') || k('ArrowUp') ? 1 : 0) - (k('KeyS') || k('ArrowDown') ? 1 : 0);
