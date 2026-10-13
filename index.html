@@ -166,6 +166,7 @@ h2{display:flex;align-items:center;gap:10px;margin:0;font:600 16px/1.2 var(--f-b
 
 .toast{position:fixed;left:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));max-width:min(348px,calc(100vw - 32px));padding:12px 14px;border-radius:9px;background:var(--raise);border:1px solid var(--line-strong);box-shadow:0 10px 30px rgba(0,0,0,.35);font-size:14px;z-index:30}
 .toast.bad{border-color:var(--bad)}
+.toast-act{margin-left:12px;background:none;border:0;color:var(--accent);font:600 14px var(--f-body);cursor:pointer;padding:0;text-decoration:underline;text-underline-offset:3px}
 .toast.warn{border-color:var(--accent)}
 .toast.ok{border-color:var(--ok)}
 
@@ -194,6 +195,14 @@ h2{display:flex;align-items:center;gap:10px;margin:0;font:600 16px/1.2 var(--f-b
 #tb-rec[aria-pressed="true"] svg{animation:recpulse 1.2s ease-in-out infinite}
 @keyframes recpulse{50%{opacity:.35}}
 #tb-rec-t{font-variant-numeric:tabular-nums}
+.clearpop{position:absolute;top:76px;left:50%;transform:translateX(-50%);z-index:7;width:240px;display:flex;flex-direction:column;gap:2px;padding:8px;background:var(--panel);border:1px solid var(--line-strong);border-radius:12px;box-shadow:0 14px 40px rgba(0,0,0,.45)}
+.clearpop b{font-size:12.5px;color:var(--muted);font-weight:500;padding:4px 8px 6px}
+.clearpop button{display:flex;justify-content:space-between;align-items:center;min-height:38px;padding:0 10px;border:0;border-radius:8px;background:transparent;color:var(--fg);font-size:14px;cursor:pointer;text-align:left}
+.clearpop button:hover:not(:disabled){background:var(--raise)}
+.clearpop button:disabled{opacity:.38;cursor:default}
+.clearpop button i{font-style:normal;font:12.5px var(--f-mono);color:var(--muted)}
+.clearpop button.all{margin-top:4px;border-top:1px solid var(--line);border-radius:0 0 8px 8px;color:var(--bad)}
+.clearpop small{color:var(--muted);font-size:12px;padding:6px 8px 2px}
 .tb-sep{width:1px;align-self:stretch;margin:6px 4px;background:var(--line-strong)}
 .sw{width:26px;height:26px;border-radius:50%;border:2px solid var(--line-strong);background:var(--sw);cursor:pointer;margin:0 2px;padding:0}
 .sw[aria-pressed="true"]{border-color:var(--fg);box-shadow:0 0 0 2px var(--accent)}
@@ -236,7 +245,7 @@ body.panel-off{grid-template-columns:0 minmax(0,1fr)}
 body.panel-off .panel{display:none}
 .scrim{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:59}
 @media (min-width:1700px){body{grid-template-columns:420px minmax(0,1fr)}}
-@container (max-width:900px){.tb span,.modebar .mode-t{display:none}.tb,.modebar .mode{min-width:44px}}
+@container (max-width:1020px){.tb span,.modebar .mode-t{display:none}.tb,.modebar .mode{min-width:44px}}
 @media (max-width:1180px) and (min-width:821px){body{grid-template-columns:330px minmax(0,1fr)}.panel{padding-inline:16px}}
 /* phones and small tablets in portrait: view on top, panel below */
 @media (max-width:820px), (orientation:portrait) and (max-width:1000px){
@@ -398,7 +407,7 @@ body.cardboard .topbar,body.cardboard .walkui,body.cardboard .chip,body.cardboar
       <span class="lbl">Очистить:</span>
       <button type="button" class="btn small" data-clear="pin">Метки</button>
       <button type="button" class="btn small" data-clear="measure">Размеры</button>
-      <button type="button" class="btn small" data-clear="line">Эскизы</button>
+      <button type="button" class="btn small" data-clear="line">Карандаш</button>
       <button type="button" class="btn small" data-clear="box">Кубы</button>
       <button type="button" class="btn small" data-clear="ref">Реперы</button>
       <button type="button" class="btn small" data-clear="section">Сечение</button>
@@ -537,6 +546,7 @@ body.cardboard .topbar,body.cardboard .walkui,body.cardboard .chip,body.cardboar
     <button type="button" class="sw add" id="sw-add" title="Добавить свой цвет" aria-label="Добавить свой цвет">+</button>
     <input type="color" id="sw-input" class="sr" value="#7a5cff" aria-label="Выбор цвета">
     <span class="tb-sep"></span>
+    <button type="button" class="tb" id="tb-clear" title="Очистить разметку: метки, размеры, карандаш — по отдельности или всё"><svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V4.5h6V7M6.5 7l1 13h9l1-13M10 11v6M14 11v6"/></svg><span>Очистить</span></button>
     <button type="button" class="tb" id="tb-undo" title="Отменить (Ctrl+Z)"><svg viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg><span>Отменить</span></button>
     <button type="button" class="tb" id="tb-shot" title="Сохранить снимок экрана"><svg viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.2"/></svg><span>Снимок</span></button>
     <button type="button" class="tb" id="tb-rec" aria-pressed="false" title="Записать видео того, что происходит в окне модели"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10.5l5-3v9l-5-3z"/></svg><span id="tb-rec-t">Видео</span></button>
@@ -567,6 +577,17 @@ body.cardboard .topbar,body.cardboard .walkui,body.cardboard .chip,body.cardboar
       <span class="mode-t">VR очки</span>
     </button>
   </div>
+  </div>
+  <div class="clearpop" id="clearpop" hidden role="menu" aria-label="Очистить">
+    <b>Очистить в сцене</b>
+    <button type="button" data-clear="pin">Метки <i></i></button>
+    <button type="button" data-clear="measure">Размеры <i></i></button>
+    <button type="button" data-clear="line">Карандаш <i></i></button>
+    <button type="button" data-clear="ref">Реперы <i></i></button>
+    <button type="button" data-clear="box">Кубы <i></i></button>
+    <button type="button" data-clear="section">Сечение <i></i></button>
+    <button type="button" data-clear="all" class="all">Очистить всё <i></i></button>
+    <small>Можно вернуть: «Отменить» или Ctrl+Z</small>
   </div>
   <div class="chip" id="chip">Левая кнопка — вращать · правая — двигать · колесо — ближе / дальше · WASD — полёт, Shift — быстрее, Q / E — вниз / вверх</div>
   <div class="walkui" id="walkui" hidden>
@@ -669,7 +690,7 @@ const UP = new V3(0, 1, 0), DOWN = new V3(0, -1, 0);
 const UNITS = { mm: 0.001, cm: 0.01, m: 1, in: 0.0254, ft: 0.3048 };
 const TABLE_STEPS = [20, 50, 100, 200, 500, 1000];
 const EYE = 1.65, STEP = 0.45, RADIUS = 0.3, GRAV = 9.8;
-const APP_VERSION = '3.2';
+const APP_VERSION = '3.3';
 const BASE_COLORS = ['#f2efe8', '#d8a33f', '#e0604a', '#3f86c9'];
 const KINDS = { issue: { label: 'Замечание', color: '#e0604a' }, question: { label: 'Вопрос', color: '#d8a33f' }, idea: { label: 'Идея', color: '#4fae7f' } };
 const TOOLS = [['nav', 'Выделение'], ['pin', 'Метка'], ['measure', 'Рулетка'], ['pen', 'Карандаш'], ['erase', 'Ластик'], ['section', 'Сечение'], ['ref', 'Репер']];   // «Куб» временно скрыт: код инструмента сохранён
@@ -689,8 +710,9 @@ const vec = a => new V3(a[0], a[1], a[2]);
 const WHITE_PX = (() => { const c = document.createElement('canvas'); c.width = c.height = 2; const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, 2, 2); return c.toDataURL(); })();
 
 let toastTimer;
-function toast(msg, kind = '') {
+function toast(msg, kind = '', action = null) {
   const t = $('#toast'); t.textContent = msg; t.className = 'toast ' + kind; t.hidden = false;
+  if (action) { const b = document.createElement('button'); b.type = 'button'; b.className = 'toast-act'; b.textContent = action.label; b.addEventListener('click', () => { t.hidden = true; action.fn(); }); t.append(b); }
   clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.hidden = true; }, kind === 'bad' ? 9000 : 5000);
 }
 function busy(msg) { $('#busy').hidden = !msg; if (msg) $('#busytext').textContent = msg; }
@@ -1906,7 +1928,7 @@ async function importNotes(file) {
     toast(k ? `Загружено заметок: ${k}` : 'В файле нет заметок VRtrip.', k ? 'ok' : 'warn');
   } catch { toast('Не получилось прочитать файл. Нужен .json, скачанный из VRtrip.', 'bad'); }
 }
-const CLEAR_LABEL = { pin: 'Метки', measure: 'Размеры', line: 'Эскизы', box: 'Кубы', ref: 'Реперы', section: 'Сечение', all: 'Всё' };
+const CLEAR_LABEL = { pin: 'Метки', measure: 'Размеры', line: 'Карандаш', box: 'Кубы', ref: 'Реперы', section: 'Сечение', all: 'Всё' };
 function clearCount(k) { const ns = shownRecs().flatMap(r => r.notes); if (k === 'section') return sec.on ? 1 : 0; if (k === 'all') return ns.length + (sec.on ? 1 : 0); return ns.filter(n => n.type === k).length; }
 function renderClearRow() {
   let any = false;
@@ -1917,19 +1939,35 @@ function renderClearRow() {
   });
   $('#clear-row').hidden = !any;
 }
-$('#clear-row').addEventListener('click', e => {
-  const b = e.target.closest('[data-clear]'); if (!b) return; const k = b.dataset.clear, rec = activeRec(); if (!rec?.built) return;
-  const scene = shownRecs();
-  if (!b.classList.contains('armed')) { b.classList.add('armed'); b.textContent = 'Точно удалить?'; setTimeout(() => { b.classList.remove('armed'); renderClearRow(); }, 3000); return; }
-  b.classList.remove('armed');
+/* clear markup by kind (or everything) in all models of the scene; one undo brings it back */
+function clearKind(k) {
+  const rec = activeRec(); if (!rec?.built) return 0;
+  const n = clearCount(k); if (!n) { flash('Нечего очищать'); return 0; }
+  clearSelection();
   if (k === 'section' || k === 'all') secOff();
   if (k !== 'section') {
-    const items = []; for (const r of scene) r.notes.forEach((n, index) => { if (k === 'all' || n.type === k) items.push({ note: n, index, recId: r.id }); });
+    const items = []; for (const r of shownRecs()) r.notes.forEach((x, index) => { if (k === 'all' || x.type === k) items.push({ note: x, index, recId: r.id }); });
     for (const it of items) removeNote(it.note.id, false);
     if (items.length) undoStack.push({ op: 'delmany', items, recId: rec.id });
   }
-  renderClearRow(); toast(k === 'all' ? 'Разметка очищена. Отменить — Ctrl+Z' : `Удалено: ${CLEAR_LABEL[k].toLowerCase()}. Отменить — Ctrl+Z`);
+  renderClearRow(); renderClearPop();
+  const msg = k === 'all' ? `Модель очищена от разметки (${n})` : `Удалено: ${CLEAR_LABEL[k].toLowerCase()} · ${n}`;
+  if (state.view === 'xr') flash(msg + '. Вернуть — «Отменить»'); else toast(msg, 'ok', { label: 'Вернуть', fn: () => undo() });
+  return n;
+}
+$('#clear-row').addEventListener('click', e => { const b = e.target.closest('[data-clear]'); if (b) clearKind(b.dataset.clear); });
+/* the same from the toolbar: a small menu with counts */
+function renderClearPop() {
+  const pop = $('#clearpop'); if (!pop) return;
+  pop.querySelectorAll('[data-clear]').forEach(b => { const k = b.dataset.clear, n = clearCount(k); b.disabled = !n; b.querySelector('i').textContent = k === 'section' ? (n ? 'есть' : '—') : n; });
+}
+$('#tb-clear').addEventListener('click', e => {
+  e.stopPropagation(); const pop = $('#clearpop'); renderClearPop(); pop.hidden = !pop.hidden; if (pop.hidden) return;
+  const v = $('#view').getBoundingClientRect(), b = e.currentTarget.getBoundingClientRect();
+  pop.style.top = `${b.bottom - v.top + 8}px`; pop.style.left = `${THREE.MathUtils.clamp(b.left + b.width / 2 - v.left, 132, v.width - 132)}px`;
 });
+$('#clearpop').addEventListener('click', e => { const b = e.target.closest('[data-clear]'); if (!b || b.disabled) return; $('#clearpop').hidden = true; clearKind(b.dataset.clear); });
+document.addEventListener('pointerdown', e => { if (!e.target.closest('#clearpop, #tb-clear')) $('#clearpop').hidden = true; });
 /* desktop note dialog */
 let dlgResolve = null, dlgColor = '#e0604a';
 function paintDlgColors() {
@@ -2470,7 +2508,7 @@ function renderToolbar() {
     b.disabled = !on; b.setAttribute('aria-pressed', String(i === state.color)); sw.append(b);
   });
   $('#sw-add').disabled = !on;
-  $('#tb-undo').disabled = !on; $('#tb-shot').disabled = !on; $('#tb-rec').disabled = !on && !vid.mr;
+  $('#tb-undo').disabled = !on; $('#tb-clear').disabled = !on; $('#tb-shot').disabled = !on; $('#tb-rec').disabled = !on && !vid.mr;
 }
 $('#toolbar').addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b || b.disabled) return;
@@ -3137,6 +3175,7 @@ function layoutFace(f) {
     });
     B.push({ id: 'np:prev', label: '▲', x: 880, y: Y, w: 120, h: 84 }); B.push({ id: 'np:next', label: '▼', x: 880, y: Y + 92, w: 120, h: 84 });
     if (!list.length) B.push({ id: 'info', label: 'Заметок пока нет. Метка, Рулетка, Карандаш — на грани «Инструменты»', x: 24, y: Y, w: 976, h: 84, kind: 'text' });
+    else [['clr:pin', 'Убрать метки'], ['clr:measure', 'Убрать размеры'], ['clr:line', 'Убрать карандаш'], ['clr:all', 'Очистить всё']].forEach(([id, label], i) => B.push({ id, label, x: 24 + i * 246, y: Y + 468, w: 236, h: 84 }));
   }
 }
 function drawPalette() { if (palReady) faces.forEach(drawFace); }
@@ -3277,6 +3316,7 @@ function palClick(id) {
   else if (id.startsWith('up:')) changeModelSetting('zUp', id.slice(3) === 'true');
   else if (id === 'clay' && rec?.built) changeModelSetting('clay', !rec.settings.clay);
   else if (id === 'shot') vrSnapshot();
+  else if (id.startsWith('clr:')) clearKind(id.slice(4));
   else if (id === 'sun:-' || id === 'sun:+') sunStep(id === 'sun:+' ? 60 : -60);
   else if (id === 'sun:aim') { if (sunState.aim || state.sunAim) { sunState.aim = null; state.sunAim = false; flash('Свет снова по настройкам солнца'); shadowsDirty(); } else { state.sunAim = true; flash('Направьте контроллер туда, откуда идёт свет (окно, солнце), и нажмите курок'); } layoutPalette(); }
   else if (id === 'align') { if (state.alignRel) alignClear(); else startAlign(); }
