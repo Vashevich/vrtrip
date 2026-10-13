@@ -723,7 +723,7 @@ const UP = new V3(0, 1, 0), DOWN = new V3(0, -1, 0);
 const UNITS = { mm: 0.001, cm: 0.01, m: 1, in: 0.0254, ft: 0.3048 };
 const TABLE_STEPS = [20, 50, 100, 200, 500, 1000];
 const EYE = 1.65, STEP = 0.45, RADIUS = 0.3, GRAV = 9.8;
-const APP_VERSION = '3.6';
+const APP_VERSION = '3.7';
 const BASE_COLORS = ['#f2efe8', '#d8a33f', '#e0604a', '#3f86c9'];
 const KINDS = { issue: { label: 'Замечание', color: '#e0604a' }, question: { label: 'Вопрос', color: '#d8a33f' }, idea: { label: 'Идея', color: '#4fae7f' } };
 const TOOLS = [['nav', 'Выделение'], ['pin', 'Метка'], ['measure', 'Рулетка'], ['pen', 'Карандаш'], ['erase', 'Ластик'], ['section', 'Сечение'], ['ref', 'Репер'], ['explode', 'Взрыв']];   // «Куб» временно скрыт: код инструмента сохранён
@@ -2528,7 +2528,7 @@ function updateTip() {
   const tip = $('#tip'); if (state.view === 'xr') { drawPalette(); return; }
   let txt = '';
   if (state.tool === 'nav' && sel) txt = `Выделена ${selName()}. Тяните стрелку гизмо: зелёная — вверх-вниз. ${sel.kind === 'note' ? 'Delete — удалить, ' : ''}Esc — снять`;
-  else if (state.tool === 'nav') txt = state.view !== 'walk' ? '' : matchMedia('(pointer:coarse)').matches ? 'Джойстик — идти, тянуть пальцем — осмотреться, касание пола — перейти туда.' : (document.pointerLockElement === canvas ? TIPS.nav.lock : TIPS.nav.walk);
+  else if (state.tool === 'nav') txt = state.view !== 'walk' ? '' : matchMedia('(pointer:coarse)').matches ? 'Джойстик — идти, тянуть пальцем — осмотреться, касание пола — перейти туда.' : (locked() ? TIPS.nav.lock : TIPS.nav.walk);
   else txt = TIPS[state.tool][tool.phase] || TIPS[state.tool].idle;
   if (txt && state.view === 'orbit' && state.tool !== 'nav' && !matchMedia('(pointer:coarse)').matches) txt += ' · средняя кнопка — вращать, правая — двигать';
   tip.textContent = txt; tip.hidden = !txt; tip.classList.toggle('tool', state.tool !== 'nav');
@@ -2779,7 +2779,7 @@ function enterWalk() {
 function exitWalk() {
   if (cb.on) exitCardboard();
   if (toy.on) setToy(false);
-  if (locked()) document.exitPointerLock();
+  stopAim();
   state.view = 'orbit'; keys.clear(); joy.x = joy.y = 0; cancelTool();
   document.body.classList.remove('walking'); $('#walkui').hidden = true; updateCanvasCursor();
   camera.fov = 55; camera.rotation.set(0, 0, 0); controls.enabled = true;
@@ -3039,6 +3039,7 @@ const typing = e => /^(INPUT|TEXTAREA|SELECT)$/.test(e.target?.tagName);
 window.addEventListener('keydown', e => {
   if (typing(e) || state.view === 'xr') return;
   if ((e.ctrlKey || e.metaKey) && e.code === 'KeyZ') { e.preventDefault(); undo(); return; }
+  if (e.code === 'Escape' && freeLook) { stopAim(); return; }
   if (e.code === 'Escape') { if (sel) clearSelection(); else if (tool.phase !== 'idle' || tool.pen) cancelTool(); else if (state.tool !== 'nav') setTool('nav'); else if (state.view === 'walk') exitWalk(); return; }
   if (/^Digit[1-9]$/.test(e.code) && isReady() && TOOLS[+e.code.slice(5) - 1]) { setTool(TOOLS[+e.code.slice(5) - 1][0]); return; }
   if ((e.code === 'Delete' || e.code === 'Backspace') && sel) { e.preventDefault(); deleteSelection(); return; }
@@ -3072,11 +3073,30 @@ function rayAt(cx, cy) {
   ndc.set(((cx - r.left) / r.width) * 2 - 1, -((cy - r.top) / r.height) * 2 + 1);
   camera.updateMatrixWorld(); raycaster.setFromCamera(ndc, camera); return raycaster.ray.clone();
 }
-const locked = () => document.pointerLockElement === canvas;
+let freeLook = false;                                   // fallback when the browser refuses pointer lock (embedded browsers, quick re-lock after Esc)
+const hardLocked = () => document.pointerLockElement === canvas;
+const locked = () => hardLocked() || freeLook;
+function aimChanged() {
+  const on = locked();
+  gizmo.enabled = !on; $('#xhair').hidden = !on; canvas.style.cursor = freeLook ? 'none' : ''; updateTip();
+  if (!on) { hideCursor(); if (toy.on) setToy(false); } else if (state.view === 'walk' && !cb.on) setToy(true);
+}
+function startAim() {
+  let done = false;
+  const fail = () => { if (done || hardLocked()) return; done = true; freeLook = true; aimChanged(); toast('Браузер не дал захватить мышь — включён обзор движением мыши. Esc — выйти.', 'warn'); };
+  try {
+    const r = canvas.requestPointerLock?.();
+    if (r && typeof r.then === 'function') r.then(() => { done = true; }, fail);
+    else if (!canvas.requestPointerLock) fail();
+    else setTimeout(() => { if (!hardLocked()) fail(); }, 400);
+  } catch { fail(); }
+}
+function stopAim() { if (hardLocked()) document.exitPointerLock(); if (freeLook) { freeLook = false; aimChanged(); } }
+document.addEventListener('pointerlockerror', () => { if (state.view === 'walk' && !freeLook) { freeLook = true; aimChanged(); } });
 const centerRay = () => { const r = canvas.getBoundingClientRect(); return rayAt(r.left + r.width / 2, r.top + r.height / 2); };
 const rayFromEvent = e => (locked() ? centerRay() : rayAt(e.clientX, e.clientY));
 const fineMouse = matchMedia('(pointer:fine)');
-document.addEventListener('pointerlockchange', () => { gizmo.enabled = !locked(); $('#xhair').hidden = !locked(); updateTip(); if (!locked()) { hideCursor(); if (toy.on) setToy(false); } else if (state.view === 'walk' && !cb.on) setToy(true); });
+document.addEventListener('pointerlockchange', () => { if (hardLocked()) freeLook = false; aimChanged(); });
 $('#view').addEventListener('pointerdown', e => {
   if (e.target !== canvas) return;
   controls.enabled = state.view === 'orbit' && (state.tool === 'nav' || e.button !== 0) && !gizmoHot();
@@ -3085,7 +3105,7 @@ let pd = null;
 canvas.addEventListener('contextmenu', e => e.preventDefault());
 canvas.addEventListener('pointerdown', e => {
   if (state.view === 'xr' || state.view === 'ar' || !$('#dlg').hidden || gizmoHot()) return;
-  if (state.view === 'walk' && !cb.on && !locked() && e.pointerType === 'mouse' && e.button === 0 && fineMouse.matches) { canvas.requestPointerLock?.(); return; }   // first click: the mouse becomes the look
+  if (state.view === 'walk' && !cb.on && !locked() && e.pointerType === 'mouse' && e.button === 0) { startAim(); return; }   // first click: the mouse becomes the look   // first click: the mouse becomes the look
   if (toy.on && state.view === 'walk' && e.button === 0 && state.tool === 'nav' && (locked() || e.pointerType !== 'mouse')) { shoot(rayFromEvent(e)); return; }
   const useTool = state.tool !== 'nav' && e.button === 0;
   pd = { x: e.clientX, y: e.clientY, lx: e.clientX, ly: e.clientY, id: e.pointerId, moved: false, tool: useTool, look: state.view === 'walk' && !useTool && !locked() };
@@ -3214,16 +3234,18 @@ canvas.addEventListener('wheel', e => {
 const toy = { on: false, balls: [], flyers: [], hidden: [], splats: [], drops: [], gun: null, kick: 0, audio: null, told: false };
 const BALL_GEO = new THREE.SphereGeometry(0.07, 16, 12);
 const BALL_COLORS = [0xff5a4e, 0xffc23d, 0x4fc3f7, 0x7ed957, 0xc77dff, 0xff8fd1];
-/* a plain white tube, like a little cannon, sticking out at the bottom right */
+/* a plain white tube sticking out from the lower right corner towards the crosshair */
 function makeGun() {
-  const g = new THREE.Group(), W = new THREE.MeshStandardMaterial({ color: 0xf4f2ee, roughness: 0.32, metalness: 0 });
-  const tube = new THREE.Mesh(new THREE.CylinderGeometry(0.042, 0.055, 0.5, 40, 1, true).rotateX(Math.PI / 2), W); tube.material.side = THREE.DoubleSide;
-  const inner = new THREE.Mesh(new THREE.CylinderGeometry(0.036, 0.036, 0.06, 32, 1, true).rotateX(Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0x15181b, side: THREE.BackSide })); inner.position.z = -0.22;
-  const rim = new THREE.Mesh(new THREE.TorusGeometry(0.043, 0.008, 12, 40), W); rim.position.z = -0.25;
-  const cap = new THREE.Mesh(new THREE.SphereGeometry(0.055, 28, 16, 0, Math.PI * 2, 0, Math.PI / 2).rotateX(Math.PI / 2), W); cap.position.z = 0.25;
-  g.add(tube, inner, rim, cap);
-  g.position.set(0.19, -0.17, -0.42); g.rotation.set(0.06, 0.1, 0);
-  g.userData.muzzle = new V3(0, 0, -0.26);
+  const g = new THREE.Group();
+  const W = new THREE.MeshStandardMaterial({ color: 0xf6f4ef, roughness: 0.7, metalness: 0, emissive: 0x2a2a28 });
+  const back = new V3(0.24, -0.2, -0.16), front = new V3(0.085, -0.085, -0.62), L = back.distanceTo(front);
+  const arm = new THREE.Group(); arm.position.copy(back); arm.lookAt(front);           // the tube runs along local +Z, back → front
+  const tube = new THREE.Mesh(new THREE.CylinderGeometry(0.026, 0.026, L, 40, 1, true).rotateX(Math.PI / 2).translate(0, 0, L / 2), W);
+  tube.material.side = THREE.DoubleSide;
+  const lip = new THREE.Mesh(new THREE.TorusGeometry(0.026, 0.0045, 12, 40), W); lip.position.z = L;
+  const hole = new THREE.Mesh(new THREE.CircleGeometry(0.0245, 32), new THREE.MeshBasicMaterial({ color: 0x1a1d20 })); hole.position.z = L - 0.004;
+  arm.add(tube, lip, hole); g.add(arm);
+  g.userData.muzzle = front.clone();
   g.traverse(x => { if (x.isMesh) { x.renderOrder = 40; x.material.depthTest = false; x.layers.set(5); } });   // drawn on top, like a first-person view model
   return g;
 }
@@ -3336,7 +3358,7 @@ function knockPart(rec, part, at, push) {
 }
 const _tr = new THREE.Raycaster(); _tr.firstHitOnly = true; _tr.layers.enableAll();
 function toyUpdate(dt) {
-  if (toy.gun) { toy.kick = Math.max(0, toy.kick - dt * 8); toy.gun.position.z = -0.5 + toy.kick * 0.04; toy.gun.rotation.x = 0.04 + toy.kick * 0.25; }
+  if (toy.gun) { toy.kick = Math.max(0, toy.kick - dt * 8); toy.gun.position.z = toy.kick * 0.035; toy.gun.rotation.x = toy.kick * 0.06; }
   if (toy.gun) toy.gun.visible = state.tool === 'nav';
   if (!toy.balls.length && !toy.flyers.length && !toy.drops.length) return;
   const targets = [...shownRecs().flatMap(r => r.meshes), ...toy.flyers.map(f => f.obj)];
