@@ -393,6 +393,7 @@ body.cardboard .topbar,body.cardboard .walkui,body.cardboard .chip,body.cardboar
       <button type="button" class="btn small" data-clear="measure">Размеры</button>
       <button type="button" class="btn small" data-clear="line">Эскизы</button>
       <button type="button" class="btn small" data-clear="box">Кубы</button>
+      <button type="button" class="btn small" data-clear="ref">Реперы</button>
       <button type="button" class="btn small" data-clear="section">Сечение</button>
       <button type="button" class="btn small" data-clear="all">Всё</button>
     </div>
@@ -406,8 +407,21 @@ body.cardboard .topbar,body.cardboard .walkui,body.cardboard .chip,body.cardboar
     </div>
   </details>
 
+  <details class="sec" id="sec-align" open>
+    <summary><h2><span class="step">04</span>Привязка к месту</h2></summary>
+    <div class="sec-body">
+    <p class="note">Чтобы модель встала на объекте точно: отметьте на модели 2–3 репера как можно дальше друг от друга (углы плиты, оси колонн, отметки на полу), распечатайте листы с крестами и положите их центрами на эти точки на месте. В шлеме (сквозной режим) коснитесь кончиком контроллера центра каждого креста, на Android в AR — наведите кольцо и нажмите «Отметить».</p>
+    <div class="row-btns">
+      <button type="button" class="btn small primary" id="ref-tool">Поставить репер</button>
+      <button type="button" class="btn small" id="ref-print">Распечатать листы</button>
+    </div>
+    <p class="note" id="ref-list">Реперов пока нет.</p>
+    <p class="note">1 репер — только сдвиг. 2 — сдвиг и поворот. 3 и больше — точнее и с проверкой ошибки в миллиметрах. Работайте внутри области между реперами: чем дальше от них, тем больше ошибка.</p>
+    </div>
+  </details>
+
   <details class="sec" id="sec-env" open>
-    <summary><h2><span class="step">04</span>Окружение</h2></summary>
+    <summary><h2><span class="step">05</span>Окружение</h2></summary>
     <div class="sec-body">
     <div class="field">
       <span class="lbl" id="l-env">Фон и свет — во всех режимах</span>
@@ -427,7 +441,7 @@ body.cardboard .topbar,body.cardboard .walkui,body.cardboard .chip,body.cardboar
   </details>
 
   <details class="sec" id="sec-models" open>
-    <summary><h2><span class="step">05</span>Информация о моделях</h2></summary>
+    <summary><h2><span class="step">06</span>Информация о моделях</h2></summary>
     <div class="sec-body">
     <div class="dims">
       <b id="dims">—</b>
@@ -562,7 +576,14 @@ body.cardboard .topbar,body.cardboard .walkui,body.cardboard .chip,body.cardboar
       <button type="button" class="btn" id="ar-rot-l" aria-label="Повернуть влево">⟲</button>
       <button type="button" class="btn" id="ar-rot-r" aria-label="Повернуть вправо">⟳</button>
       <button type="button" class="btn primary" id="ar-place">Поставить</button>
+      <button type="button" class="btn" id="ar-align">Реперы</button>
       <button type="button" class="btn" id="ar-exit">Выйти</button>
+    </div>
+    <div class="ar-bottom" id="ar-alignbar" hidden>
+      <button type="button" class="btn primary" id="al-mark">Отметить</button>
+      <button type="button" class="btn" id="al-skip">Пропустить</button>
+      <button type="button" class="btn" id="al-done">Готово</button>
+      <button type="button" class="btn" id="al-cancel">Отмена</button>
     </div>
   </div>
   <div class="cbui" id="cbui" hidden>
@@ -611,10 +632,10 @@ const UP = new V3(0, 1, 0), DOWN = new V3(0, -1, 0);
 const UNITS = { mm: 0.001, cm: 0.01, m: 1, in: 0.0254, ft: 0.3048 };
 const TABLE_STEPS = [20, 50, 100, 200, 500, 1000];
 const EYE = 1.65, STEP = 0.45, RADIUS = 0.3, GRAV = 9.8;
-const APP_VERSION = '3.0';
+const APP_VERSION = '3.1';
 const BASE_COLORS = ['#f2efe8', '#d8a33f', '#e0604a', '#3f86c9'];
 const KINDS = { issue: { label: 'Замечание', color: '#e0604a' }, question: { label: 'Вопрос', color: '#d8a33f' }, idea: { label: 'Идея', color: '#4fae7f' } };
-const TOOLS = [['nav', 'Выделение'], ['pin', 'Метка'], ['measure', 'Рулетка'], ['pen', 'Карандаш'], ['erase', 'Ластик'], ['section', 'Сечение']];   // «Куб» временно скрыт: код инструмента сохранён
+const TOOLS = [['nav', 'Выделение'], ['pin', 'Метка'], ['measure', 'Рулетка'], ['pen', 'Карандаш'], ['erase', 'Ластик'], ['section', 'Сечение'], ['ref', 'Репер']];   // «Куб» временно скрыт: код инструмента сохранён
 const AUTHOR = 'Сергей Дмитриев · Rock Parametric';
 const base = p => String(p).split(/[\\/]/).pop();
 const safeDecode = s => { try { return decodeURIComponent(s); } catch { return s; } };
@@ -1339,7 +1360,7 @@ function updateLabels() {
 function disposeObj(o) {
   billboards.delete(o);
   o.traverse(x => {
-    if (x.isSprite) { labels.delete(x); x.material.map?.dispose(); x.material.dispose(); return; }
+    if (x.isSprite) { labels.delete(x); if (!x.userData.sharedTex) x.material.map?.dispose(); x.material.dispose(); return; }
     if (x.geometry && !x.userData.sharedGeo) x.geometry.dispose();
     if (x.material && !x.userData.sharedMat) x.material.dispose();
   });
@@ -1386,12 +1407,23 @@ const shared = (o, geo = true, mat = true) => { o.userData.sharedGeo = geo; o.us
 
 function pinHead(n) { return vec(n.p); }
 function noteCenter(n) {
-  if (n.type === 'pin') return pinHead(n);
+  if (n.type === 'pin' || n.type === 'ref') return vec(n.p);
   if (n.type === 'measure') return vec(n.a).add(vec(n.b)).multiplyScalar(0.5);
   if (n.type === 'box') return vec(n.min).add(vec(n.max)).multiplyScalar(0.5);
   if (n.type === 'line') { if (n.c) return vec(n.c); const pts = n.pts; return vec(pts[Math.floor(pts.length / 2)]); }
   return new V3();
 }
+const REF_COLOR = '#3fd0c9';
+const REF_TEX = (() => {
+  const c = document.createElement('canvas'); c.width = c.height = 96; const x = c.getContext('2d');
+  x.lineCap = 'round';
+  for (const [w, col] of [[9, 'rgba(15,18,20,0.9)'], [4, REF_COLOR]]) {
+    x.lineWidth = w; x.strokeStyle = col;
+    x.beginPath(); x.arc(48, 48, 26, 0, Math.PI * 2); x.stroke();
+    x.beginPath(); x.moveTo(48, 6); x.lineTo(48, 90); x.moveTo(6, 48); x.lineTo(90, 48); x.stroke();
+  }
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+})();
 function makeNoteObj(n) {
   const g = new THREE.Group(); const pick = [];
   if (n.type === 'box') {
@@ -1409,6 +1441,14 @@ function makeNoteObj(n) {
     const pk = shared(new THREE.Mesh(PICK_UNIT, PICK_MAT)); pk.position.copy(p); dot.userData.pickMesh = pk;
     const lab = makeLabel(n.text ? `${n.num}. ${n.text}` : `${n.num}`, null, { bg: col, depthTest: false });
     lab.center.set(0.5, -0.28); lab.position.copy(p);
+    g.add(dot, pk, lab); pick.push(pk);
+  } else if (n.type === 'ref') {
+    const p = vec(n.p);
+    const dot = new THREE.Sprite(new THREE.SpriteMaterial({ map: REF_TEX, depthTest: false, transparent: true })); dot.userData.sharedTex = true;
+    dot.position.copy(p); dot.renderOrder = 13; dot.userData.aspect = 1; dot.userData.hk = 0.9; labels.add(dot);
+    const pk = shared(new THREE.Mesh(PICK_UNIT, PICK_MAT)); pk.position.copy(p); dot.userData.pickMesh = pk;
+    const lab = makeLabel(`Р${n.num}`, null, { bg: REF_COLOR, depthTest: false });
+    lab.center.set(-0.18, -0.25); lab.position.copy(p);
     g.add(dot, pk, lab); pick.push(pk);
   } else if (n.type === 'measure') {
     const a = vec(n.a), b = vec(n.b), d = a.distanceTo(b);
@@ -1472,11 +1512,13 @@ function undo() {
   else { addNote(op.note, false, rec); const arrN = rec.notes; arrN.splice(arrN.indexOf(op.note), 1); arrN.splice(Math.min(op.index, arrN.length), 0, op.note); renderNotes(); }
   flash('Отменено');
 }
+function nextRefNum() { return shownRecs().flatMap(r => r.notes).filter(n => n.type === 'ref').reduce((m, n) => Math.max(m, n.num || 0), 0) + 1; }
 function nextPinNum() { return shownRecs().flatMap(r => r.notes).filter(n => n.type === 'pin').reduce((m, n) => Math.max(m, n.num || 0), 0) + 1; }   // numbering runs through the whole scene
 function flash(msg) { if (state.view === 'xr') { palMessage = msg; drawPalette(); clearTimeout(flash.t); flash.t = setTimeout(() => { palMessage = ''; drawPalette(); }, 1800); } else toast(msg); }
 
 function noteSummary(n) {
   if (n.type === 'pin') return { badge: String(n.num), color: pinColor(n), title: n.text || 'Без текста', sub: 'Метка' };
+  if (n.type === 'ref') { const p = vec(n.p); return { badge: 'Р' + n.num, color: REF_COLOR, title: `Репер Р${n.num}`, sub: `${fmt2(p.x)} ; ${fmt2(p.y)} ; ${fmt2(p.z)} м` }; }
   if (n.type === 'measure') {
     const a = vec(n.a), b = vec(n.b); const d = a.distanceTo(b), hz = Math.hypot(a.x - b.x, a.z - b.z), vt = Math.abs(a.y - b.y);
     return { badge: '↔', ghost: true, title: `Размер ${fmt2(d)} м`, sub: `гор. ${fmt2(hz)} · верт. ${fmt2(vt)} м` };
@@ -1486,6 +1528,7 @@ function noteSummary(n) {
   return { badge: '?', title: 'Объект', sub: '' };
 }
 function renderNotes() {
+  if (typeof renderRefList === 'function') renderRefList();
   if (state.view === 'xr' && (state.palTab === 'notes' || state.palTab === 'models')) layoutPalette();
   const ul = $('#notes'); ul.textContent = '';
   const rec = activeRec(); const list = shownRecs().flatMap(r => r.notes);
@@ -1553,6 +1596,11 @@ async function exportPackage() {
         const [px, nx, py, ny, pz, nz] = ids;
         for (const [a, b, c] of [[px, py, pz], [py, nx, pz], [nx, ny, pz], [ny, px, pz], [py, px, nz], [nx, py, nz], [ny, nx, nz], [px, ny, nz]]) parts.push(`f ${a} ${b} ${c}\n`);
         txt.push(`${n.num}. ${n.text || '(без текста)'}`);
+      } else if (n.type === 'ref') {
+        const c = vec(n.p), r = 0.1;
+        parts.push(`o VRtrip_Репер_Р${n.num}\nusemtl ${mname(REF_COLOR)}\n`);
+        for (const d of [[r, 0, 0], [0, r, 0], [0, 0, r]]) { const a = V(c.clone().add(new V3(...d))), b = V(c.clone().sub(new V3(...d))); parts.push(`l ${a} ${b}\n`); }
+        txt.push(`Репер Р${n.num}`);
       } else if (n.type === 'measure') {
         const A = vec(n.a), B = vec(n.b), d = A.distanceTo(B);
         parts.push(`o VRtrip_Размер_${fmt2(d).replace(',', '.')}м\nusemtl ${mname(MEASURE_COLOR)}\n`);
@@ -1599,14 +1647,14 @@ async function importNotes(file) {
     if (!Array.isArray(list)) throw new Error();
     let k = 0; let num = nextPinNum(rec) - 1;
     for (const n of list) {
-      if (!['pin', 'box', 'measure', 'line'].includes(n?.type)) continue;
+      if (!['pin', 'box', 'measure', 'line', 'ref'].includes(n?.type)) continue;
       const c = { ...n, id: uid() }; if (c.type === 'pin') c.num = ++num;
       addNote(c, false, rec); k++;
     }
     toast(k ? `Загружено заметок: ${k}` : 'В файле нет заметок VRtrip.', k ? 'ok' : 'warn');
   } catch { toast('Не получилось прочитать файл. Нужен .json, скачанный из VRtrip.', 'bad'); }
 }
-const CLEAR_LABEL = { pin: 'Метки', measure: 'Размеры', line: 'Эскизы', box: 'Кубы', section: 'Сечение', all: 'Всё' };
+const CLEAR_LABEL = { pin: 'Метки', measure: 'Размеры', line: 'Эскизы', box: 'Кубы', ref: 'Реперы', section: 'Сечение', all: 'Всё' };
 function clearCount(k) { const ns = shownRecs().flatMap(r => r.notes); if (k === 'section') return sec.on ? 1 : 0; if (k === 'all') return ns.length + (sec.on ? 1 : 0); return ns.filter(n => n.type === k).length; }
 function renderClearRow() {
   let any = false;
@@ -1689,7 +1737,7 @@ function hitScene(wr, { notes = true, ground = true } = {}) {
   return best;
 }
 /* Vertex snapping: the cursor jumps to the nearest corner of the triangle under it when close enough */
-const SNAP_TOOLS = new Set(['measure', 'box', 'pin']);
+const SNAP_TOOLS = new Set(['measure', 'box', 'pin', 'ref']);
 /* Look a little around the pointer ray (9 rays) and snap to the nearest model corner within the tolerance */
 const _u = new V3(), _w = new V3();
 function trySnap(h, wr) {
@@ -1902,6 +1950,8 @@ function toolDown(wr) {
     else if (tool.phase === 'm') { tool.b = h.local.clone(); finishMeasure(); }
   } else if (t === 'pin') {
     const h = toolHit(wr); if (h) createPin(h);
+  } else if (t === 'ref') {
+    const h = toolHit(wr); if (h) { const n = addNote({ type: 'ref', p: arr(h.local), n: arr(h.normal), num: nextRefNum() }); if (n) flash(`Репер Р${n.num} поставлен`); }
   } else if (t === 'pen') {
     penBegin(wr);
   } else if (t === 'erase') {
@@ -2002,7 +2052,7 @@ function addPartMove(rec, pid, df) {
 const toFileDelta = (rec, dl) => dl.clone().applyMatrix3(new THREE.Matrix3().setFromMatrix4(fileToLocal(rec).invert()));
 function translateNote(n, d) {
   const add = a => arr(vec(a).add(d));
-  if (n.type === 'pin') n.p = add(n.p);
+  if (n.type === 'pin' || n.type === 'ref') n.p = add(n.p);
   else if (n.type === 'measure') { n.a = add(n.a); n.b = add(n.b); }
   else if (n.type === 'box') { n.min = add(n.min); n.max = add(n.max); }
   else if (n.type === 'line') { if (n.c) n.c = add(n.c); else if (n.pts) n.pts = n.pts.map(add); }
@@ -2022,7 +2072,7 @@ function selName() {
   if (!sel) return '';
   if (sel.kind === 'part') return sel.part.name ? `часть «${sel.part.name}»` : 'часть модели';
   const n = selRec()?.notes.find(x => x.id === sel.id);
-  return { pin: 'метка', measure: 'рулетка', line: 'линия карандаша', box: 'куб' }[n?.type] || 'разметка';
+  return { pin: 'метка', measure: 'рулетка', line: 'линия карандаша', box: 'куб', ref: `репер Р${n?.num}` }[n?.type] || 'разметка';
 }
 function selectPick(pk) {
   const rec = pk?.rec; if (!rec?.built || !pk || pk.kind === 'none') { clearSelection(); return; }
@@ -2129,6 +2179,7 @@ function pickSelectable(wr, tol = 0) {
 const TIPS = {
   nav: { walk: 'Клик по полу — перейти туда. Тянуть мышью — осмотреться.', orbit: '' },
   box: { idle: 'Куб: щёлкните первый угол основания', foot: 'Задайте второй угол и щёлкните', height: 'Поднимите на нужную высоту и щёлкните. Esc — отмена' },
+  ref: { idle: 'Репер: щёлкните точку, которую легко найти на месте — угол плиты, ось колонны, отметка на полу. Крупная цветная точка — привязка к вершине' },
   pin: { idle: 'Метка: щёлкните по поверхности, чтобы оставить комментарий. Крупная цветная точка — привязка к углу' },
   measure: { idle: 'Рулетка: щёлкните первую точку. Крупная цветная точка — привязка к вершине', m: 'Щёлкните вторую точку. Esc — отмена' },
   pen: { idle: 'Карандаш: нажмите на модель и рисуйте — линия ляжет в плоскость перед вами' },
@@ -2139,6 +2190,7 @@ const VR_TIPS = {
   nav: 'Курок по объекту — выделить и тащить лучом. По полу — телепорт.',
   box: { idle: 'Курок — первый угол основания', foot: 'Курок — второй угол', height: 'Поднимите и нажмите курок' },
   pin: 'Курок по поверхности — метка с комментарием',
+  ref: 'Курок по точке модели — репер для привязки',
   measure: { idle: 'Курок — первая точка', m: 'Курок — вторая точка' },
   pen: 'Держите курок — рисует кружок на конце палочки',
   erase: 'Наведите луч — объект станет красным. Курок — стереть, держите и ведите — стирать подряд',
@@ -2638,7 +2690,7 @@ const CURSORS = {
   pen: svgCur(`<path d='M3 29l1.8-6.6L21.5 5.7l4.8 4.8L9.6 27.2z' ${INK}/><path d='M18.6 8.6l4.8 4.8' fill='none' stroke='#15181b' stroke-width='2'/><path d='M3 29l1.8-6.6 4.8 4.8z' fill='#15181b'/>`, 3, 29, 'crosshair'),
   erase: svgCur(`<path d='M4 20.5L15.5 9l9 9-8 8H10z' ${INK}/><path d='M15.5 9l3.5-3.5 9 9L24.5 18z' fill='#e3826f' stroke='#15181b' stroke-width='2' stroke-linejoin='round'/><path d='M9.5 15l9 9' fill='none' stroke='#15181b' stroke-width='2'/>`, 6, 23, 'cell'),
   pin: svgCur(`<path d='M16 30s-9-9.2-9-16a9 9 0 0 1 18 0c0 6.8-9 16-9 16z' ${INK}/><circle cx='16' cy='14' r='3.3' fill='#15181b'/>`, 16, 30, 'pointer'),
-  measure: 'crosshair', box: 'crosshair', section: 'ns-resize',
+  measure: 'crosshair', box: 'crosshair', ref: 'crosshair', section: 'ns-resize',
 };
 function updateCanvasCursor(grabbing = false) {
   canvas.style.cursor = grabbing ? 'grabbing' : CURSORS[state.tool] || (state.view === 'walk' ? 'grab' : 'default');
@@ -2810,6 +2862,12 @@ function layoutFace(f) {
     B.push({ id: 'mp:prev', label: '▲', x: 820, y: Y, w: 180, h: 84 }); B.push({ id: 'mp:next', label: '▼', x: 820, y: Y + 92, w: 180, h: 84 });
     [['mm', 'мм'], ['cm', 'см'], ['m', 'м'], ['in', 'дюйм'], ['ft', 'фут']].forEach(([u, l], i) => B.push({ id: 'u:' + u, label: l, x: 24 + i * 197, y: Y + 292, w: 187, h: 84 }));
     row3(Y + 390, [['up:false', 'Y вверх'], ['up:true', 'Z вверх'], ['clay', 'Белый макет']]);
+  } else if (tab === 'view' && state.align) {
+    const a = state.align, cur = a.refs[a.i];
+    B.push({ id: 'info', label: cur ? `Коснитесь кончиком контроллера центра креста Р${cur.num} и нажмите курок` : 'Все реперы отмечены', x: 24, y: Y, w: 976, h: 84, kind: 'text' });
+    a.refs.slice(0, 10).forEach((r, k) => B.push({ id: 'al:go:' + k, label: `Р${r.num}${a.res?.[k] != null && a.count >= 3 ? ` · ${Math.round(a.res[k] * 1000)} мм` : a.W[k] ? ' ✓' : ''}`, x: 24 + (k % 5) * 197, y: Y + 96 + Math.floor(k / 5) * 96, w: 187, h: 84 }));
+    row3(Y + 300, [['al:skip', 'Пропустить'], ['al:scale', a.scale ? 'Масштаб: по точкам' : 'Масштаб: 1:1'], ['al:done', 'Готово']]);
+    row3(Y + 408, [['al:cancel', 'Отмена']]);
   } else if (tab === 'view') {
     row3(Y, [state.sessionMode === 'immersive-ar' && ['pt', 'Сквозной'], ['table', '1:1 ↔ макет'], ['start', 'Ко входу']].filter(Boolean));
     row3(Y + 108, [state.mode === 'walk' && ['grav', 'Гравитация'], state.mode === 'walk' && ['coll', 'Стены'], ['place', 'Макет передо мной']].filter(Boolean));
@@ -2817,7 +2875,8 @@ function layoutFace(f) {
     row3(Y + 324, [['next', 'Следующая модель'], ['hud', 'Скрыть меню']]);
     B.push({ id: 'tilt:-', label: 'Наклон −', x: 684, y: Y + 324, w: 153, h: 96 }); B.push({ id: 'tilt:+', label: 'Наклон +', x: 847, y: Y + 324, w: 153, h: 96 });
     B.push({ id: 'shot', label: 'Снимок', x: 24, y: Y + 432, w: 240, h: 84 });
-    B.push({ id: 'info', label: 'Видео: кнопка Meta → Камера → Запись', x: 280, y: Y + 432, w: 720, h: 84, kind: 'text' });
+    B.push({ id: 'align', label: state.alignRel ? 'Снять привязку' : 'Привязка по реперам', x: 280, y: Y + 432, w: 400, h: 84 });
+    B.push({ id: 'info', label: 'Видео: Meta → Камера', x: 696, y: Y + 432, w: 304, h: 84, kind: 'text' });
   } else if (tab === 'notes') {
     const list = sortedNotes(), per = 5, { page } = pageOf('notes', list.length, per);
     list.slice(page * per, page * per + per).forEach((n, k) => {
@@ -2867,6 +2926,9 @@ function drawFace(f) {
       continue;
     }
     let active = b.id === state.tool, label = b.label;
+    if (b.id === 'al:scale') active = !!state.align?.scale;
+    else if (b.id.startsWith('al:go:')) active = +b.id.slice(6) === state.align?.i;
+    else if (b.id === 'align') active = !!state.alignRel;
     const s = rec?.settings;
     if (b.id === 'pt') { active = state.sessionMode === 'immersive-ar' && state.passthrough; label = state.sessionMode === 'immersive-ar' ? (state.passthrough ? 'Сквозной: вкл' : 'Сквозной: выкл') : 'Сквозной —'; }
     else if (b.id === 'table') { active = state.mode === 'table'; label = state.mode === 'table' ? 'Макет → 1:1' : '1:1 → макет'; }
@@ -2893,7 +2955,7 @@ function transformNotes(rec, T, moveSec = true) {
   const r6 = v => Math.round(v * 1e6) / 1e6, A6 = v => [r6(v.x), r6(v.y), r6(v.z)];      // keep precision through repeated unit changes
   const P = a => A6(vec(a).applyMatrix4(T)), D = a => A6(vec(a).transformDirection(T)), k = Math.cbrt(Math.abs(T.determinant())) || 1;
   for (const n of rec.notes) {
-    if (n.type === 'pin') { n.p = P(n.p); if (n.n) n.n = D(n.n); }
+    if (n.type === 'pin' || n.type === 'ref') { n.p = P(n.p); if (n.n) n.n = D(n.n); }
     else if (n.type === 'measure') { n.a = P(n.a); n.b = P(n.b); }
     else if (n.type === 'box') { const bx = new THREE.Box3(vec(n.min), vec(n.max)).applyMatrix4(T); n.min = A6(bx.min); n.max = A6(bx.max); }
     else if (n.type === 'line') {
@@ -2963,6 +3025,15 @@ function palClick(id) {
   else if (id.startsWith('up:')) changeModelSetting('zUp', id.slice(3) === 'true');
   else if (id === 'clay' && rec?.built) changeModelSetting('clay', !rec.settings.clay);
   else if (id === 'shot') vrSnapshot();
+  else if (id === 'align') { if (state.alignRel) alignClear(); else startAlign(); }
+  else if (id.startsWith('al:')) {
+    const a = state.align; if (!a) return;
+    if (id.startsWith('al:go:')) { a.i = +id.slice(6); alignPaint(); }
+    else if (id === 'al:skip') { const nx = nextAlignIndex(a, a.i); if (nx < 0 || nx === a.i) alignFinish(); else { a.i = nx; alignPaint(); } }
+    else if (id === 'al:scale') { a.scale = !a.scale; applyAlign(); alignPaint(); }
+    else if (id === 'al:done') alignFinish();
+    else if (id === 'al:cancel') alignCancel();
+  }
   else if (id.startsWith('nd:')) removeNote(id.slice(3));
   else if (id.startsWith('n:')) { const n = rec?.notes.find(x => x.id === id.slice(2)); if (n) goToNoteXR(n); }
   layoutPalette();
@@ -3049,6 +3120,130 @@ function openKeyboard(n) {
 function closeKeyboard(res) { kbd.open = false; kb.mesh.removeFromParent(); const r = kbd.resolve; kbd.resolve = null; r?.(res); drawPalette(); }
 layoutKeyboard();
 
+/* ================= site alignment by reference marks (реперы) ================= */
+/* Marks are placed on the model (note type 'ref'); on site the same points are touched with the controller tip (Quest)
+   or aimed at with the AR ring (Android). A least-squares fit gives yaw + position (and optional scale); the model then stays
+   fixed relative to the tracking space, so it remains registered to the room however you move or turn. */
+function sceneRefs() { return shownRecs().flatMap(r => r.notes.filter(n => n.type === 'ref')).sort((a, b) => a.num - b.num); }
+function solveAlign(P, W, withScale, yaw0 = 0) {
+  const n = P.length, pc = new V3(), wc = new V3();
+  P.forEach(v => pc.add(v)); W.forEach(v => wc.add(v)); pc.divideScalar(n); wc.divideScalar(n);
+  let A = 0, B = 0, pp = 0;
+  for (let i = 0; i < n; i++) { const a = P[i].clone().sub(pc), b = W[i].clone().sub(wc); A += b.x * a.x + b.z * a.z; B += b.x * a.z - b.z * a.x; pp += a.x * a.x + a.z * a.z; }
+  const rot = n >= 2 && A * A + B * B > 1e-10;
+  const q = new THREE.Quaternion().setFromAxisAngle(UP, rot ? Math.atan2(B, A) : yaw0);
+  const s = withScale && rot && pp > 1e-8 ? THREE.MathUtils.clamp(Math.hypot(A, B) / pp, 0.5, 2) : 1;
+  const t = wc.clone().sub(pc.clone().applyQuaternion(q).multiplyScalar(s));
+  const res = P.map((v, i) => v.clone().applyQuaternion(q).multiplyScalar(s).add(t).distanceTo(W[i]));
+  return { q, s, t, res };
+}
+function holdAlign() {                                  // keep the model where the fit put it, relative to the tracking space
+  if (!state.alignRel) return;
+  rig.updateMatrixWorld();
+  const M = rig.matrixWorld.clone().multiply(state.alignRel), sc = new V3();
+  M.decompose(holder.position, holder.quaternion, sc); holder.scale.setScalar(sc.x);
+}
+function currentRelYaw() { rig.updateMatrixWorld(); holder.updateMatrixWorld(); const m = rig.matrixWorld.clone().invert().multiply(holder.matrixWorld); const q = new THREE.Quaternion(); m.decompose(new V3(), q, new V3()); return yawOfQ(q) ; }
+function applyAlign() {
+  const a = state.align; if (!a) return null;
+  const idx = a.W.map((w, k) => (w ? k : -1)).filter(k => k >= 0); if (!idx.length) return null;
+  const P = idx.map(k => noteCenter(a.refs[k])), W = idx.map(k => a.W[k]);
+  const r = solveAlign(P, W, a.scale, a.yaw0);
+  state.alignRel = new THREE.Matrix4().compose(r.t, r.q, new V3(r.s, r.s, r.s));
+  a.res = []; idx.forEach((k, j) => { a.res[k] = r.res[j]; }); a.count = idx.length; a.s = r.s;
+  holdAlign(); return r;
+}
+function alignSummary(a) {
+  if (!a?.count) return 'Ни один репер не отмечен';
+  const errs = a.refs.map((r, k) => (a.res?.[k] != null ? `Р${r.num} ${Math.round(a.res[k] * 1000)} мм` : null)).filter(Boolean);
+  return `Привязано по ${a.count} ${plural(a.count, 'реперу', 'реперам', 'реперам')}${a.count >= 3 ? ' · ошибка: ' + errs.join(', ') : a.count === 2 ? ' · для проверки ошибки нужен 3-й' : ' · только сдвиг, без поворота'}${a.s !== 1 ? ` · масштаб ${a.s.toFixed(4)}` : ''}`;
+}
+function startAlign() {
+  const refs = sceneRefs();
+  if (!refs.length) { flash('Сначала поставьте реперы на модели: инструмент «Репер»'); return; }
+  cancelTool(); clearSelection();
+  if (state.view === 'xr') { state.grab = null; if (state.mode === 'table') setMode('walk'); }
+  state.align = { refs, i: 0, W: refs.map(() => null), scale: false, prev: state.alignRel, yaw0: state.alignRel ? currentRelYaw() : (state.view === 'ar' ? currentRelYaw() : -rig.rotation.y) };
+  alignPaint();
+}
+function nextAlignIndex(a, from) { for (let k = 1; k <= a.refs.length; k++) { const j = (from + k) % a.refs.length; if (!a.W[j]) return j; } return -1; }
+function alignMark(wRigLocal) {
+  const a = state.align; if (!a || a.i < 0) return;
+  a.W[a.i] = wRigLocal.clone(); applyAlign();
+  const nx = nextAlignIndex(a, a.i);
+  if (nx < 0) { alignFinish(); return; }
+  a.i = nx; alignPaint();
+}
+function alignFinish() {
+  const a = state.align; if (!a) return;
+  if (!a.count) { alignCancel(); return; }
+  state.align = null; const msg = alignSummary(a);
+  if (state.view === 'ar') { ar.placed = true; holder.visible = true; arHint(msg); arAlignBar(false); arScaleText(); }
+  else { palMessage = msg; layoutPalette(); clearTimeout(flash.t); flash.t = setTimeout(() => { palMessage = ''; drawPalette(); }, 9000); }
+  buzz('right', 0.6, 50);
+}
+function alignCancel() {
+  const a = state.align; if (!a) return;
+  state.align = null; state.alignRel = a.prev || null;
+  if (!state.alignRel && state.view === 'xr') resetHolder(); else holdAlign();
+  if (state.view === 'ar') { arAlignBar(false); arHint(ar.placed ? 'Привязка отменена' : 'Наведите кольцо на пол и нажмите «Поставить»'); } else { flash('Привязка отменена'); }
+}
+function alignClear() { state.align = null; state.alignRel = null; if (state.view === 'xr') { resetHolder(); if (state.mode === 'walk') toStart(); } flash('Привязка снята'); layoutPalette(); }
+function alignPaint() {
+  const a = state.align;
+  if (state.view === 'ar') {
+    const r = a?.refs[a.i];
+    arHint(r ? `Наведите кольцо на центр креста Р${r.num} и нажмите «Отметить»${a.count ? ' · ' + alignSummary(a) : ''}` : alignSummary(a));
+    arAlignBar(true); return;
+  }
+  palMessage = a?.count ? alignSummary(a) : '';
+  if (state.palTab !== 'view') showTab('view');
+  layoutPalette();
+}
+function arAlignBar(on) { $('#ar-alignbar').hidden = !on; document.querySelector('#arui .ar-bottom:not(#ar-alignbar)').hidden = on; }
+$('#ar-align').addEventListener('click', () => startAlign());
+$('#al-mark').addEventListener('click', () => { if (!reticle.visible) { arHint('Кольцо не видит поверхность — поводите телефоном над крестом'); return; } rig.updateMatrixWorld(); alignMark(rig.worldToLocal(new V3().setFromMatrixPosition(reticle.matrix))); });
+$('#al-skip').addEventListener('click', () => { const a = state.align; if (!a) return; const nx = nextAlignIndex(a, a.i); if (nx < 0 || nx === a.i) alignFinish(); else { a.i = nx; alignPaint(); } });
+$('#al-done').addEventListener('click', () => alignFinish());
+$('#al-cancel').addEventListener('click', () => alignCancel());
+/* printable sheets: one A4 per mark — a 150 mm cross with a centre point, a 100 mm check bar and a QR code naming the mark */
+async function loadQR() {
+  if (window.qrcode) return true;
+  return new Promise(res => { const sc = document.createElement('script'); sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js'; sc.onload = () => res(true); sc.onerror = () => res(false); document.head.append(sc); });
+}
+async function printRefs() {
+  const refs = sceneRefs(); if (!refs.length) { toast('Сначала поставьте реперы: кнопка «Поставить репер», затем щёлкните точки на модели.', 'warn'); return; }
+  const w = window.open('', '_blank'); if (!w) { toast('Браузер не дал открыть окно печати — разрешите всплывающие окна для сайта.', 'warn'); return; }
+  w.document.write('<p style="font:16px sans-serif;padding:20px">Готовлю листы…</p>');
+  const hasQR = await loadQR(), names = shownRecs().map(r => r.name).join(', ');
+  const esc = t => String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const page = n => {
+    const p = vec(n.p), code = `VRTRIP;REF;${n.num};${p.x.toFixed(3)};${p.y.toFixed(3)};${p.z.toFixed(3)}`;
+    let qr = ''; if (hasQR) { const q = window.qrcode(0, 'M'); q.addData(code); q.make(); qr = q.createSvgTag({ cellSize: 4, margin: 0, scalable: true }); }
+    let ticks = ''; for (let k = -7; k <= 7; k++) if (k) { const L = k % 5 ? 3 : 6; ticks += `<line x1="${75 + k * 10}" y1="${75 - L}" x2="${75 + k * 10}" y2="${75 + L}"/><line x1="${75 - L}" y1="${75 + k * 10}" x2="${75 + L}" y2="${75 + k * 10}"/>`; }
+    return `<section class="pg"><header><b>VRtrip · Репер Р${n.num}</b><span>${esc(names)}</span></header>
+      <svg class="cross" viewBox="0 0 150 150" width="150mm" height="150mm"><circle cx="75" cy="75" r="40" fill="none" stroke="#000" stroke-width="0.6"/><line x1="0" y1="75" x2="150" y2="75" stroke="#000" stroke-width="0.35"/><line x1="75" y1="0" x2="75" y2="150" stroke="#000" stroke-width="0.35"/><g stroke="#000" stroke-width="0.35">${ticks}</g><circle cx="75" cy="75" r="1.2" fill="#000"/><text x="80" y="70" font-size="8" font-family="sans-serif" font-weight="700">Р${n.num}</text></svg>
+      <div class="foot"><div class="qr">${qr}</div><div class="txt"><p><b>Центр креста — точка Р${n.num}.</b> Положите лист так, чтобы центр креста совпал с этой точкой на объекте (по разметке, лазеру или рулетке). Поворот листа не важен.</p><p>Координаты в модели: ${fmt2(p.x)} ; ${fmt2(p.y)} ; ${fmt2(p.z)} м (x ; высота ; z).</p><div class="bar"><span></span></div><p class="small">Проверка печати: полоса выше — ровно 100 мм. Печатайте в масштабе 100%, без «подогнать по размеру».</p></div></div></section>`;
+  };
+  w.document.open();
+  w.document.write(`<!doctype html><html lang="ru"><head><meta charset="utf-8"><title>VRtrip — реперы</title><style>
+    @page{size:A4 portrait;margin:0}*{box-sizing:border-box}body{margin:0;font:12pt/1.35 Arial,sans-serif;color:#000}
+    .pg{width:210mm;height:297mm;padding:14mm 15mm;display:flex;flex-direction:column;align-items:center;justify-content:space-between;page-break-after:always;break-after:page}
+    header{width:100%;display:flex;justify-content:space-between;align-items:baseline;border-bottom:0.4mm solid #000;padding-bottom:3mm}header b{font-size:18pt}header span{font-size:10pt;color:#333}
+    .cross{display:block}.foot{width:100%;display:flex;gap:8mm;align-items:flex-start}.qr{width:42mm;height:42mm;flex:none}.qr svg{width:42mm;height:42mm}
+    .txt p{margin:0 0 2mm}.small{font-size:9pt;color:#333}.bar{width:100mm;height:3mm;border:0.3mm solid #000;margin:2mm 0}.bar span{display:block;width:50%;height:100%;background:#000}
+    @media screen{body{background:#888}.pg{background:#fff;margin:10px auto}}
+  </style></head><body>${refs.map(page).join('')}<script>setTimeout(()=>print(),400)<\/script></body></html>`);
+  w.document.close();
+}
+$('#ref-print').addEventListener('click', printRefs);
+$('#ref-tool').addEventListener('click', () => { if (!isReady()) { toast('Сначала откройте модель.', 'warn'); return; } if (state.view === 'walk') exitWalk(); setTool('ref'); });
+function renderRefList() {
+  const refs = sceneRefs(), el = $('#ref-list');
+  el.textContent = refs.length ? `Реперов: ${refs.length} — ${refs.map(r => 'Р' + r.num).join(', ')}.${refs.length < 2 ? ' Для поворота нужен ещё хотя бы один.' : ''}` : 'Реперов пока нет.';
+  $('#ref-print').disabled = !refs.length;
+}
+
 /* ================= XR: controllers ================= */
 const factory = new XRControllerModelFactory();
 const rayGeo = new THREE.BufferGeometry().setFromPoints([new V3(0, 0, 0), new V3(0, 0, -1)]);
@@ -3066,10 +3261,10 @@ eraseBall.add(new THREE.LineSegments(new THREE.WireframeGeometry(new THREE.Icosa
 eraseBall.position.z = -TIP;
 tipRig.add(tipStick, penBall, penRing, eraseBall); tipRig.visible = false;
 function updateTipRig() {
-  const pen = state.tool === 'pen';
+  const pen = state.tool === 'pen' || !!state.align;
   tipRig.visible = state.view === 'xr' && pen;
   penBall.visible = penRing.visible = pen; eraseBall.visible = false;
-  penBall.material.color.set(curColor());
+  penBall.material.color.set(state.align ? REF_COLOR : curColor());
 }
 const tipWorld = c => c.localToWorld(new V3(0, 0, -TIP));
 /* small tag above the right controller naming the current tool */
@@ -3117,7 +3312,7 @@ function notesInSphere(cw, r) {
   for (const rec of scene) for (const n of rec.notes) {
     const o = rec.noteObjs.get(n.id); if (!o) continue;
     let hit = false;
-    if (n.type === 'pin') hit = W(vec(n.p)).distanceTo(cw) <= r + 0.02;
+    if (n.type === 'pin' || n.type === 'ref') hit = W(vec(n.p)).distanceTo(cw) <= r + 0.02;
     else if (n.type === 'measure') { const a = W(vec(n.a)).clone(), b = W(vec(n.b)).clone(); hit = segDist(cw, a, b) <= r; }
     else if (n.type === 'box') { const cl = holder.worldToLocal(cw.clone()); const bx = new THREE.Box3(vec(n.min), vec(n.max)); hit = bx.distanceToPoint(cl) * sc <= r; }
     else if (n.type === 'line') {
@@ -3235,14 +3430,14 @@ function pollInput(dt) {
   const pressed = (h, i) => !!pads[h]?.buttons[i]?.pressed;
   const edge = (h, i) => pressed(h, i) && !prev[h][i];
 
-  if (edge('right', 4)) setMode(state.mode === 'walk' ? 'table' : 'walk');
+  if (edge('right', 4)) { if (state.alignRel || state.align) flash('Модель привязана к месту — сначала снимите привязку (грань «Вид»)'); else setMode(state.mode === 'walk' ? 'table' : 'walk'); }
   if (edge('right', 5)) togglePassthrough();
   if (edge('left', 4)) toggleMenu();
   if (edge('left', 5) && state.models.length > 1) activate((state.active + 1) % state.models.length);
   if (edge('left', 3)) toggleMenu();
 
   /* grips: two hands scale/rotate/move; one hand moves the maquette */
-  const gl = pressed('left', 1), gr = pressed('right', 1);
+  const gl = pressed('left', 1) && !state.alignRel && !state.align, gr = pressed('right', 1) && !state.alignRel && !state.align;
   if (gl && gr) { if (state.grab?.type !== 'two') { startTwo(); buzz('left', 0.35, 25); buzz('right', 0.35, 25); } if (state.grab) updateTwo(); }
   else if ((gl || gr) && state.mode === 'table') { const h = gl ? 'left' : 'right'; if (state.grab?.type !== 'one' || state.grab.hand !== h) startOne(h); if (state.grab) updateOne(); }
   else state.grab = null;
@@ -3287,6 +3482,7 @@ function pollInput(dt) {
   }
 
   handleRightPointer(pads);
+  holdAlign();
   for (const h of ['left', 'right']) prev[h] = pads[h] ? pads[h].buttons.map(b => b.pressed) : [];
 }
 let palThrottle = 0;
@@ -3300,7 +3496,7 @@ function handleRightPointer(pads) {
   const trig = !!pads.right?.buttons[0]?.pressed; const down = trig && !state.prevTrig, up = !trig && state.prevTrig; state.prevTrig = trig;
   r.c.getWorldPosition(_o); _d.set(0, 0, -1).applyQuaternion(r.c.getWorldQuaternion(_q));
   const wr = new THREE.Ray(_o.clone(), _d.clone());
-  const stickTool = state.tool === 'pen';
+  const stickTool = state.tool === 'pen' || !!state.align;
   sec.hover = false;
   updateTipRig();
   r.ray.visible = true; let len = 4;
@@ -3317,6 +3513,9 @@ function handleRightPointer(pads) {
     if (down && ui.btn && ui.btn.kind !== 'text') { buzz('right', 0.45, 30); ui.p.click(ui.btn.id); state.uiCapture = true; }
   } else if (state.uiCapture || kbd.open || state.grab) {
     if (!trig) state.uiCapture = false;
+  } else if (state.align) {
+    len = 0;
+    if (down && state.align.refs[state.align.i]) { rig.updateMatrixWorld(); alignMark(rig.worldToLocal(tipWorld(r.c))); buzz('right', 0.7, 40); }
   } else if (state.tool === 'nav' && vrDrag) {
     /* the picked object hangs on the laser at the distance it was grabbed: sweep the ray or move the hand */
     const pw = wr.origin.clone().addScaledVector(wr.direction, vrDrag.len);
@@ -3416,6 +3615,7 @@ async function enter(passthrough) {
 }
 function onEnd() {
   if (kbd.open) closeKeyboard(null);
+  state.align = null; state.alignRel = null;
   clearSelection(); vrDrag = null; sec.snap = lsGet('vrtrip-secsnap') || '45'; setTimeout(flushVrShots, 600);
   state.view = 'orbit'; state.sessionMode = null; state.grab = null; state.mode = 'walk'; state.uiCapture = false; cancelTool();
   rig.position.set(0, 0, 0); rig.rotation.set(0, 0, 0); resetHolder();
@@ -3505,12 +3705,14 @@ async function enterPhoneAR() {
   session.addEventListener('end', onArEnd);
 }
 function onArEnd() {
+  state.align = null; state.alignRel = null; $('#ar-alignbar').hidden = true; document.querySelector('#arui .ar-bottom:not(#ar-alignbar)').hidden = false;
   ar.hitSource?.cancel?.(); ar.hitSource = null;
   renderer.xr.setReferenceSpaceType('local-floor');
   state.view = 'orbit'; $('#arui').hidden = true; reticle.visible = false; holder.visible = true; resetHolder();
   controls.enabled = true; applyEnv(); frame(); onResize(); updateTip();
 }
 function arUpdate(xrFrame) {
+  holdAlign();
   if (!xrFrame || !ar.hitSource) return;
   const ref = renderer.xr.getReferenceSpace();
   const hits = xrFrame.getHitTestResults(ar.hitSource);
@@ -3522,6 +3724,8 @@ function arUpdate(xrFrame) {
 }
 function placeAtReticle() {
   const rec = activeRec(); if (!rec?.built) return;
+  if (state.align) return;
+  if (state.alignRel) { arHint('Модель привязана по реперам. Чтобы переставить вручную — «Реперы» → «Отмена» или выйдите из AR.'); return; }
   if (!reticle.visible) { arHint('Поверхность ещё не найдена — поводите телефоном над полом'); return; }
   const p = new V3().setFromMatrixPosition(reticle.matrix), c = camera.getWorldPosition(new V3());
   const dir = new V3(c.x - p.x, 0, c.z - p.z); if (dir.lengthSq() < 1e-6) dir.set(0, 0, 1); dir.normalize();
