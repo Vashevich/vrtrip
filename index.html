@@ -293,6 +293,13 @@ body.cardboard .topbar,body.cardboard .walkui,body.cardboard .chip,body.cardboar
 .cb-set{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:min(440px,calc(100% - 24px));max-height:calc(100% - 24px);overflow:auto;display:flex;flex-direction:column;gap:10px;padding:14px;background:var(--panel);border:1px solid var(--line-strong);border-radius:12px;pointer-events:auto}
 .cb-range{display:grid;grid-template-columns:130px 1fr;gap:10px;align-items:center;font-size:13.5px;color:var(--muted)}
 .cb-range input{accent-color:var(--accent)}
+.cb-range b{color:var(--fg);font-weight:500;font-variant-numeric:tabular-nums;margin-left:4px}
+.sunplace{display:flex;flex-direction:column;gap:8px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--bg)}
+.sunplace .geo{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;gap:8px;align-items:end}
+.sunplace .geo label{min-width:0}.sunplace .geo input{width:100%}
+.sunplace label{display:flex;flex-direction:column;gap:4px;font-size:12.5px;color:var(--muted)}
+.sunplace input[type=number],.sunplace input[type=date]{min-width:0;background:var(--panel);border:1px solid var(--line);color:var(--fg);border-radius:7px;padding:7px 9px;font:13.5px var(--f-mono)}
+.sunplace .cb-range{display:grid;grid-template-columns:118px 1fr;flex-direction:row;align-items:center}
 .cb-rot{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:24px;text-align:center;background:rgba(10,12,14,.92);pointer-events:auto}
 .cb-rot b{font-size:18px}
 .cb-rot span{color:var(--muted);max-width:30ch}
@@ -431,6 +438,30 @@ body.cardboard .topbar,body.cardboard .walkui,body.cardboard .chip,body.cardboar
         <button type="button" data-val="studio">Студия</button>
         <button type="button" data-val="evening">Вечер</button>
       </div>
+    </div>
+    <div class="field">
+      <span class="lbl" id="l-sun">Солнце</span>
+      <div class="seg" id="sunmode" role="group" aria-labelledby="l-sun">
+        <button type="button" data-val="preset">Как в фоне</button>
+        <button type="button" data-val="place">По месту и времени</button>
+      </div>
+    </div>
+    <div class="sunplace" id="sunplace">
+      <div class="geo">
+        <label>Широта<input type="number" id="sun-lat" step="0.0001" min="-90" max="90" inputmode="decimal"></label>
+        <label>Долгота<input type="number" id="sun-lng" step="0.0001" min="-180" max="180" inputmode="decimal"></label>
+        <button type="button" class="btn small" id="sun-geo" title="Взять координаты этого устройства">Здесь</button>
+      </div>
+      <label class="cb-range"><span>Дата</span><input type="date" id="sun-date"></label>
+      <label class="cb-range"><span>Время <b id="sun-time-t"></b></span><input type="range" id="sun-time" min="180" max="1380" step="5"></label>
+      <label class="cb-range"><span>Север <b id="sun-north-t"></b></span><input type="range" id="sun-north" min="0" max="359" step="1"></label>
+      <p class="note" id="sun-info"></p>
+    </div>
+    <div class="checks">
+      <label class="check"><input type="checkbox" id="v-shadows"><span>Тени<small>От солнца — на модели и на полу, в том числе на реальном полу в сквозном режиме и AR</small></span></label>
+      <label class="check"><input type="checkbox" id="v-refl"><span>Отражения<small>Стекло, металл и глянец отражают окружение</small></span></label>
+      <label class="check"><input type="checkbox" id="v-ao"><span>Затенение углов<small>Мягкая тень в стыках и углах. Только на экране — в шлеме выключено ради плавности</small></span></label>
+      <label class="check"><input type="checkbox" id="v-edges"><span>Линии рёбер<small>Графичная подача: тонкие тёмные рёбра, особенно хорошо с «Белым макетом»</small></span></label>
     </div>
     <div class="checks" id="walkprefs">
       <label class="check"><input type="checkbox" id="p-gravity"><span>Гравитация<small>Ходить по полу и лестницам, а не летать</small></span></label>
@@ -619,6 +650,12 @@ import { MTLLoader } from 'three/addons/loaders/MTLLoader.js';
 import { XRControllerModelFactory } from 'three/addons/webxr/XRControllerModelFactory.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { USDZExporter } from 'three/addons/exporters/USDZExporter.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { GTAOPass } from 'three/addons/postprocessing/GTAOPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import { XREstimatedLight } from 'three/addons/webxr/XREstimatedLight.js';
 import { computeBoundsTree, disposeBoundsTree, acceleratedRaycast } from 'three-mesh-bvh';
 
 THREE.BufferGeometry.prototype.computeBoundsTree = computeBoundsTree;
@@ -632,7 +669,7 @@ const UP = new V3(0, 1, 0), DOWN = new V3(0, -1, 0);
 const UNITS = { mm: 0.001, cm: 0.01, m: 1, in: 0.0254, ft: 0.3048 };
 const TABLE_STEPS = [20, 50, 100, 200, 500, 1000];
 const EYE = 1.65, STEP = 0.45, RADIUS = 0.3, GRAV = 9.8;
-const APP_VERSION = '3.1';
+const APP_VERSION = '3.2';
 const BASE_COLORS = ['#f2efe8', '#d8a33f', '#e0604a', '#3f86c9'];
 const KINDS = { issue: { label: 'Замечание', color: '#e0604a' }, question: { label: 'Вопрос', color: '#d8a33f' }, idea: { label: 'Идея', color: '#4fae7f' } };
 const TOOLS = [['nav', 'Выделение'], ['pin', 'Метка'], ['measure', 'Рулетка'], ['pen', 'Карандаш'], ['erase', 'Ластик'], ['section', 'Сечение'], ['ref', 'Репер']];   // «Куб» временно скрыт: код инструмента сохранён
@@ -692,6 +729,13 @@ const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch {} };
 const prefs = { gravity: lsGet('vrtrip-gravity') !== '0', collide: lsGet('vrtrip-collide') !== '0', env: lsGet('vrtrip-env') || 'graphite' };
 let customColors = (() => { try { const a = JSON.parse(lsGet('vrtrip-colors') || '[]'); return Array.isArray(a) ? a.filter(c => /^#[0-9a-f]{6}$/i.test(c)).slice(-8) : []; } catch { return []; } })();
 const allColors = () => [...BASE_COLORS, ...customColors];
+/* visual settings: sun by place and time, shadows, reflections, ambient occlusion (screen), edge lines */
+const VIS = (() => {
+  const d = { sunMode: 'preset', lat: 55.751, lng: 37.618, date: '', min: 13 * 60, north: 0, shadows: true, refl: true, ao: !matchMedia('(pointer:coarse)').matches, edges: false };
+  try { return Object.assign(d, JSON.parse(lsGet('vrtrip-vis') || '{}')); } catch { return d; }
+})();
+VIS.envI = 0.55;
+function saveVis() { const { envI, ...v } = VIS; lsSet('vrtrip-vis', JSON.stringify(v)); }
 function savePrefs() { lsSet('vrtrip-gravity', prefs.gravity ? '1' : '0'); lsSet('vrtrip-collide', prefs.collide ? '1' : '0'); lsSet('vrtrip-env', prefs.env); }
 
 /* ================= renderer & scene ================= */
@@ -704,6 +748,7 @@ renderer.xr.enabled = true;
 renderer.xr.setReferenceSpaceType('local-floor');
 renderer.xr.setFoveation(1);
 renderer.localClippingEnabled = true;
+renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFShadowMap; renderer.shadowMap.autoUpdate = false;
 
 const scene = new THREE.Scene();
 const PREVIEW_BG = new THREE.Color(0x1b2024);
@@ -743,7 +788,7 @@ const previewGrid = new THREE.GridHelper(1, 20, 0x56606a, 0x2f363c); scene.add(p
 const holder = new THREE.Group(); scene.add(holder);
 const previewGroup = new THREE.Group();
 
-const CLAY = new THREE.MeshStandardMaterial({ color: 0xf1ede5, roughness: 0.88, metalness: 0, side: THREE.DoubleSide });
+const CLAY = new THREE.MeshStandardMaterial({ color: 0xf1ede5, roughness: 0.88, metalness: 0, side: THREE.DoubleSide, clipShadows: true });
 const CLAY_GLASS = new THREE.MeshStandardMaterial({ color: 0xbfd9e0, roughness: 0.1, transparent: true, opacity: 0.3, depthWrite: false, side: THREE.DoubleSide });
 
 /* ================= state ================= */
@@ -806,6 +851,19 @@ function normalizeGeo(g, keepColor) {
   if (keepColor) out.setAttribute('color', new THREE.BufferAttribute(new Float32Array(g.attributes.color.array), 3));
   return out;
 }
+/* Phong / Lambert (OBJ, FBX, 3DS) become physically based so they get reflections and the same light as glTF */
+const upgraded = new Map();
+function upgradeMat(m) {
+  if (!m || !(m.isMeshPhongMaterial || m.isMeshLambertMaterial)) return m;
+  if (upgraded.has(m)) return upgraded.get(m);
+  const sh = m.isMeshPhongMaterial ? m.shininess ?? 30 : 0;
+  const n = new THREE.MeshStandardMaterial({
+    name: m.name, color: m.color, map: m.map, alphaMap: m.alphaMap, normalMap: m.normalMap || null, bumpMap: m.bumpMap || null, bumpScale: m.bumpScale ?? 1,
+    emissive: m.emissive, emissiveMap: m.emissiveMap, opacity: m.opacity, transparent: m.transparent, alphaTest: m.alphaTest, side: m.side, vertexColors: m.vertexColors,
+    roughness: THREE.MathUtils.clamp(1 - Math.log2(sh + 1) / 10, 0.12, 0.95), metalness: 0,
+  });
+  upgraded.set(m, n); return n;
+}
 /* Bake transforms and merge everything that shares a material: far fewer draw calls on Quest */
 function optimize(obj) {
   obj.updateMatrixWorld(true);
@@ -817,7 +875,7 @@ function optimize(obj) {
     pid++; names[pid] = o.name || o.parent?.name || '';       // every source mesh is a selectable part, even after merging
     const g = plainGeometry(o.geometry);
     g.applyMatrix4(o.matrixWorld);
-    const mats = Array.isArray(o.material) ? o.material : [o.material];
+    const mats = (Array.isArray(o.material) ? o.material : [o.material]).map(upgradeMat);
     if (Array.isArray(o.material) && g.groups.length) for (const gr of g.groups) push(mats[gr.materialIndex] || mats[0], sliceGeo(g, gr.start, gr.count));
     else push(mats[0], g);
   });
@@ -835,11 +893,12 @@ function optimize(obj) {
     } catch { parts = clean; }
     mat.side = THREE.DoubleSide;
     mat.vertexColors = keepColor;
-    if (mat.isMeshStandardMaterial && mat.metalness > 0.3 && !mat.metalnessMap) mat.metalness = 0.3;   // no environment map here: full metal would render black
+    if (mat.isMeshStandardMaterial && mat.metalness > 0.85 && !mat.metalnessMap) mat.metalness = 0.85;
+    if (mat.isMeshStandardMaterial) { mat.envMapIntensity = VIS.envI; mat.clipShadows = true; }
     if (mat.transparent && mat.opacity < 0.99) mat.depthWrite = false;
     for (const geo of parts) {
       geo.computeBoundingBox(); geo.computeBoundingSphere(); geo.computeBoundsTree();
-      const mesh = new THREE.Mesh(geo, mat); mesh.userData.orig = mat;
+      const mesh = new THREE.Mesh(geo, mat); mesh.userData.orig = mat; mesh.castShadow = !(mat.transparent && mat.opacity < 0.99); mesh.receiveShadow = true;
       if (mat.transparent) mesh.renderOrder = 1;
       meshes.push(mesh);
     }
@@ -1146,7 +1205,7 @@ function mountScene() {
   holder.add(previewGroup, secVis);
   lsSet('vrtrip-shown', JSON.stringify(state.models.filter(r => r.shown).map(r => r.id)));
 }
-function afterSceneChange() { renderList(); renderSettings(); renderNotes(); renderToolbar(); updateModeButtons(); if (state.view === 'xr') layoutPalette(); }
+function afterSceneChange() { shadowsDirty(); if (VIS.edges) applyEdges(); renderList(); renderSettings(); renderNotes(); renderToolbar(); updateModeButtons(); if (state.view === 'xr') layoutPalette(); }
 /* switch one model on or off in the scene (the exposition list works like checkboxes) */
 async function showModel(i, on, { frameAll = false } = {}) {
   const rec = state.models[i]; if (!rec) return;
@@ -1312,6 +1371,199 @@ function applyEnv() {
   fog.color.set(p.bottom); fog.near = p.fog[0]; fog.far = p.fog[1]; scene.fog = state.view === 'orbit' ? null : fog;
 }
 
+
+/* ================= light, shadows and render style ================= */
+/* Sun position (NOAA / SunCalc formulas): azimuth from north clockwise, altitude above the horizon */
+function sunPosition(date, lat, lng) {
+  const rad = Math.PI / 180, d = date.valueOf() / 864e5 - 0.5 + 2440588 - 2451545;
+  const M = rad * (357.5291 + 0.98560028 * d), C = rad * (1.9148 * Math.sin(M) + 0.02 * Math.sin(2 * M) + 0.0003 * Math.sin(3 * M));
+  const L = M + C + rad * 102.9372 + Math.PI, e = rad * 23.4397;
+  const dec = Math.asin(Math.sin(e) * Math.sin(L)), ra = Math.atan2(Math.sin(L) * Math.cos(e), Math.cos(L));
+  const phi = rad * lat, H = rad * (280.16 + 360.9856235 * d) + rad * lng - ra;
+  return { azimuth: Math.atan2(Math.sin(H), Math.cos(H) * Math.sin(phi) - Math.tan(dec) * Math.cos(phi)) + Math.PI, altitude: Math.asin(Math.sin(phi) * Math.sin(dec) + Math.cos(phi) * Math.cos(dec) * Math.cos(H)) };
+}
+function visDate() {
+  const t = VIS.date ? new Date(VIS.date + 'T00:00') : new Date(); t.setHours(0, 0, 0, 0);
+  return new Date(t.getTime() + VIS.min * 60000);
+}
+/* direction towards the sun in model space (north = −Z turned by VIS.north clockwise); null when it is below the horizon */
+const sunState = { alt: 1, aim: null };
+function sunDirLocal() {
+  if (sunState.aim) return sunState.aim.clone();
+  if (VIS.sunMode !== 'place') { const p = (ENV[prefs.env] || ENV.graphite).sunPos; sunState.alt = 1; return new V3(...p).normalize(); }
+  const { azimuth: A, altitude: h } = sunPosition(visDate(), VIS.lat, VIS.lng); sunState.alt = h;
+  const th = -VIS.north * Math.PI / 180, N = new V3(0, 0, -1).applyAxisAngle(UP, th), E = new V3(1, 0, 0).applyAxisAngle(UP, th);
+  return N.multiplyScalar(Math.cos(A)).addScaledVector(E, Math.sin(A)).multiplyScalar(Math.cos(h)).addScaledVector(UP, Math.sin(h)).normalize();
+}
+scene.add(sun.target);
+sun.shadow.mapSize.set(2048, 2048); sun.shadow.bias = -0.0004;
+/* shadow catcher: an invisible floor that only shows shadows — on the real floor in passthrough and AR, on the backdrop elsewhere */
+const catcher = new THREE.Mesh(new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2), new THREE.ShadowMaterial({ opacity: 0.34, depthWrite: false }));
+catcher.receiveShadow = true; catcher.matrixAutoUpdate = false; catcher.renderOrder = 1; scene.add(catcher);
+let envTex = null;
+function ensureEnv() { if (!envTex) { const pm = new THREE.PMREMGenerator(renderer); envTex = pm.fromScene(new RoomEnvironment(), 0.04).texture; pm.dispose(); } return envTex; }
+let shadowKey = '', estLight = null;
+const _sb = new THREE.Box3(), _sc = new V3(), _sq = new THREE.Quaternion();
+function updateLighting() {
+  const z = sceneSize();
+  scene.environment = VIS.refl ? (estLight?.on && xrEst.environment ? xrEst.environment : ensureEnv()) : null;
+  if (!z) { catcher.visible = false; return; }
+  holder.updateMatrixWorld();
+  const k = holder.scale.x, R = Math.max(z.x, z.y, z.z) * 0.75 * k + 0.5 * k;
+  _sc.set(0, z.y / 2, 0).applyMatrix4(holder.matrixWorld);
+  let dirW;
+  if (estLight?.on) {                                   // Android AR: the real light, estimated by ARCore
+    dirW = xrEst.directionalLight.position.clone(); if (dirW.lengthSq() < 1e-6) dirW.set(0.3, 1, 0.2); dirW.normalize();
+    sun.intensity = xrEst.directionalLight.intensity; sun.color.copy(xrEst.directionalLight.color);
+  } else { const dl = sunDirLocal(); dirW = dl.transformDirection(holder.matrixWorld); }
+  const night = VIS.sunMode === 'place' && !sunState.aim && !estLight?.on && sunState.alt < 0;
+  /* low sun: warmer and weaker; below the horizon: no direct light, darker sky */
+  if (!estLight?.on) {
+    const base = (state.view === 'orbit' || state.view === 'walk' || (state.view === 'xr' && !state.passthrough)) ? (ENV[prefs.env] || ENV.graphite) : ENV.graphite;
+    if (VIS.sunMode === 'place' && !sunState.aim) {
+      const f = THREE.MathUtils.clamp(Math.sin(sunState.alt) * 3, 0, 1);
+      sun.intensity = base.sunI * f; sun.color.set(base.sun).lerp(new THREE.Color('#ff9a5a'), 1 - THREE.MathUtils.clamp(Math.sin(sunState.alt) * 2.2, 0, 1));
+      hemi.intensity = base.hemi * (night ? 0.35 : 0.55 + 0.45 * f);
+    } else { sun.intensity = base.sunI; sun.color.set(base.sun); hemi.intensity = base.hemi; }
+    if (VIS.refl) hemi.intensity *= 0.72;                       // the environment already adds soft light
+  }
+  sun.position.copy(_sc).addScaledVector(dirW, R * 2); sun.target.position.copy(_sc); sun.target.updateMatrixWorld();
+  const cast = VIS.shadows && !night && sun.intensity > 0.01;
+  if (sun.castShadow !== cast) { sun.castShadow = cast; shadowKey = ''; }
+  catcher.visible = cast;
+  if (cast) {
+    const cam = sun.shadow.camera;
+    fitShadow(z, dirW, R);
+    sun.shadow.normalBias = (Math.max(cam.right - cam.left, cam.top - cam.bottom) / 2048) * 1.5;
+    holder.getWorldQuaternion(_sq);
+    catcher.matrix.compose(_sb.min.set(0, 0.002, 0).applyMatrix4(holder.matrixWorld), _sq, _sb.max.setScalar(Math.max(z.x, z.z) * 4 * k + 20 * k).setY(1));
+    catcher.matrixWorldNeedsUpdate = true;
+    const key = [dirW.x.toFixed(4), dirW.y.toFixed(4), dirW.z.toFixed(4), _sc.x.toFixed(3), _sc.y.toFixed(3), _sc.z.toFixed(3), R.toFixed(3), _sq.x.toFixed(4), _sq.y.toFixed(4), shadowsVersion, secWorld.normal.x.toFixed(3), secWorld.normal.y.toFixed(3), secWorld.constant.toFixed(3), sec.on].join();
+    if (key !== shadowKey) { shadowKey = key; cam.updateProjectionMatrix(); renderer.shadowMap.needsUpdate = true; }
+  }
+}
+let shadowsVersion = 0, xrEst = null;
+/* the shadow camera covers the model and the shadow it casts on the ground (long at a low sun), and nothing more */
+const _lc = new THREE.OrthographicCamera(), _pt = new V3(), _mn = new V3(), _mx = new V3();
+function fitShadow(z, dirW, R) {
+  const k = holder.scale.x, inv = holder.matrixWorld.clone().invert(), dL = dirW.clone().transformDirection(inv);
+  const maxLen = Math.max(z.x, z.y, z.z) * 4;
+  _lc.position.copy(sun.position); _lc.lookAt(sun.target.position); _lc.updateMatrixWorld(); _lc.matrixWorldInverse.copy(_lc.matrixWorld).invert();
+  _mn.setScalar(Infinity); _mx.setScalar(-Infinity);
+  const add = p => { _pt.copy(p).applyMatrix4(holder.matrixWorld).applyMatrix4(_lc.matrixWorldInverse); _mn.min(_pt); _mx.max(_pt); };
+  for (const x of [-z.x / 2, z.x / 2]) for (const y of [0, z.y]) for (const w of [-z.z / 2, z.z / 2]) {
+    const p = new V3(x, y, w); add(p);
+    if (y > 0 && dL.y > 0.02) add(p.clone().addScaledVector(dL, -Math.min(y / dL.y, maxLen)).setY(0));
+  }
+  const m = 0.5 * k + (_mx.x - _mn.x) * 0.02, cam = sun.shadow.camera;
+  cam.left = _mn.x - m; cam.right = _mx.x + m; cam.bottom = _mn.y - m; cam.top = _mx.y + m;
+  cam.near = Math.max(0.01, -_mx.z - R); cam.far = -_mn.z + R;
+}
+function ensureEstLight() {
+  if (xrEst) return;
+  xrEst = new XREstimatedLight(renderer); xrEst.directionalLight.visible = false;     // copied into our own sun, which casts the shadows
+  xrEst.addEventListener('estimationstart', () => { scene.add(xrEst); estLight = { on: true }; hemi.visible = false; shadowsDirty(); });
+  xrEst.addEventListener('estimationend', () => { scene.remove(xrEst); estLight = null; hemi.visible = true; shadowsDirty(); });
+}
+function shadowsDirty() { shadowsVersion++; }
+/* screen-space ambient occlusion: browser views only (in the headset it would cost twice — once per eye) */
+let composer = null, gtao = null;
+function aoActive() { return VIS.ao && (state.view === 'orbit' || state.view === 'walk') && !cb.on && !renderer.xr.isPresenting; }
+function ensureComposer() {
+  if (composer) return composer;
+  const sz = renderer.getDrawingBufferSize(new THREE.Vector2());
+  const rt = new THREE.WebGLRenderTarget(sz.x, sz.y, { type: THREE.HalfFloatType, samples: 4 });
+  composer = new EffectComposer(renderer, rt); composer.setPixelRatio(renderer.getPixelRatio());
+  composer.addPass(new RenderPass(scene, camera));
+  gtao = new GTAOPass(scene, camera, sz.x, sz.y);
+  gtao.updateGtaoMaterial({ radius: 0.6, distanceExponent: 1, thickness: 1, scale: 1, samples: 12, distanceFallOff: 1 });
+  gtao.updatePdMaterial({ lumaPhi: 10, depthPhi: 2, normalPhi: 3, radius: 6, rings: 2, samples: 12 });
+  gtao.blendIntensity = 0.85;
+  composer.addPass(gtao); composer.addPass(new OutputPass());
+  resizeComposer(); return composer;
+}
+function resizeComposer() { if (!composer) return; const v = $('#view'); composer.setPixelRatio(renderer.getPixelRatio()); composer.setSize(v.clientWidth, v.clientHeight); }
+/* UI objects (labels, markers, strokes, previews, gizmo) live on their own layer: with AO on they are drawn after the
+   AO pass, so they are neither shaded by it nor tone-mapped */
+const UI_LAYER = 5;
+camera.layers.enable(UI_LAYER);
+function toUI(o) { o.traverse(x => { if (x.material && x.material !== PICK_MAT && (x.isSprite || x.material.isMeshBasicMaterial || x.material.isLineBasicMaterial)) x.layers.set(UI_LAYER); }); return o; }
+function renderFrame() {
+  if (aoActive()) {
+    ensureComposer();
+    const z = sceneSize(); if (z) gtao.updateGtaoMaterial({ radius: THREE.MathUtils.clamp(Math.max(z.x, z.y, z.z) * 0.04, 0.05, 1.5) * holder.scale.x });
+    toUI(previewGroup);
+    camera.layers.disable(UI_LAYER); composer.render();
+    camera.layers.set(UI_LAYER); const ac = renderer.autoClear, bg = scene.background, sm = renderer.shadowMap.enabled;
+    renderer.autoClear = false; scene.background = null; renderer.shadowMap.enabled = false; renderer.render(scene, camera); renderer.autoClear = ac; scene.background = bg; renderer.shadowMap.enabled = sm;
+    camera.layers.enable(0);
+  } else renderer.render(scene, camera);
+}
+/* edge lines: thin dark outlines on every crease of the model (architectural line drawing), built once per model */
+const EDGE_LINE = new THREE.LineBasicMaterial({ color: 0x23272b, transparent: true, opacity: 0.85 });
+let edgesBusy = false, edgesAgain = false;
+async function applyEdges() {
+  if (edgesBusy) { edgesAgain = true; return; }
+  edgesBusy = true;
+  try { do { edgesAgain = false; await applyEdgesOnce(); } while (edgesAgain); } finally { edgesBusy = false; busy(false); }
+}
+async function applyEdgesOnce() {
+  const recs = state.models.filter(r => r.built);
+  const heavy = recs.reduce((a, r) => a + (r.shown && VIS.edges ? r.meshes.filter(m => !m.userData.edges).reduce((b, m) => b + m.geometry.attributes.position.count, 0) : 0), 0) > 3e5;
+  for (const r of recs) for (const m of r.meshes) {
+    const want = VIS.edges && r.shown;
+    if (!want) { if (m.userData.edges) m.userData.edges.visible = false; m.material.polygonOffset = false; continue; }
+    if (!m.userData.edges) {
+      if (m.geometry.attributes.position.count > 1.8e6) continue;          // too heavy to outline in the browser
+      if (heavy) { busy('Строю линии рёбер…'); await pause(); }
+      const e = new THREE.LineSegments(new THREE.EdgesGeometry(m.geometry, 25), EDGE_LINE); e.userData.sharedMat = true; e.raycast = () => {};
+      m.add(e); m.userData.edges = e;
+    }
+    m.userData.edges.visible = true;
+  }
+  for (const r of recs) for (const m of r.meshes) { const on = VIS.edges && r.shown; for (const mat of [m.material, m.userData.orig]) if (mat.polygonOffset !== on) { mat.polygonOffset = on; mat.polygonOffsetFactor = 1; mat.polygonOffsetUnits = 1; mat.needsUpdate = true; } }
+  for (const mat of [CLAY, CLAY_GLASS]) if (mat.polygonOffset !== VIS.edges) { mat.polygonOffset = VIS.edges; mat.polygonOffsetFactor = 1; mat.polygonOffsetUnits = 1; mat.needsUpdate = true; }
+}
+function refreshEdges(m) { const e = m.userData.edges; if (!e) return; e.geometry.dispose(); e.geometry = new THREE.EdgesGeometry(m.geometry, 25); }
+
+
+/* visual settings panel */
+const hhmm = m => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
+function renderVis() {
+  $('#sunmode').querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.val === VIS.sunMode)));
+  $('#sunplace').hidden = VIS.sunMode !== 'place';
+  $('#sun-lat').value = VIS.lat; $('#sun-lng').value = VIS.lng;
+  $('#sun-date').value = VIS.date || new Date().toISOString().slice(0, 10);
+  $('#sun-time').value = VIS.min; $('#sun-time-t').textContent = hhmm(VIS.min);
+  $('#sun-north').value = VIS.north; $('#sun-north-t').textContent = `${VIS.north}°`;
+  const sp = sunPosition(visDate(), VIS.lat, VIS.lng), az = Math.round(sp.azimuth * 180 / Math.PI) % 360, h = Math.round(sp.altitude * 180 / Math.PI);
+  $('#sun-info').textContent = h < 0 ? `Солнце за горизонтом (${h}°) — ночь` : `Солнце: азимут ${az}° от севера, высота ${h}° над горизонтом. Время — по часам этого устройства. Север модели — ось −Z (в Rhino это +Y), ползунок «Север» поворачивает его.`;
+  $('#v-shadows').checked = VIS.shadows; $('#v-refl').checked = VIS.refl; $('#v-ao').checked = VIS.ao; $('#v-edges').checked = VIS.edges;
+}
+function visChanged() { saveVis(); renderVis(); shadowsDirty(); if (state.view === 'xr') drawPalette(); }
+$('#sunmode').addEventListener('click', e => { const b = e.target.closest('[data-val]'); if (!b) return; VIS.sunMode = b.dataset.val; sunState.aim = null; visChanged(); });
+$('#sun-lat').addEventListener('change', e => { const v = parseFloat(e.target.value); if (isFinite(v)) VIS.lat = THREE.MathUtils.clamp(v, -90, 90); visChanged(); });
+$('#sun-lng').addEventListener('change', e => { const v = parseFloat(e.target.value); if (isFinite(v)) VIS.lng = THREE.MathUtils.clamp(v, -180, 180); visChanged(); });
+$('#sun-date').addEventListener('change', e => { VIS.date = e.target.value; visChanged(); });
+$('#sun-time').addEventListener('input', e => { VIS.min = +e.target.value; visChanged(); });
+$('#sun-north').addEventListener('input', e => { VIS.north = +e.target.value; visChanged(); });
+$('#sun-geo').addEventListener('click', () => {
+  if (!navigator.geolocation) { toast('Это устройство не сообщает координаты — введите их вручную.', 'warn'); return; }
+  navigator.geolocation.getCurrentPosition(p => { VIS.lat = +p.coords.latitude.toFixed(4); VIS.lng = +p.coords.longitude.toFixed(4); visChanged(); toast('Координаты взяты с устройства.', 'ok'); },
+    () => toast('Не удалось получить координаты — разрешите доступ к местоположению или введите их вручную.', 'warn'), { timeout: 10000 });
+});
+$('#v-shadows').addEventListener('change', e => { VIS.shadows = e.target.checked; visChanged(); });
+$('#v-refl').addEventListener('change', e => { VIS.refl = e.target.checked; visChanged(); });
+$('#v-ao').addEventListener('change', e => { VIS.ao = e.target.checked; visChanged(); });
+$('#v-edges').addEventListener('change', e => { VIS.edges = e.target.checked; visChanged(); applyEdges(); });
+/* headset: move the sun by an hour, or point the controller at the window / real sun to set where light comes from */
+function sunStep(dm) {
+  if (VIS.sunMode !== 'place') { VIS.sunMode = 'place'; }
+  sunState.aim = null; VIS.min = THREE.MathUtils.clamp(VIS.min + dm, 180, 1380); visChanged();
+  const sp = sunPosition(visDate(), VIS.lat, VIS.lng);
+  flash(`Солнце ${hhmm(VIS.min)}${sp.altitude < 0 ? ' — за горизонтом' : ` · высота ${Math.round(sp.altitude * 180 / Math.PI)}°`}`);
+}
+
 /* ================= labels ================= */
 const labels = new Set();
 const LABEL_FONT = '"IBM Plex Sans", system-ui, sans-serif';
@@ -1475,7 +1727,7 @@ function makeNoteObj(n) {
   return g;
 }
 const END_GEO = new THREE.SphereGeometry(0.03, 10, 8);
-function mountNote(rec, n) { migrateNote(n); const o = makeNoteObj(n); rec.notesGroup.add(o); rec.noteObjs.set(n.id, o); if (o.userData.billboard) billboards.add(o); }
+function mountNote(rec, n) { migrateNote(n); const o = toUI(makeNoteObj(n)); rec.notesGroup.add(o); rec.noteObjs.set(n.id, o); if (o.userData.billboard) billboards.add(o); }
 
 const undoStack = [];
 function addNote(n, record = true, rec = null) {
@@ -1697,7 +1949,7 @@ $('#dlg-cancel').addEventListener('click', () => closeDialog(null));
 $('#dlg-text').addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); $('#dlg').requestSubmit(); } if (e.key === 'Escape') closeDialog(null); });
 
 /* ================= hit testing ================= */
-const raycaster = new THREE.Raycaster(); raycaster.firstHitOnly = true;
+const raycaster = new THREE.Raycaster(); raycaster.firstHitOnly = true; raycaster.layers.enableAll();
 const holderInv = new THREE.Matrix4();
 const _q = new THREE.Quaternion(), _v = new V3(), _o = new V3(), _d = new V3();
 function localRay(wr) { holder.updateMatrixWorld(); holderInv.copy(holder.matrixWorld).invert(); return wr.clone().applyMatrix4(holderInv); }
@@ -1775,7 +2027,7 @@ function dotTexture(snap, col = '#ffffff') {
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
 }
 const CUR_MATS = { free: new THREE.SpriteMaterial({ map: dotTexture(false), depthTest: false, transparent: true }), snap: new THREE.SpriteMaterial({ map: dotTexture(true), depthTest: false, transparent: true }) };
-const cursor = new THREE.Sprite(CUR_MATS.free); cursor.renderOrder = 30; cursor.visible = false; scene.add(cursor);
+const cursor = new THREE.Sprite(CUR_MATS.free); cursor.renderOrder = 30; cursor.visible = false; cursor.layers.set(5); scene.add(cursor);
 let snapCol = '';
 function setCursor(pos, snap = false) {
   if (snap && snapCol !== curColor()) { snapCol = curColor(); CUR_MATS.snap.map.dispose(); CUR_MATS.snap.map = dotTexture(true, snapCol); CUR_MATS.snap.needsUpdate = true; }   // snapped dot takes the palette colour
@@ -2087,7 +2339,7 @@ function selectPick(pk) {
     const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); g.computeBoundingBox(); g.computeBoundingSphere();
     const vis = new THREE.Group(); vis.add(new THREE.Mesh(g, SEL_MAT)); vis.renderOrder = 2;
     const bh = new THREE.Box3Helper(g.boundingBox.clone(), SEL_COLOR); bh.material.depthTest = false; bh.material.transparent = true; bh.renderOrder = 14; vis.add(bh);
-    rec.xf.add(vis); sel.vis = vis; sel.box = g.boundingBox.clone();
+    rec.xf.add(toUI(vis)); sel.vis = vis; sel.box = g.boundingBox.clone();
   } else { sel.id = pk.id; tintNote(pk.id, true, SEL_COLOR); }
   placeGizmo(); updateTip();
 }
@@ -2117,7 +2369,7 @@ function selDragTo(pw) {
 }
 function moveSel(dl) {
   const rec = selRec(); if (!rec) return;
-  sel.drag.acc.add(dl);
+  sel.drag.acc.add(dl); shadowsDirty();
   if (sel.kind === 'part') { const df = toFileDelta(rec, dl); shiftPart(sel.part, df, false); sel.vis.position.add(df); }
   else rec.noteObjs.get(sel.id)?.position.add(dl);
 }
@@ -2127,7 +2379,7 @@ function selDragEnd() {
   if (!rec || d.lengthSq() < 1e-12) return;
   if (sel.kind === 'part') {
     const df = toFileDelta(rec, d);
-    for (const [m] of sel.part.ranges) refitMesh(m);
+    for (const [m] of sel.part.ranges) { refitMesh(m); refreshEdges(m); }
     addPartMove(rec, sel.part.pid, df);
     undoStack.push({ op: 'movepart', recId: rec.id, pid: sel.part.pid, d: [df.x, df.y, df.z] });
     schedulePersist(rec); renderSettings();
@@ -2141,7 +2393,7 @@ function selDragEnd() {
 function undoMove(op, rec) {
   if (op.op === 'movepart') {
     const part = rec.parts.get(op.pid); if (!part) return;
-    const df = vec(op.d).negate(); shiftPart(part, df); addPartMove(rec, op.pid, df);
+    const df = vec(op.d).negate(); shiftPart(part, df); addPartMove(rec, op.pid, df); for (const [m] of part.ranges) refreshEdges(m); shadowsDirty();
     if (sel?.part === part) sel.vis.position.add(df);
     schedulePersist(rec); renderSettings();
   } else {
@@ -2266,7 +2518,7 @@ const vrShots = [];
 function vrSnapshot() {
   const xrCam = renderer.xr.getCamera(), eye = xrCam.cameras?.[0] || xrCam;
   const W = 1920, H = 1080, rt = new THREE.WebGLRenderTarget(W, H, { samples: 4 }); rt.texture.colorSpace = THREE.SRGBColorSpace;
-  const cam = new THREE.PerspectiveCamera(75, W / H, 0.03, 3000); eye.matrixWorld.decompose(cam.position, cam.quaternion, new V3()); cam.updateMatrixWorld();
+  const cam = new THREE.PerspectiveCamera(75, W / H, 0.03, 3000); cam.layers.mask = camera.layers.mask; eye.matrixWorld.decompose(cam.position, cam.quaternion, new V3()); cam.updateMatrixWorld();
   const xrOn = renderer.xr.enabled; renderer.xr.enabled = false;
   const bg = scene.background; if (!bg) scene.background = new THREE.Color(0x1b2024);         // passthrough cannot be captured: dark backdrop instead
   hideCursor(); renderer.setRenderTarget(rt); renderer.render(scene, cam); renderer.setRenderTarget(null);
@@ -2309,7 +2561,7 @@ const secFill = new THREE.Mesh(new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 
 const secGrid = new THREE.GridHelper(1, 20, 0xd8a33f, 0xd8a33f); secGrid.material.transparent = true; secGrid.material.opacity = 0.35; secGrid.material.depthWrite = false;
 const secEdge = new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints([new V3(-0.5, 0, -0.5), new V3(0.5, 0, -0.5), new V3(0.5, 0, 0.5), new V3(-0.5, 0, 0.5)]), new THREE.LineBasicMaterial({ color: 0xd8a33f }));
 const secArrow = new THREE.ArrowHelper(UP, new V3(), 0.07, 0xd8a33f, 0.025, 0.016);
-secVis.add(secFill, secGrid, secEdge, secArrow);
+secVis.add(secFill, secGrid, secEdge, secArrow); toUI(secVis);
 function updateSection() {
   const rec = activeRec(), on = sec.on && !!rec?.built;
   for (const m of [...state.models.filter(r => r.built).flatMap(r => r.meshes), { material: SEL_MAT }]) { const want = on ? SEC_PLANES : null; if (m.material.clippingPlanes !== want) { m.material.clippingPlanes = want; m.material.needsUpdate = true; } }
@@ -2603,7 +2855,7 @@ function cbRender() {
   if (!cb.rt || cb.rt.width !== sz.x || cb.rt.height !== sz.y) { cb.rt?.dispose(); cb.rt = new THREE.WebGLRenderTarget(sz.x, sz.y, { samples: 4 }); cb.rt.texture.colorSpace = THREE.SRGBColorSpace; }
   const w = Math.floor(sz.x / 2), h = sz.y, P = CB_PRESETS[cb.preset] || CB_PRESETS.homido;
   camera.aspect = w / h; camera.fov = cb.fov; camera.focus = 100; camera.updateProjectionMatrix(); camera.updateMatrixWorld();
-  cbStereo.eyeSep = cb.ipd; cbStereo.update(camera);
+  cbStereo.eyeSep = cb.ipd; cbStereo.update(camera); cbStereo.cameraL.layers.mask = cbStereo.cameraR.layers.mask = camera.layers.mask;
   for (const [cam, x] of [[cbStereo.cameraL, 0], [cbStereo.cameraR, w]]) {
     cb.rt.viewport.set(x, 0, w, h); cb.rt.scissor.set(x, 0, w, h); cb.rt.scissorTest = true;
     renderer.setRenderTarget(cb.rt); renderer.render(scene, cam);
@@ -2791,7 +3043,7 @@ function frame() {
 function onResize() {
   if (renderer.xr.isPresenting) return;
   const v = $('#view'); const w = v.clientWidth, h = v.clientHeight; if (!w || !h) return;
-  renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix();
+  renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); resizeComposer();
 }
 new ResizeObserver(onResize).observe($('#view'));
 
@@ -2872,11 +3124,10 @@ function layoutFace(f) {
     row3(Y, [state.sessionMode === 'immersive-ar' && ['pt', 'Сквозной'], ['table', '1:1 ↔ макет'], ['start', 'Ко входу']].filter(Boolean));
     row3(Y + 108, [state.mode === 'walk' && ['grav', 'Гравитация'], state.mode === 'walk' && ['coll', 'Стены'], ['place', 'Макет передо мной']].filter(Boolean));
     [['env:graphite', 'Графит'], ['env:sky', 'Небо'], ['env:studio', 'Студия'], ['env:evening', 'Вечер']].forEach(([id, label], i) => B.push({ id, label, x: 24 + i * 246, y: Y + 216, w: 236, h: 96 }));
-    row3(Y + 324, [['next', 'Следующая модель'], ['hud', 'Скрыть меню']]);
-    B.push({ id: 'tilt:-', label: 'Наклон −', x: 684, y: Y + 324, w: 153, h: 96 }); B.push({ id: 'tilt:+', label: 'Наклон +', x: 847, y: Y + 324, w: 153, h: 96 });
+    [['sun:-', 'Солнце −1 ч'], ['sun:+', 'Солнце +1 ч'], ['sun:aim', sunState.aim || state.sunAim ? 'Свет: сбросить' : 'Свет рукой'], ['tilt:-', 'Наклон −'], ['tilt:+', 'Наклон +']].forEach(([id, label], i) => B.push({ id, label, x: 24 + i * 197, y: Y + 324, w: 187, h: 96 }));
     B.push({ id: 'shot', label: 'Снимок', x: 24, y: Y + 432, w: 240, h: 84 });
     B.push({ id: 'align', label: state.alignRel ? 'Снять привязку' : 'Привязка по реперам', x: 280, y: Y + 432, w: 400, h: 84 });
-    B.push({ id: 'info', label: 'Видео: Meta → Камера', x: 696, y: Y + 432, w: 304, h: 84, kind: 'text' });
+    B.push({ id: 'hud', label: 'Скрыть меню', x: 696, y: Y + 432, w: 304, h: 84 });
   } else if (tab === 'notes') {
     const list = sortedNotes(), per = 5, { page } = pageOf('notes', list.length, per);
     list.slice(page * per, page * per + per).forEach((n, k) => {
@@ -2929,6 +3180,7 @@ function drawFace(f) {
     if (b.id === 'al:scale') active = !!state.align?.scale;
     else if (b.id.startsWith('al:go:')) active = +b.id.slice(6) === state.align?.i;
     else if (b.id === 'align') active = !!state.alignRel;
+    else if (b.id === 'sun:aim') active = !!state.sunAim;
     const s = rec?.settings;
     if (b.id === 'pt') { active = state.sessionMode === 'immersive-ar' && state.passthrough; label = state.sessionMode === 'immersive-ar' ? (state.passthrough ? 'Сквозной: вкл' : 'Сквозной: выкл') : 'Сквозной —'; }
     else if (b.id === 'table') { active = state.mode === 'table'; label = state.mode === 'table' ? 'Макет → 1:1' : '1:1 → макет'; }
@@ -3025,6 +3277,8 @@ function palClick(id) {
   else if (id.startsWith('up:')) changeModelSetting('zUp', id.slice(3) === 'true');
   else if (id === 'clay' && rec?.built) changeModelSetting('clay', !rec.settings.clay);
   else if (id === 'shot') vrSnapshot();
+  else if (id === 'sun:-' || id === 'sun:+') sunStep(id === 'sun:+' ? 60 : -60);
+  else if (id === 'sun:aim') { if (sunState.aim || state.sunAim) { sunState.aim = null; state.sunAim = false; flash('Свет снова по настройкам солнца'); shadowsDirty(); } else { state.sunAim = true; flash('Направьте контроллер туда, откуда идёт свет (окно, солнце), и нажмите курок'); } layoutPalette(); }
   else if (id === 'align') { if (state.alignRel) alignClear(); else startAlign(); }
   else if (id.startsWith('al:')) {
     const a = state.align; if (!a) return;
@@ -3488,7 +3742,7 @@ function pollInput(dt) {
 let palThrottle = 0;
 function drawPaletteThrottled() { const t = performance.now(); if (t - palThrottle > 120) { palThrottle = t; drawPalette(); } }
 
-const panelHits = new THREE.Raycaster();
+const panelHits = new THREE.Raycaster(); panelHits.layers.enableAll();
 let vrDrag = null;
 function handleRightPointer(pads) {
   const r = ctrlFor('right'); hideCursor();
@@ -3513,6 +3767,11 @@ function handleRightPointer(pads) {
     if (down && ui.btn && ui.btn.kind !== 'text') { buzz('right', 0.45, 30); ui.p.click(ui.btn.id); state.uiCapture = true; }
   } else if (state.uiCapture || kbd.open || state.grab) {
     if (!trig) state.uiCapture = false;
+  } else if (state.sunAim) {
+    holder.updateMatrixWorld(); const inv = new THREE.Matrix4().copy(holder.matrixWorld).invert();
+    sunState.aim = wr.direction.clone().transformDirection(inv); if (sunState.aim.y < 0.05) { sunState.aim.y = 0.05; sunState.aim.normalize(); }
+    r.ray.material.color.set(0xffd36b); len = 3;
+    if (down) { state.sunAim = false; buzz('right', 0.5, 30); flash('Свет зафиксирован'); layoutPalette(); }
   } else if (state.align) {
     len = 0;
     if (down && state.align.refs[state.align.i]) { rig.updateMatrixWorld(); alignMark(rig.worldToLocal(tipWorld(r.c))); buzz('right', 0.7, 40); }
@@ -3688,7 +3947,8 @@ async function enterPhoneAR() {
   if (state.view === 'walk') exitWalk();
   let session;
   try {
-    session = await navigator.xr.requestSession('immersive-ar', { requiredFeatures: ['hit-test'], optionalFeatures: ['dom-overlay', 'local-floor'], domOverlay: { root: $('#arui') } });
+    ensureEstLight();
+    session = await navigator.xr.requestSession('immersive-ar', { requiredFeatures: ['hit-test'], optionalFeatures: ['dom-overlay', 'local-floor', 'light-estimation'], domOverlay: { root: $('#arui') } });
   } catch (e) { toast('Не удалось запустить AR: ' + e.message, 'bad'); return; }
   renderer.xr.setReferenceSpaceType('local');
   await renderer.xr.setSession(session);
@@ -3811,13 +4071,13 @@ renderer.setAnimationLoop((t, xrFrame) => {
   else if (state.view === 'walk') { if (cb.on) cbPre(); walkUpdate(dt); if (cb.on) cbPost(dt); }
   else { flyUpdate(dt); controls.update(); }
   if (sky.visible) { sky.position.copy(camera.getWorldPosition(_v)); sky.scale.setScalar(Math.min(1, camera.far * 0.9 / 1000)); }
-  updateSection(); updateBillboards(); updateLabels(); updateCursor();
-  if (cb.on) cbRender(); else renderer.render(scene, camera);
+  updateSection(); updateBillboards(); updateLabels(); updateCursor(); updateLighting();
+  if (cb.on) cbRender(); else renderFrame();
 });
 
 (async () => {
   { const sc = allColors().indexOf(lsGet('vrtrip-color') || ''); state.color = sc >= 0 ? sc : 1; }
-  renderPrefs(); updateCanvasCursor(); onResize(); frame(); renderList(); renderSettings(); renderNotes(); renderToolbar(); updateTip(); applyEnv();
+  renderPrefs(); renderVis(); updateCanvasCursor(); onResize(); frame(); renderList(); renderSettings(); renderNotes(); renderToolbar(); updateTip(); applyEnv();
   document.querySelectorAll('details.sec').forEach(d => {      // remember which panel sections are collapsed
     if (lsGet('vrtrip-open-' + d.id) === '0') d.open = false;
     d.addEventListener('toggle', () => lsSet('vrtrip-open-' + d.id, d.open ? '1' : '0'));
