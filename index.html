@@ -87,7 +87,19 @@ h2{display:flex;align-items:center;gap:10px;margin:0;font:600 16px/1.2 var(--f-b
 .models li{display:flex;gap:6px}
 .pick{flex:1;min-width:0;text-align:left;display:flex;flex-direction:column;gap:2px;padding:9px 12px;border:1px solid var(--line);border-radius:8px;background:transparent;color:var(--fg);cursor:pointer}
 .pick:hover{border-color:var(--line-strong)}
-.pick[aria-current="true"]{border-color:var(--accent);background:var(--accent-wash)}
+.pick{flex-direction:row;align-items:center;gap:10px}
+.ptxt{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}
+.pick .box{flex:none;width:18px;height:18px;border:1.5px solid var(--line-strong);border-radius:5px;display:grid;place-items:center}
+.pick[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-wash)}
+.pick[aria-pressed="true"] .box{background:var(--accent);border-color:var(--accent)}
+.pick[aria-pressed="true"] .box::after{content:'';width:5px;height:9px;border:solid var(--accent-ink);border-width:0 2px 2px 0;transform:translateY(-1px) rotate(45deg)}
+.pick[aria-pressed="false"] .name{color:var(--muted)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chips button{border:1px solid var(--line);background:transparent;color:var(--fg);border-radius:999px;padding:5px 11px;font-size:13px;cursor:pointer;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chips button:hover{border-color:var(--accent)}
+.chips button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.seg button.mixed{background:repeating-linear-gradient(135deg,var(--raise) 0 5px,transparent 5px 10px);color:var(--fg);box-shadow:inset 0 0 0 1px var(--line-strong)}
+.lbl .mixtag{margin-left:6px;font:11px var(--f-mono);color:var(--muted);border:1px dashed var(--line-strong);border-radius:4px;padding:0 5px}
 .pick .name{font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .pick .meta{font:12px/1.3 var(--f-mono);color:var(--muted);font-variant-numeric:tabular-nums}
 .del{min-width:44px;border:1px solid var(--line);border-radius:8px;background:transparent;color:var(--muted);cursor:pointer;font-size:17px}
@@ -255,6 +267,7 @@ h2{display:flex;align-items:center;gap:10px;margin:0;font:600 16px/1.2 var(--f-b
     </form>
     <button class="link" id="sample" type="button">Добавить пример — двухэтажный павильон</button>
     <h3 class="sub">Экспозиция</h3>
+    <p class="note">Щёлкните по модели, чтобы добавить её в сцену или убрать. В сцене может быть сколько угодно моделей сразу.</p>
     <ul id="models" class="models"></ul>
     </div>
   </details>
@@ -262,6 +275,10 @@ h2{display:flex;align-items:center;gap:10px;margin:0;font:600 16px/1.2 var(--f-b
   <details class="sec off" id="sec-set" open>
     <summary><h2><span class="step">02</span>Масштаб</h2></summary>
     <div class="sec-body">
+    <div class="field" id="targetfield" hidden>
+      <span class="lbl" id="l-target">Настройки применяются к</span>
+      <div class="chips" id="targets" role="group" aria-labelledby="l-target"></div>
+    </div>
     <div class="dims">
       <b id="dims">—</b>
       <small>ширина × глубина × высота</small>
@@ -496,7 +513,7 @@ const UP = new V3(0, 1, 0), DOWN = new V3(0, -1, 0);
 const UNITS = { mm: 0.001, cm: 0.01, m: 1, in: 0.0254, ft: 0.3048 };
 const TABLE_STEPS = [20, 50, 100, 200, 500, 1000];
 const EYE = 1.65, STEP = 0.45, RADIUS = 0.3, GRAV = 9.8;
-const APP_VERSION = '2.4';
+const APP_VERSION = '2.5';
 const BASE_COLORS = ['#f2efe8', '#d8a33f', '#e0604a', '#3f86c9'];
 const STAR_LOGO = 'data:image/png;base64,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';
 const KINDS = { issue: { label: 'Замечание', color: '#e0604a' }, question: { label: 'Вопрос', color: '#d8a33f' }, idea: { label: 'Идея', color: '#4fae7f' } };
@@ -623,6 +640,18 @@ const state = {
 };
 const xrSupport = { ar: false, vr: false };
 const activeRec = () => state.models[state.active] || null;
+/* exposition: any number of models can be in the scene at once; the "active" one is the last one switched on */
+const shownRecs = () => state.models.filter(r => r.shown && r.built);
+const recById = id => state.models.find(r => r.id === id) || null;
+const recOfMesh = o => (o && shownRecs().find(r => r.meshes.includes(o))) || null;
+const recOfNote = id => shownRecs().find(r => r.noteObjs?.has(id)) || null;
+const allMeshes = () => shownRecs().flatMap(r => r.meshes);
+/* which models the «Масштаб» settings change: all models in the scene, or one picked by its chip */
+function targetRecs() { const all = shownRecs(); const one = all.find(r => r.id === state.setTarget); return one ? [one] : all; }
+function sceneSize() {
+  const v = new V3(); for (const r of shownRecs()) v.max(r.size);
+  return shownRecs().length ? v : null;
+}
 const isReady = () => !!activeRec()?.built;
 
 /* ================= geometry pipeline ================= */
@@ -974,48 +1003,71 @@ async function addModel(rec) {
   rec.order = Date.now() + Math.random();
   state.models.push(rec);
   await persist(rec);
-  await activate(state.models.length - 1);
+  await showModel(state.models.length - 1, true, { frameAll: true });     // a new model joins the scene next to what is already shown
 }
 
 async function addSample() {
   const existing = state.models.findIndex(m => m.sample);
-  if (existing >= 0) return activate(existing);
+  if (existing >= 0) return showModel(existing, true, { frameAll: true });
   const rec = { id: 'sample-pavilion-2', name: 'Павильон (пример)', sample: true, settings: null };
   busy('Строю пример…');
   try { await buildModel(rec); await addModel(rec); } finally { busy(false); }
 }
 
+async function ensureBuilt(rec) {
+  if (rec.built) return true;
+  if (state.view === 'xr') { palMessage = 'Загружаю модель…'; drawPalette(); await pause(60); }
+  busy(`Открываю «${rec.name}»…`);
+  try { await buildModel(rec); return true; }
+  catch (e) { toast(`${rec.name}: ${e.message}`, 'bad'); console.error(e); return false; }
+  finally { busy(false); palMessage = ''; }
+}
+function mountScene() {
+  holder.clear();
+  for (const r of shownRecs()) holder.add(r.root, r.notesGroup);
+  holder.add(previewGroup, secVis);
+  lsSet('vrtrip-shown', JSON.stringify(state.models.filter(r => r.shown).map(r => r.id)));
+}
+function afterSceneChange() { renderList(); renderSettings(); renderNotes(); renderToolbar(); updateModeButtons(); if (state.view === 'xr') layoutPalette(); }
+/* switch one model on or off in the scene (the exposition list works like checkboxes) */
+async function showModel(i, on, { frameAll = false } = {}) {
+  const rec = state.models[i]; if (!rec) return;
+  cancelTool(); clearSelection();
+  const wasEmpty = !shownRecs().length;
+  if (on && !(await ensureBuilt(rec))) { afterSceneChange(); return; }
+  rec.shown = on;
+  if (on) { state.active = i; lsSet('obhod-active', rec.id); }
+  else if (state.active === i) { const k = state.models.findIndex(r => r.shown && r.built); state.active = k; }
+  if (!shownRecs().length) secOff();
+  mountScene(); afterSceneChange();
+  if (on && (wasEmpty || frameAll)) reframe();
+}
+/* solo: only this model in the scene (Y in the headset, "next model") */
 async function activate(i) {
   const rec = state.models[i]; if (!rec) return;
   cancelTool(); clearSelection();
-  if (!rec.built) {
-    if (state.view === 'xr') { palMessage = 'Загружаю модель…'; drawPalette(); await pause(60); }
-    busy(`Открываю «${rec.name}»…`);
-    try { await buildModel(rec); }
-    catch (e) { toast(`${rec.name}: ${e.message}`, 'bad'); console.error(e); busy(false); palMessage = ''; drawPalette(); return; }
-    busy(false); palMessage = '';
-  }
-  holder.clear(); holder.add(rec.root, rec.notesGroup, previewGroup, secVis);
-  sec.on = false; sec.mode = 'fixed'; renderSecUI();
+  if (!(await ensureBuilt(rec))) return;
+  state.models.forEach(r => { r.shown = r === rec; });
   state.active = i; lsSet('obhod-active', rec.id);
-  undoStack.length = 0;
-  renderList(); renderSettings(); renderNotes(); renderToolbar();
-  state.tableRel = null;
+  sec.on = false; sec.mode = 'fixed'; renderSecUI();
+  mountScene(); afterSceneChange();
+  state.tableRel = null; reframe();
+}
+function reframe() {
   if (state.view === 'xr') { state.mode = 'walk'; state.grab = null; resetHolder(); toStart(); drawPalette(); }
   else if (state.view === 'walk') placeEntrance();
-  else frame(rec);
+  else frame();
 }
 
 async function removeModel(i) {
   const rec = state.models[i]; if (!rec) return;
   if (rec.built) disposeRec(rec);
+  clearSelection(); for (let k = undoStack.length - 1; k >= 0; k--) if (undoStack[k].recId === rec.id) undoStack.splice(k, 1);
   state.models.splice(i, 1); await unpersist(rec.id);
-  if (state.active === i) {
-    holder.clear(); state.active = -1;
-    if (state.models.length) await activate(Math.min(i, state.models.length - 1));
-    else if (state.view === 'walk') exitWalk();
-  } else if (state.active > i) state.active--;
-  renderList(); renderSettings(); renderNotes(); renderToolbar(); if (!activeRec()) frame(null);
+  const act = activeRec() === rec ? null : activeRec();
+  state.active = act ? state.models.indexOf(act) : state.models.findIndex(r => r.shown && r.built);
+  if (!shownRecs().length) { secOff(); if (state.view === 'walk') exitWalk(); }
+  mountScene(); afterSceneChange(); if (!shownRecs().length) frame();
 }
 
 /* ================= panel rendering ================= */
@@ -1026,13 +1078,15 @@ function renderList() {
   state.models.forEach((rec, i) => {
     const li = document.createElement('li');
     const pick = document.createElement('button'); pick.type = 'button'; pick.className = 'pick';
-    pick.setAttribute('aria-current', String(i === state.active));
+    pick.setAttribute('aria-pressed', String(!!rec.shown)); pick.title = rec.shown ? 'В сцене — нажмите, чтобы убрать' : 'Нажмите, чтобы добавить в сцену';
+    const box = document.createElement('span'); box.className = 'box'; box.setAttribute('aria-hidden', 'true');
     const n = document.createElement('span'); n.className = 'name'; n.textContent = rec.name;
     const meta = document.createElement('span'); meta.className = 'meta';
     const cnt = (rec.notes || []).length;
     meta.textContent = sizeText(rec.settings?.size) + (cnt ? ` · заметок: ${cnt}` : '');
-    pick.append(n, meta);
-    pick.addEventListener('click', () => { if (i !== state.active) activate(i); });
+    const txt = document.createElement('span'); txt.className = 'ptxt'; txt.append(n, meta);
+    pick.append(box, txt);
+    pick.addEventListener('click', () => showModel(i, !rec.shown));
     const del = document.createElement('button'); del.type = 'button'; del.className = 'del'; del.textContent = '×';
     del.setAttribute('aria-label', `Удалить «${rec.name}»`);
     del.addEventListener('click', () => {
@@ -1045,32 +1099,41 @@ function renderList() {
 }
 
 function renderSettings() {
-  const rec = activeRec(); const on = isReady();
+  const scene = shownRecs(), recs = targetRecs(), on = recs.length > 0;
+  $('#targetfield').hidden = scene.length < 2;
+  { const box = $('#targets'); box.textContent = ''; const cur = recs.length === 1 && scene.length > 1 ? recs[0].id : 'all';
+    for (const [id, label] of [['all', `Все в сцене · ${scene.length}`], ...scene.map(r => [r.id, r.name])]) { const b = document.createElement('button'); b.type = 'button'; b.dataset.id = id; b.textContent = label; b.title = label; b.setAttribute('aria-pressed', String(cur === id)); box.append(b); } }
   $('#sec-set').classList.toggle('off', !on);
-  document.querySelectorAll('#sec-set .seg button').forEach(b => { b.disabled = !on; });
+  document.querySelectorAll('#sec-set .seg button').forEach(b => { b.disabled = !on; b.classList.remove('mixed'); });
+  document.querySelectorAll('#sec-set .mixtag').forEach(x => x.remove());
   updateModeButtons();
-  if (!on) { $('#dims').textContent = '—'; $('#tris').textContent = ''; $('#autonote').hidden = true; document.querySelectorAll('#sec-set .seg button').forEach(b => b.setAttribute('aria-pressed', 'false')); return; }
-  const s = rec.settings;
-  $('#dims').textContent = sizeText(s.size);
-  const tris = $('#tris'); tris.textContent = `${fmtTris(rec.tris)} треугольников${rec.tris > 2e6 ? ' — тяжело для шлема, упростите модель' : ''}`;
-  tris.className = rec.tris > 2e6 ? 'warn' : '';
-  $('#autonote').hidden = !s.autoUnits;
-  { const k = Object.keys(s.moves || {}).length; $('#reset-moves').hidden = !k; $('#reset-moves').textContent = `Вернуть сдвинутые части на место · ${k}`; }
-  document.querySelectorAll('.seg[data-key]').forEach(seg => {
-    const k = seg.dataset.key;
-    seg.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(String(s[k]) === b.dataset.val)));
-  });
-  $('#tablescale').querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(+b.dataset.val === s.table)));
+  if (!on) { $('#dims').textContent = '—'; $('#tris').textContent = ''; $('#autonote').hidden = true; $('#reset-moves').hidden = true; document.querySelectorAll('#sec-set .seg button').forEach(b => b.setAttribute('aria-pressed', 'false')); return; }
+  const tri = recs.reduce((a, r) => a + r.tris, 0);
+  $('#dims').textContent = recs.length === 1 ? sizeText(recs[0].settings.size) : `${recs.length} ${plural(recs.length, 'модель', 'модели', 'моделей')} в сцене`;
+  const tris = $('#tris'); tris.textContent = `${fmtTris(tri)} треугольников${tri > 2e6 ? ' — тяжело для шлема, упростите модель' : ''}${recs.length > 1 ? ' · настройки ниже меняют все эти модели' : ''}`;
+  tris.className = tri > 2e6 ? 'warn' : '';
+  $('#autonote').hidden = !recs.some(r => r.settings.autoUnits);
+  { const k = recs.reduce((a, r) => a + Object.keys(r.settings.moves || {}).length, 0); $('#reset-moves').hidden = !k; $('#reset-moves').textContent = `Вернуть сдвинутые части на место · ${k}`; }
+  const paint = (seg, vals) => {
+    const mixed = new Set(vals).size > 1;
+    seg.querySelectorAll('button').forEach(b => { b.setAttribute('aria-pressed', String(!mixed && vals[0] === b.dataset.val)); b.classList.toggle('mixed', mixed && vals.includes(b.dataset.val)); });
+    if (mixed) { const l = document.getElementById(seg.getAttribute('aria-labelledby')); if (l) { const t = document.createElement('span'); t.className = 'mixtag'; t.textContent = 'разные'; l.append(t); } }
+  };
+  document.querySelectorAll('.seg[data-key]').forEach(seg => paint(seg, recs.map(r => String(r.settings[seg.dataset.key]))));
+  paint($('#tablescale'), recs.map(r => String(r.settings.table)));
 }
+function plural(n, a, b, c) { const m = n % 10, h = n % 100; return m === 1 && h !== 11 ? a : m >= 2 && m <= 4 && (h < 12 || h > 14) ? b : c; }
 
 document.querySelectorAll('.seg[data-key]').forEach(seg => seg.addEventListener('click', e => {
-  const b = e.target.closest('button'); const rec = activeRec(); if (!b || !rec?.built) return;
+  const b = e.target.closest('button'); if (!b || !targetRecs().length) return;
   const k = seg.dataset.key; let v = b.dataset.val; if (v === 'true' || v === 'false') v = v === 'true';
   changeModelSetting(k, v);
 }));
+$('#targets').addEventListener('click', e => { const b = e.target.closest('[data-id]'); if (!b) return; state.setTarget = b.dataset.id; renderSettings(); });
 $('#tablescale').addEventListener('click', e => {
-  const b = e.target.closest('button'); const rec = activeRec(); if (!b || !rec?.built) return;
-  rec.settings.table = +b.dataset.val; state.tableRel = null; renderSettings(); persist(rec);
+  const b = e.target.closest('button'); if (!b || !shownRecs().length) return;
+  for (const rec of targetRecs()) { rec.settings.table = +b.dataset.val; persist(rec); }
+  state.tableRel = null; renderSettings();
 });
 
 /* preferences */
@@ -1264,8 +1327,8 @@ const END_GEO = new THREE.SphereGeometry(0.03, 10, 8);
 function mountNote(rec, n) { migrateNote(n); const o = makeNoteObj(n); rec.notesGroup.add(o); rec.noteObjs.set(n.id, o); if (o.userData.billboard) billboards.add(o); }
 
 const undoStack = [];
-function addNote(n, record = true) {
-  const rec = activeRec(); if (!rec?.built) return null;
+function addNote(n, record = true, rec = null) {
+  rec ||= state.hitRec?.shown && state.hitRec.built ? state.hitRec : activeRec(); if (!rec?.built) return null;
   n.id = n.id || uid(); n.t = n.t || Date.now();
   rec.notes.push(n); mountNote(rec, n);
   if (record) undoStack.push({ op: 'add', id: n.id, recId: rec.id });
@@ -1273,7 +1336,7 @@ function addNote(n, record = true) {
   return n;
 }
 function removeNote(id, record = true) {
-  const rec = activeRec(); if (!rec?.built) return;
+  const rec = recOfNote(id); if (!rec?.built) return;
   const i = rec.notes.findIndex(n => n.id === id); if (i < 0) return;
   if (sel?.id === id) clearSelection();
   const [n] = rec.notes.splice(i, 1);
@@ -1282,23 +1345,23 @@ function removeNote(id, record = true) {
   schedulePersist(rec); renderNotes(); renderList();
 }
 function updateNote(n) {
-  const rec = activeRec(); if (!rec?.built) return;
+  const rec = recOfNote(n.id); if (!rec?.built) return;
   const o = rec.noteObjs.get(n.id); if (o) disposeObj(o);
   mountNote(rec, n); schedulePersist(rec); renderNotes();
 }
 function undo() {
-  const rec = activeRec(); const op = undoStack.pop();
-  if (!op || !rec || op.recId !== rec.id) { flash('Отменять нечего'); return; }
+  const op = undoStack.pop(); const rec = op ? recById(op.recId) : null;
+  if (!op || !rec?.built || !rec.shown) { flash('Отменять нечего'); return; }
   if (op.op === 'add') removeNote(op.id, false);
   else if (op.op === 'movepart' || op.op === 'movenote') undoMove(op, rec);
   else if (op.op === 'delmany') {
-    for (const it of [...op.items].sort((a, b) => a.index - b.index)) { addNote(it.note, false); const a = rec.notes; a.splice(a.indexOf(it.note), 1); a.splice(Math.min(it.index, a.length), 0, it.note); }
+    for (const it of [...op.items].sort((a, b) => a.index - b.index)) { const r = recById(it.recId) || rec; if (!r.built) continue; addNote(it.note, false, r); const a = r.notes; a.splice(a.indexOf(it.note), 1); a.splice(Math.min(it.index, a.length), 0, it.note); }
     renderNotes(); schedulePersist(rec);
   }
-  else { addNote(op.note, false); const arrN = rec.notes; arrN.splice(arrN.indexOf(op.note), 1); arrN.splice(Math.min(op.index, arrN.length), 0, op.note); renderNotes(); }
+  else { addNote(op.note, false, rec); const arrN = rec.notes; arrN.splice(arrN.indexOf(op.note), 1); arrN.splice(Math.min(op.index, arrN.length), 0, op.note); renderNotes(); }
   flash('Отменено');
 }
-function nextPinNum(rec) { return rec.notes.filter(n => n.type === 'pin').reduce((m, n) => Math.max(m, n.num || 0), 0) + 1; }
+function nextPinNum() { return shownRecs().flatMap(r => r.notes).filter(n => n.type === 'pin').reduce((m, n) => Math.max(m, n.num || 0), 0) + 1; }   // numbering runs through the whole scene
 function flash(msg) { if (state.view === 'xr') { palMessage = msg; drawPalette(); clearTimeout(flash.t); flash.t = setTimeout(() => { palMessage = ''; drawPalette(); }, 1800); } else toast(msg); }
 
 function noteSummary(n) {
@@ -1314,8 +1377,8 @@ function noteSummary(n) {
 function renderNotes() {
   if (state.view === 'xr' && (state.palTab === 'notes' || state.palTab === 'models')) layoutPalette();
   const ul = $('#notes'); ul.textContent = '';
-  const rec = activeRec(); const list = rec?.built ? rec.notes : [];
-  $('#n-export').disabled = !list.length; $('#n-obj').disabled = !rec?.built; renderClearRow();
+  const rec = activeRec(); const list = shownRecs().flatMap(r => r.notes);
+  $('#n-export').disabled = !rec?.notes?.length; $('#n-obj').disabled = !rec?.built; renderClearRow();
   if (!list.length) { const li = document.createElement('li'); li.style.display = 'block'; li.innerHTML = '<p class="empty">Пока нет. Выберите «Метку», «Рулетку» или «Карандаш» на панели над моделью и щёлкните по модели.</p>'; ul.append(li); return; }
   const sorted = [...list].sort((a, b) => (a.type === 'pin' ? 0 : 1) - (b.type === 'pin' ? 0 : 1) || (a.num || 0) - (b.num || 0) || a.t - b.t);
   for (const n of sorted) {
@@ -1427,13 +1490,13 @@ async function importNotes(file) {
     for (const n of list) {
       if (!['pin', 'box', 'measure', 'line'].includes(n?.type)) continue;
       const c = { ...n, id: uid() }; if (c.type === 'pin') c.num = ++num;
-      addNote(c, false); k++;
+      addNote(c, false, rec); k++;
     }
     toast(k ? `Загружено заметок: ${k}` : 'В файле нет заметок VRtrip.', k ? 'ok' : 'warn');
   } catch { toast('Не получилось прочитать файл. Нужен .json, скачанный из VRtrip.', 'bad'); }
 }
 const CLEAR_LABEL = { pin: 'Метки', measure: 'Размеры', line: 'Эскизы', box: 'Кубы', section: 'Сечение', all: 'Всё' };
-function clearCount(k) { const rec = activeRec(); const ns = rec?.built ? rec.notes : []; if (k === 'section') return sec.on ? 1 : 0; if (k === 'all') return ns.length + (sec.on ? 1 : 0); return ns.filter(n => n.type === k).length; }
+function clearCount(k) { const ns = shownRecs().flatMap(r => r.notes); if (k === 'section') return sec.on ? 1 : 0; if (k === 'all') return ns.length + (sec.on ? 1 : 0); return ns.filter(n => n.type === k).length; }
 function renderClearRow() {
   let any = false;
   document.querySelectorAll('#clear-row [data-clear]').forEach(b => {
@@ -1445,11 +1508,12 @@ function renderClearRow() {
 }
 $('#clear-row').addEventListener('click', e => {
   const b = e.target.closest('[data-clear]'); if (!b) return; const k = b.dataset.clear, rec = activeRec(); if (!rec?.built) return;
+  const scene = shownRecs();
   if (!b.classList.contains('armed')) { b.classList.add('armed'); b.textContent = 'Точно удалить?'; setTimeout(() => { b.classList.remove('armed'); renderClearRow(); }, 3000); return; }
   b.classList.remove('armed');
   if (k === 'section' || k === 'all') secOff();
   if (k !== 'section') {
-    const items = []; rec.notes.forEach((n, index) => { if (k === 'all' || n.type === k) items.push({ note: n, index }); });
+    const items = []; for (const r of scene) r.notes.forEach((n, index) => { if (k === 'all' || n.type === k) items.push({ note: n, index, recId: r.id }); });
     for (const it of items) removeNote(it.note.id, false);
     if (items.length) undoStack.push({ op: 'delmany', items, recId: rec.id });
   }
@@ -1478,9 +1542,9 @@ const raycaster = new THREE.Raycaster(); raycaster.firstHitOnly = true;
 const holderInv = new THREE.Matrix4();
 const _q = new THREE.Quaternion(), _v = new V3(), _o = new V3(), _d = new V3();
 function localRay(wr) { holder.updateMatrixWorld(); holderInv.copy(holder.matrixWorld).invert(); return wr.clone().applyMatrix4(holderInv); }
-function surfaceMeshes(rec, withNotes = true) {
-  const out = [...rec.meshes];
-  if (withNotes) for (const o of rec.noteObjs.values()) if (o.userData.surface) out.push(o.userData.surface);
+function surfaceMeshes(_rec, withNotes = true) {          // every model in the scene (+ drawn boxes)
+  const out = [];
+  for (const r of shownRecs()) { out.push(...r.meshes); if (withNotes) for (const o of r.noteObjs.values()) if (o.userData.surface) out.push(o.userData.surface); }
   return out;
 }
 /* Returns the nearest surface (model, drawn boxes, or the ground plane) in holder-local metres */
@@ -1491,7 +1555,7 @@ function hitScene(wr, { notes = true, ground = true } = {}) {
   let h;
   if (sec.on) {
     raycaster.firstHitOnly = false;
-    h = raycaster.intersectObjects(surfaceMeshes(rec, notes), false).find(x => !rec.meshes.includes(x.object) || secWorld.distanceToPoint(x.point) >= -1e-4);
+    h = raycaster.intersectObjects(surfaceMeshes(rec, notes), false).find(x => !x.object.userData.orig || secWorld.distanceToPoint(x.point) >= -1e-4);
     raycaster.firstHitOnly = true;
   } else h = raycaster.intersectObjects(surfaceMeshes(rec, notes), false)[0];
   let best = null;
@@ -1500,6 +1564,7 @@ function hitScene(wr, { notes = true, ground = true } = {}) {
     if (n.dot(wr.direction) > 0) n.negate();
     holderInv.copy(holder.matrixWorld).invert();
     best = { world: h.point.clone(), local: h.point.clone().applyMatrix4(holderInv), normal: n.transformDirection(holderInv).normalize(), dist: h.distance, object: h.object, face: h.face };
+    const hr = recOfMesh(h.object) || recOfNote(h.object.userData.noteId); if (hr) state.hitRec = hr;     // new markup goes to the model that was hit
   }
   if (ground) {
     const lr = localRay(wr);
@@ -1574,8 +1639,8 @@ function hoverCursor(wr) {
 }
 
 function pickNote(wr) {
-  const rec = activeRec(); if (!rec?.built) return null;
-  const objs = []; for (const o of rec.noteObjs.values()) objs.push(...o.userData.pick);
+  const objs = []; for (const r of shownRecs()) for (const o of r.noteObjs.values()) objs.push(...o.userData.pick);
+  if (!objs.length) return null;
   raycaster.set(wr.origin, wr.direction); raycaster.far = 400;
   const h = raycaster.intersectObjects(objs, false)[0];
   return h ? { id: h.object.userData.noteId, dist: h.distance } : null;
@@ -1700,7 +1765,7 @@ function penBegin(wr) {
 
 async function createPin(hit) {
   const rec = activeRec();
-  const n = addNote({ type: 'pin', p: arr(hit.local), n: arr(hit.normal), text: '', num: nextPinNum(rec), color: curColor() });
+  const n = addNote({ type: 'pin', p: arr(hit.local), n: arr(hit.normal), text: '', num: nextPinNum(), color: curColor() });
   if (!n) return;
   const res = state.view === 'xr' ? await openKeyboard(n) : await openNoteDialog(n, true);
   if (!res) { removeNote(n.id, false); undoStack.pop(); return; }
@@ -1770,8 +1835,8 @@ function eraseAt(wr) {
   const tol = state.view === 'xr' ? 0.02 : (7 / Math.max(canvas.clientHeight, 1)) * THREE.MathUtils.degToRad(camera.fov);
   const ids = new Set(); for (const r of coneRays(wr, tol)) { const p = pickNote(r); if (p) ids.add(p.id); }
   for (const id of ids) {
-    const i = rec.notes.findIndex(n => n.id === id); if (i < 0) continue;
-    const note = rec.notes[i]; removeNote(id, false); (tool.erased ||= []).push({ note, index: i });
+    const r = recOfNote(id); if (!r) continue; const i = r.notes.findIndex(n => n.id === id); if (i < 0) continue;
+    const note = r.notes[i]; removeNote(id, false); (tool.erased ||= []).push({ note, index: i, recId: r.id });
   }
 }
 function eraseEnd() {
@@ -1849,7 +1914,7 @@ function selName() {
   return { pin: 'метка', measure: 'рулетка', line: 'линия карандаша', box: 'куб' }[n?.type] || 'разметка';
 }
 function selectPick(pk) {
-  const rec = activeRec(); if (!rec?.built || !pk || pk.kind === 'none') { clearSelection(); return; }
+  const rec = pk?.rec; if (!rec?.built || !pk || pk.kind === 'none') { clearSelection(); return; }
   if (sel && ((pk.kind === 'part' && sel.part === pk.part) || (pk.kind === 'note' && sel.id === pk.id))) return;
   clearSelection();
   sel = { recId: rec.id, kind: pk.kind };
@@ -1925,11 +1990,13 @@ function undoMove(op, rec) {
   if (sel) placeGizmo();
 }
 function resetPartMoves() {
-  const rec = activeRec(); if (!rec?.built || !rec.settings.moves) return;
+  const recs = targetRecs().filter(r => Object.keys(r.settings.moves || {}).length); if (!recs.length) return;
   clearSelection();
-  for (const [pid, d] of Object.entries(rec.settings.moves)) { const p = rec.parts.get(+pid); if (p) shiftPart(p, vec(d).negate()); }
-  rec.settings.moves = {}; undoStack.splice(0, undoStack.length, ...undoStack.filter(o => o.op !== 'movepart'));
-  schedulePersist(rec); renderSettings(); toast('Части модели вернулись на место.', 'ok');
+  for (const rec of recs) {
+    for (const [pid, d] of Object.entries(rec.settings.moves)) { const p = rec.parts.get(+pid); if (p) shiftPart(p, vec(d).negate()); }
+    rec.settings.moves = {}; schedulePersist(rec);
+  }
+  undoStack.splice(0, undoStack.length, ...undoStack.filter(o => o.op !== 'movepart')); renderSettings(); toast('Части модели вернулись на место.', 'ok');
 }
 function deleteSelection() {
   if (!sel) return;
@@ -1938,12 +2005,13 @@ function deleteSelection() {
 }
 /* what is under the pointer: a markup object (thin lines get a little cone of tolerance) or a part of the model */
 function pickSelectable(wr, tol = 0) {
-  const rec = activeRec(); if (!rec?.built) return { kind: 'none' };
+  if (!shownRecs().length) return { kind: 'none' };
   let pn = null; for (const r of tol ? coneRays(wr, tol) : [wr]) { const p = pickNote(r); if (p && (!pn || p.dist < pn.dist)) pn = p; }
   const h = hitScene(wr);
-  if (pn && (!h || pn.dist <= h.dist + 1e-3)) return { kind: 'note', id: pn.id, h, dist: pn.dist };
-  if (h && !h.ground && h.object?.userData?.noteId) return { kind: 'note', id: h.object.userData.noteId, h, dist: h.dist };
-  if (h && !h.ground && rec.meshes.includes(h.object)) { const part = partOfHit(rec, h); if (part) return { kind: 'part', part, h, dist: h.dist }; }
+  if (pn && (!h || pn.dist <= h.dist + 1e-3)) return { kind: 'note', id: pn.id, rec: recOfNote(pn.id), h, dist: pn.dist };
+  if (h && !h.ground && h.object?.userData?.noteId) return { kind: 'note', id: h.object.userData.noteId, rec: recOfNote(h.object.userData.noteId), h, dist: h.dist };
+  const rec = h && !h.ground ? recOfMesh(h.object) : null;
+  if (rec) { const part = partOfHit(rec, h); if (part) return { kind: 'part', part, rec, h, dist: h.dist }; }
   return { kind: 'none', h };
 }
 
@@ -2081,12 +2149,12 @@ const secArrow = new THREE.ArrowHelper(UP, new V3(), 0.07, 0xd8a33f, 0.025, 0.01
 secVis.add(secFill, secGrid, secEdge, secArrow);
 function updateSection() {
   const rec = activeRec(), on = sec.on && !!rec?.built;
-  if (rec?.meshes) for (const m of [...rec.meshes, { material: SEL_MAT }]) { const want = on ? SEC_PLANES : null; if (m.material.clippingPlanes !== want) { m.material.clippingPlanes = want; m.material.needsUpdate = true; } }
+  for (const m of [...state.models.filter(r => r.built).flatMap(r => r.meshes), { material: SEL_MAT }]) { const want = on ? SEC_PLANES : null; if (m.material.clippingPlanes !== want) { m.material.clippingPlanes = want; m.material.needsUpdate = true; } }
   secVis.visible = on && state.tool === 'section' && state.view !== 'ar';
   if (!on) return;
   holder.updateMatrixWorld();
   secWorld.setFromNormalAndCoplanarPoint(sec.n.clone().transformDirection(holder.matrixWorld), holder.localToWorld(sec.p.clone()));
-  const S = Math.max(rec.size.x, rec.size.y, rec.size.z, 1) * 1.3;
+  const z = sceneSize(), S = Math.max(z.x, z.y, z.z, 1) * 1.3;
   secVis.position.copy(sec.p); secVis.quaternion.setFromUnitVectors(UP, sec.n); secVis.scale.setScalar(S);
   secFill.material.opacity = sec.hover || sec.mode === 'drag' ? 0.22 : 0.08;
 }
@@ -2112,7 +2180,7 @@ function secPreset(kind) {
   if (kind === 'plan') { sec.n.set(0, -1, 0); sec.p.set(0, secFloorY() + 1.2, 0); }
   else {
     const ax = kind === 'x' ? new V3(1, 0, 0) : new V3(0, 0, 1);
-    const c = sec.on ? sec.p.clone() : new V3(0, rec.size.y / 2, 0);
+    const c = sec.on ? sec.p.clone() : new V3(0, (sceneSize()?.y || 4) / 2, 0);
     if (ax.dot(c.clone().sub(camL)) < 0) ax.negate();
     sec.n.copy(ax); sec.p.copy(c);
   }
@@ -2144,7 +2212,7 @@ const toScreen = v => { const q = v.clone().project(camera); return new THREE.Ve
 function secPointerDown(e) {
   if (!sec.on) secPreset('plan');
   holder.updateMatrixWorld();
-  const rec = activeRec(), L = Math.max(rec.size.x, rec.size.y, rec.size.z, 1) * 0.1;
+  const z = sceneSize() || new V3(10, 4, 10), L = Math.max(z.x, z.y, z.z, 1) * 0.1;
   const a = toScreen(holder.localToWorld(sec.p.clone())), b = toScreen(holder.localToWorld(sec.p.clone().addScaledVector(sec.n, L)));
   sec.drag = { x: e.clientX, y: e.clientY, p0: sec.p.clone(), v: b.sub(a), L };
 }
@@ -2162,7 +2230,7 @@ function secClick(e) {
 /* ================= movement physics (shared by browser walk and VR) ================= */
 const physRay = new THREE.Raycaster(); physRay.firstHitOnly = true;
 function castModel(origin, dir, far, all = false) {
-  const rec = activeRec(); if (!rec?.built) return all ? [] : null;
+  const rec = activeRec(); if (!shownRecs().length) return all ? [] : null;
   physRay.set(origin, dir); physRay.far = far; physRay.firstHitOnly = !all;
   const hits = physRay.intersectObjects(surfaceMeshes(rec), false);
   return all ? hits : hits[0] || null;
@@ -2192,8 +2260,8 @@ function collide(b, d) {
 }
 /* Next walkable level above or below: any surface with 1.7 m of free headroom over it */
 function floorStep(x, z, feetY, up) {
-  const rec = activeRec(); if (!rec?.built) return null;
-  const top = rec.size.y + 5;
+  const sz = sceneSize(); if (!sz) return null;
+  const top = sz.y + 5;
   const ys = castModel(new V3(x, top, z), DOWN, top + 1, true).map(h => h.point.y);
   ys.push(0);
   const walk = ys.filter(y => !castModel(new V3(x, y + 0.05, z), UP, 1.7));
@@ -2206,9 +2274,9 @@ const player = { x: 0, y: 0, z: 0, vy: 0, yaw: 0, pitch: 0 };
 const keys = new Set();
 const joy = { x: 0, y: 0, id: null };
 function placeEntrance() {
-  const rec = activeRec(); if (!rec) return;
-  player.x = 0; player.z = rec.size.z / 2 + 4; player.vy = 0; player.yaw = 0; player.pitch = -0.04;
-  player.y = prefs.gravity ? floorBelow(player.x, rec.size.y + 2, player.z) : 0;
+  const z = sceneSize(); if (!z) return;
+  player.x = 0; player.z = z.z / 2 + 4; player.vy = 0; player.yaw = 0; player.pitch = -0.04;
+  player.y = prefs.gravity ? floorBelow(player.x, z.y + 2, player.z) : 0;
 }
 function enterWalk() {
   if (!isReady()) return;
@@ -2221,7 +2289,7 @@ function exitWalk() {
   state.view = 'orbit'; keys.clear(); joy.x = joy.y = 0; cancelTool();
   document.body.classList.remove('walking'); $('#walkui').hidden = true; updateCanvasCursor();
   camera.fov = 55; camera.rotation.set(0, 0, 0); controls.enabled = true;
-  applyEnv(); frame(activeRec()); updateTip(); onResize(); updateModeButtons();
+  applyEnv(); frame(); updateTip(); onResize(); updateModeButtons();
 }
 function walkUpdate(dt) {
   const k = c => keys.has(c);
@@ -2376,7 +2444,7 @@ function flyUpdate(dt) {
   const u = (k('KeyE') ? 1 : 0) - (k('KeyQ') ? 1 : 0);
   const want = new V3();
   if (f || r || u) {
-    const rec = activeRec(); const size = rec?.size ? Math.max(rec.size.x, rec.size.y, rec.size.z) : 10;
+    const z = sceneSize(); const size = z ? Math.max(z.x, z.y, z.z) : 10;
     const speed = THREE.MathUtils.clamp(size * 0.25, 0.3, 60) * (k('ShiftLeft') || k('ShiftRight') ? 4 : 1);
     const dir = camera.getWorldDirection(new V3()), right = new V3().crossVectors(dir, UP).normalize();
     want.addScaledVector(dir, f).addScaledVector(right, r).addScaledVector(UP, u);
@@ -2388,9 +2456,9 @@ function flyUpdate(dt) {
   const d = fly.v.clone().multiplyScalar(dt);
   camera.position.add(d); controls.target.add(d);
 }
-function frame(rec) {
+function frame() {
   if (state.view !== 'orbit') return;
-  const s = rec ? rec.size : new V3(10, 4, 10);
+  const s = sceneSize() || new V3(10, 4, 10);
   const r = Math.max(s.x, s.y, s.z, 0.005);
   controls.target.set(0, s.y * 0.35, 0);
   camera.position.set(r * 0.85, s.y * 0.35 + r * 0.55, r * 1.15);
@@ -2452,7 +2520,7 @@ function showTab(tab) {                                      // turn the drum th
 function animateMenu(dt) { const t = -state.palIndex * Math.PI / 2; palCar.rotation.y += (t - palCar.rotation.y) * Math.min(1, dt * 12); }
 const starImg = new Image(); starImg.onload = () => drawPalette(); starImg.src = STAR_LOGO;
 state.palTab = 'tools'; state.palPage = { models: 0, notes: 0 };
-function sortedNotes() { const rec = activeRec(); if (!rec?.built) return []; return [...rec.notes].sort((a, b) => (a.type === 'pin' ? 0 : 1) - (b.type === 'pin' ? 0 : 1) || (a.num || 0) - (b.num || 0) || a.t - b.t); }
+function sortedNotes() { return shownRecs().flatMap(r => r.notes).sort((a, b) => (a.type === 'pin' ? 0 : 1) - (b.type === 'pin' ? 0 : 1) || (a.num || 0) - (b.num || 0) || a.t - b.t); }
 function pageOf(key, total, per) { const pages = Math.max(1, Math.ceil(total / per)); state.palPage[key] = Math.min(Math.max(0, state.palPage[key]), pages - 1); return { page: state.palPage[key], pages }; }
 function layoutPalette() { if (!palReady) return; faces.forEach(layoutFace); drawPalette(); }
 function layoutFace(f) {
@@ -2504,7 +2572,8 @@ function drawFace(f) {
   TABS.forEach(([t], i) => { c.beginPath(); c.arc(W - 250 + i * 26, 52, 8, 0, Math.PI * 2); c.fillStyle = t === f.tab ? '#d8a33f' : '#4a535b'; c.fill(); });
   fitText(c, clockText(), W - 28, 52, 140, 38, 600, '#efeae0', 'right');
   const head = state.mode === 'table' ? `Макет 1:${Math.round(1 / holder.scale.x)}` : 'Прогулка 1:1';
-  fitText(c, `${head}  ·  ${rec ? rec.name : 'нет модели'}${state.models.length > 1 ? `  (${state.active + 1}/${state.models.length})` : ''}`, 28, 128, W - 56, 32, 600, '#d8a33f');
+  const shown = shownRecs();
+  fitText(c, `${head}  ·  ${shown.length > 1 ? `в сцене ${shown.length} ${plural(shown.length, 'модель', 'модели', 'моделей')}` : rec ? rec.name : 'нет модели'}`, 28, 128, W - 56, 32, 600, '#d8a33f');
   for (const b of f.buttons) {
     const hover = f.hover === b.id;
     if (b.kind === 'text') { fitText(c, b.label, b.x + b.w / 2, b.y + b.h / 2, b.w - 20, 28, 500, '#9aa0a6', 'center'); continue; }
@@ -2520,7 +2589,7 @@ function drawFace(f) {
       continue;
     }
     if (b.kind === 'row') {
-      const on = b.id === 'm:' + state.active;
+      const on = !!state.models[+b.id.slice(2)]?.shown;
       rr(c, b.x, b.y, b.w, b.h, 14); c.fillStyle = on ? 'rgba(216,163,63,0.22)' : hover ? '#2f363c' : '#23282d'; c.fill();
       if (on) { c.lineWidth = 3; c.strokeStyle = '#d8a33f'; c.stroke(); }
       let tx = b.x + 22;
@@ -2553,7 +2622,7 @@ function drawFace(f) {
 }
 const fileToLocal = rec => { rec.root.updateMatrix(); rec.xf.updateMatrix(); return new THREE.Matrix4().multiplyMatrices(rec.root.matrix, rec.xf.matrix); };
 /* when units or the up axis change, markup and the section move with the model: same file points, new metres */
-function transformNotes(rec, T) {
+function transformNotes(rec, T, moveSec = true) {
   const r6 = v => Math.round(v * 1e6) / 1e6, A6 = v => [r6(v.x), r6(v.y), r6(v.z)];      // keep precision through repeated unit changes
   const P = a => A6(vec(a).applyMatrix4(T)), D = a => A6(vec(a).transformDirection(T)), k = Math.cbrt(Math.abs(T.determinant())) || 1;
   for (const n of rec.notes) {
@@ -2567,24 +2636,26 @@ function transformNotes(rec, T) {
   }
   for (const o of rec.noteObjs.values()) disposeObj(o);
   rec.noteObjs.clear(); for (const n of rec.notes) mountNote(rec, n);
-  if (sec.on) { sec.p.applyMatrix4(T); sec.n.transformDirection(T); }
+  if (sec.on && moveSec) { sec.p.applyMatrix4(T); sec.n.transformDirection(T); }
   renderNotes();
 }
 function changeModelSetting(k, v) {
-  const rec = activeRec(); if (!rec?.built || rec.settings[k] === v) return;
+  const recs = targetRecs().filter(r => r.settings[k] !== v); if (!recs.length) return;
   if (k !== 'clay') clearSelection();
-  const before = fileToLocal(rec);
-  rec.settings[k] = v;
-  if (k === 'units') rec.settings.autoUnits = false;
-  if (k === 'units' || k === 'zUp') { rec.settings.table = null; state.tableRel = null; }
-  applySettings(rec);
-  if ((k === 'units' || k === 'zUp') && (rec.notes.length || sec.on)) transformNotes(rec, fileToLocal(rec).multiply(before.invert()));
+  for (const rec of recs) {
+    const before = fileToLocal(rec);
+    rec.settings[k] = v;
+    if (k === 'units') rec.settings.autoUnits = false;
+    if (k === 'units' || k === 'zUp') { rec.settings.table = null; state.tableRel = null; }
+    applySettings(rec);
+    if ((k === 'units' || k === 'zUp') && (rec.notes.length || (sec.on && rec === activeRec()))) transformNotes(rec, fileToLocal(rec).multiply(before.invert()), rec === activeRec());
+    persist(rec);
+  }
   renderSettings(); renderList();
   if (k === 'units' || k === 'zUp') {                // geometry size changed: re-frame. Materials only: keep the view exactly as it is
-    if (state.view === 'walk') placeEntrance(); else if (state.view === 'orbit') frame(rec);
+    if (state.view === 'walk') placeEntrance(); else if (state.view === 'orbit') frame();
     else if (state.view === 'xr') { if (state.mode === 'table') placeTable(); else toStart(); }
   }
-  persist(rec);
 }
 function goToNoteXR(n) {
   if (state.mode === 'table') setMode('walk');
@@ -2618,7 +2689,7 @@ function palClick(id) {
   else if (id === 'next') { if (state.models.length > 1) activate((state.active + 1) % state.models.length); }
   else if (id === 'hud') { toggleMenu(false); return; }
   else if (id.startsWith('tilt:')) { palTilt = THREE.MathUtils.clamp(palTilt + (id.endsWith('+') ? 0.17 : -0.17), 0.2, 1.7); lsSet('vrtrip-tilt', String(palTilt)); applyPalTilt(); }
-  else if (id.startsWith('m:')) { const i = +id.slice(2); if (i !== state.active) activate(i); }
+  else if (id.startsWith('m:')) { const i = +id.slice(2); showModel(i, !state.models[i].shown); }
   else if (id === 'mp:prev') state.palPage.models--; else if (id === 'mp:next') state.palPage.models++;
   else if (id === 'np:prev') state.palPage.notes--; else if (id === 'np:next') state.palPage.notes++;
   else if (id.startsWith('u:')) changeModelSetting('units', id.slice(2));
@@ -2773,10 +2844,10 @@ function drawToolTag() {
 const _ew = new V3(), _ea = new V3(), _eb = new V3();
 function segDist(p, a, b) { const ab = _eb.copy(b).sub(a), t = THREE.MathUtils.clamp(_ea.copy(p).sub(a).dot(ab) / Math.max(ab.lengthSq(), 1e-9), 0, 1); return p.distanceTo(_ea.copy(a).addScaledVector(ab, t)); }
 function notesInSphere(cw, r) {
-  const rec = activeRec(); if (!rec?.built) return [];
+  const scene = shownRecs(); if (!scene.length) return [];
   holder.updateMatrixWorld(); const out = [], sc = holder.scale.x;
   const W = v => holder.localToWorld(_ew.copy(v));
-  for (const n of rec.notes) {
+  for (const rec of scene) for (const n of rec.notes) {
     const o = rec.noteObjs.get(n.id); if (!o) continue;
     let hit = false;
     if (n.type === 'pin') hit = W(vec(n.p)).distanceTo(cw) <= r + 0.02;
@@ -2794,7 +2865,7 @@ function notesInSphere(cw, r) {
 /* red highlight on whatever the eraser is about to remove */
 let hotIds = new Set();
 function tintNote(id, on, color = 0xff3b30) {
-  const o = activeRec()?.noteObjs?.get(id); if (!o) return;
+  const o = recOfNote(id)?.noteObjs?.get(id); if (!o) return;
   o.traverse(x => {
     const m = x.material; if (!m || x.userData.sharedMat || !m.color) return;
     if (on) { if (m.userData.c0 === undefined) m.userData.c0 = m.color.getHex(); m.color.set(color); }
@@ -2826,11 +2897,11 @@ function flatForward() { const d = camera.getWorldDirection(new V3()); d.y = 0; 
 function teleport(p) { const h = headPos(_v); rig.position.x += p.x - h.x; rig.position.z += p.z - h.z; rig.position.y = p.y; state.vy = 0; }
 
 function toStart() {
-  const rec = activeRec(); const depth = rec ? rec.size.z : 10;
+  const rec = activeRec(), z = sceneSize(); const depth = z ? z.z : 10;
   rig.rotation.set(0, 0, 0); state.vy = 0;
   const local = camera.position;
   rig.position.set(-local.x, 0, depth / 2 + 3 - local.z);
-  if (prefs.gravity && rec?.built) rig.position.y = floorBelow(0, rec.size.y + 2, depth / 2 + 3);
+  if (prefs.gravity && z) rig.position.y = floorBelow(0, z.y + 2, depth / 2 + 3);
 }
 function placeTable() {
   const rec = activeRec(); if (!rec) return;
@@ -3037,7 +3108,7 @@ function handleRightPointer(pads) {
     if (down) { tool.erasing = true; tool.erased = []; }
     if (trig && tool.erasing && ids.length) {
       const rec = activeRec();
-      for (const id of ids) { const i = rec.notes.findIndex(n => n.id === id); if (i < 0) continue; const note = rec.notes[i]; hotIds.delete(id); removeNote(id, false); (tool.erased ||= []).push({ note, index: i }); }
+      for (const id of ids) { const r = recOfNote(id); if (!r) continue; const i = r.notes.findIndex(n => n.id === id); if (i < 0) continue; const note = r.notes[i]; hotIds.delete(id); removeNote(id, false); (tool.erased ||= []).push({ note, index: i, recId: r.id }); }
       buzz('right', 0.5, 25);
     }
     if (up && tool.erasing) eraseEnd();
@@ -3082,7 +3153,7 @@ function onEnd() {
   state.view = 'orbit'; state.sessionMode = null; state.grab = null; state.mode = 'walk'; state.uiCapture = false; cancelTool();
   rig.position.set(0, 0, 0); rig.rotation.set(0, 0, 0); resetHolder();
   marker.visible = false; hideCursor(); tipRig.visible = false; setHot([]);
-  controls.enabled = true; applyEnv(); frame(activeRec()); onResize(); updateTip();
+  controls.enabled = true; applyEnv(); frame(); onResize(); updateTip();
 }
 $('#m-mr').addEventListener('click', () => enter(true));
 $('#m-vr').addEventListener('click', () => enter(false));
@@ -3169,7 +3240,7 @@ function onArEnd() {
   ar.hitSource?.cancel?.(); ar.hitSource = null;
   renderer.xr.setReferenceSpaceType('local-floor');
   state.view = 'orbit'; $('#arui').hidden = true; reticle.visible = false; holder.visible = true; resetHolder();
-  controls.enabled = true; applyEnv(); frame(activeRec()); onResize(); updateTip();
+  controls.enabled = true; applyEnv(); frame(); onResize(); updateTip();
 }
 function arUpdate(xrFrame) {
   if (!xrFrame || !ar.hitSource) return;
@@ -3190,7 +3261,7 @@ function placeAtReticle() {
   holder.rotation.set(0, yaw, 0);
   if (ar.mode === 'full') {                     // 1:1 — the front edge of the building lands on the ring, the building extends away from you
     holder.scale.setScalar(1);
-    holder.position.copy(p).addScaledVector(dir, -rec.size.z / 2);
+    holder.position.copy(p).addScaledVector(dir, -(sceneSize() || rec.size).z / 2);
   } else {
     holder.scale.setScalar(1 / (rec.settings.table || 100));
     holder.position.copy(p);
@@ -3231,13 +3302,14 @@ async function openQuickLook() {
   const rec = activeRec(); if (!rec?.built) return;
   busy('Готовлю модель для AR на iPhone…'); await pause();
   try {
-    rec.root.updateMatrix(); rec.xf.updateMatrix();
-    const M = new THREE.Matrix4().multiplyMatrices(rec.root.matrix, rec.xf.matrix);
     const root = new THREE.Group(); const mats = new Map();
-    for (const m of rec.meshes) {
-      const src = rec.settings.clay ? CLAY : m.userData.orig;
-      if (!mats.has(src)) mats.set(src, new THREE.MeshStandardMaterial({ color: src.color ? src.color.clone() : new THREE.Color(0xdddddd), map: rec.settings.clay ? null : (src.map || null), transparent: !!src.transparent && src.opacity < 1, opacity: src.opacity ?? 1, roughness: 0.85, metalness: 0 }));
-      const mesh = new THREE.Mesh(m.geometry, mats.get(src)); mesh.applyMatrix4(M); root.add(mesh);
+    for (const r of shownRecs()) {                // everything that is in the scene goes to AR
+      const M = fileToLocal(r);
+      for (const m of r.meshes) {
+        const src = r.settings.clay ? CLAY : m.userData.orig;
+        if (!mats.has(src)) mats.set(src, new THREE.MeshStandardMaterial({ color: src.color ? src.color.clone() : new THREE.Color(0xdddddd), map: r.settings.clay ? null : (src.map || null), transparent: !!src.transparent && src.opacity < 1, opacity: src.opacity ?? 1, roughness: 0.85, metalness: 0 }));
+        const mesh = new THREE.Mesh(m.geometry, mats.get(src)); mesh.applyMatrix4(M); root.add(mesh);
+      }
     }
     const data = await new USDZExporter().parse(root, { quickLookCompatible: true });
     const url = URL.createObjectURL(new Blob([data], { type: 'model/vnd.usdz+zip' }));
@@ -3273,7 +3345,7 @@ renderer.setAnimationLoop((t, xrFrame) => {
 
 (async () => {
   { const sc = allColors().indexOf(lsGet('vrtrip-color') || ''); state.color = sc >= 0 ? sc : 1; }
-  renderPrefs(); updateCanvasCursor(); onResize(); frame(null); renderList(); renderSettings(); renderNotes(); renderToolbar(); updateTip(); applyEnv();
+  renderPrefs(); updateCanvasCursor(); onResize(); frame(); renderList(); renderSettings(); renderNotes(); renderToolbar(); updateTip(); applyEnv();
   document.querySelectorAll('details.sec').forEach(d => {      // remember which panel sections are collapsed
     if (lsGet('vrtrip-open-' + d.id) === '0') d.open = false;
     d.addEventListener('toggle', () => lsSet('vrtrip-open-' + d.id, d.open ? '1' : '0'));
@@ -3286,8 +3358,11 @@ renderer.setAnimationLoop((t, xrFrame) => {
   for (const r of recs) if (r.id === 'sample-pavilion') unpersist(r.id);
   renderList();
   if (state.models.length) {
+    let ids = []; try { ids = JSON.parse(lsGet('vrtrip-shown') || '[]'); } catch {}
     let i = state.models.findIndex(m => m.id === lsGet('obhod-active')); if (i < 0) i = 0;
-    await activate(i);
+    if (!ids.includes(state.models[i].id)) ids.push(state.models[i].id);
+    for (const r of state.models) if (ids.includes(r.id) && r !== state.models[i] && await ensureBuilt(r)) r.shown = true;
+    await showModel(i, true, { frameAll: true });
   } else {
     try { await addSample(); } catch (e) { console.error(e); }
   }
