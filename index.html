@@ -113,6 +113,10 @@ h2{display:flex;align-items:center;gap:10px;margin:0;font:600 16px/1.2 var(--f-b
 .dims small.warn{color:var(--accent)}
 .field{display:flex;flex-direction:column;gap:6px}
 .lbl{font-size:13px;color:var(--muted)}
+.unitrows{display:flex;flex-direction:column;gap:8px}
+.unitrow{display:flex;flex-direction:column;gap:4px}
+.unitrow .uname{font-size:12.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.unitrow .seg button{min-height:32px;font-size:13px;padding:0 6px}
 .seg{display:flex;flex-wrap:wrap;gap:3px;background:var(--bg);border:1px solid var(--line);border-radius:9px;padding:3px}
 .seg button{flex:1 1 auto;min-height:38px;padding:0 10px;border:0;border-radius:6px;background:transparent;color:var(--fg);font-size:14px;cursor:pointer;font-variant-numeric:tabular-nums}
 .seg button:hover:not(:disabled){background:var(--raise)}
@@ -294,6 +298,7 @@ h2{display:flex;align-items:center;gap:10px;margin:0;font:600 16px/1.2 var(--f-b
         <button type="button" data-val="in">дюйм</button>
         <button type="button" data-val="ft">фут</button>
       </div>
+      <div class="unitrows" id="unitrows" hidden></div>
     </div>
     <div class="field">
       <span class="lbl" id="l-up">Ось «вверх» — если модель лежит на боку, переключите</span>
@@ -513,7 +518,7 @@ const UP = new V3(0, 1, 0), DOWN = new V3(0, -1, 0);
 const UNITS = { mm: 0.001, cm: 0.01, m: 1, in: 0.0254, ft: 0.3048 };
 const TABLE_STEPS = [20, 50, 100, 200, 500, 1000];
 const EYE = 1.65, STEP = 0.45, RADIUS = 0.3, GRAV = 9.8;
-const APP_VERSION = '2.5';
+const APP_VERSION = '2.6';
 const BASE_COLORS = ['#f2efe8', '#d8a33f', '#e0604a', '#3f86c9'];
 const STAR_LOGO = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAKAAAACgCAMAAAC8EZcfAAAAkFBMVEX///////7//v7+/v/+/v7//v3//fz9/f3//Pn8/Pz7+/r18/Ht49ncz8H7okH6lSj7lCb6lCf6lCb6lCXKtaKlpaX5kSL1ihrYdBaCgoLUawrTawvTagrSagvSZgZ9XUFGRkYzMzMrKysqKiopKSkoKCglJSUiIiIgICAdHR0bGxsPDw8EBAQCAgIBAQEAAACYicNqAAAMGUlEQVR42u2ceZeiOhPGo280zSajIrhdB1FUkOX7f7u3EhYBCYRFb/9xc87MtK1n+tdPUk9VQgGKCyOIbSSjXzbKgBsk/WbAMNZ+OWCk/afgEMAwchWMfzEgDWKCfjXgGf92wF+nIC4D7vrGyGQ2n89m0+l0Rr+YjMiHKj4t94Krfms6EqSMNoMBE7ofVdOMBR2Gpqk/7I3pYD6CVW8g4GxG4QBtbeXDXC4WmjpJ3hwooB0XAKPgaXRbg5QA6EzLNFf6a6xNy1otNGWoijLaxQEq5hGv49oDvIUOiun6clUY8FpfmdbCoIj9+SSsPYOoABiENu4gIMMzrTXA1A1dNy0dEHtHC5GVJ4j2AgyCTpl4hn4M3apotyoLubYWWm8RJViAQZwCRiF82ckF5yAfqMdDYwP+Nc3FTz9CCW2iIGKACV183kBYiy8/TTd56oFyEDaWCYi6bi1UNO/Dp4Yh8MUooHTBeQdzQTqEh2Fy5Vta+kKjtgiIQGvqPQixpJxjphud4stOkxi0KN8EGZbO41uZNHrpKqAiU8K11pmQOQxbfYhpB98Rnl6mn8UNjqVJ4wIS85xFOSVcw7dmHfmMIOGLUUc6Fh/Axwtd3TLQPKX5Qeo6WZOm2okQS+o1ClNAIkmcD0mY/qnxF42vnw5RO51WfxW2DmfdUlwqYMy1ybcvcj51vW4W8PXZiWoulym3eNqDBRhlfDGXTzZ2tr3bKBXCyeyHLSyugurkJdUEZR8ug7c4jKQ9swnmARKk2b7veb5nV7LLrGkBrlbrVWUus99GF16GGGMvzvliHp/7cBzn4jiPm1HUECbYbMhuQMgFhMUplJYlsssXIAcQY8V+OC4bzv2sFnZSs/8tmgSEqdQmr6mcIkU3l/k7QhJCEV3ki+vTzM5P+YDQL6ToOdK2TXyAsShgzGnAF+J70h4nBKlPmoKbADGS7cclA7zebQVlZjOdNAu4Wq4LiQ12UIWAohK2xgmWFbuwAOsB4ZfI9aPjpmarECzwuPqzapSQli/zKYv3ckCxdybCKa4Z0C0Bai/AxalRwGSSFSYefF5LXFBcQhlpQWmCOVOsnm/XGsAZUrbbNkBKSLcjsJdaWKsld31yJvhcEbATIKz5Uzvgitb6dANqVgwJEp6CpgJF9ADAxcnS1+2EUEhbrF5986BGCaGIDqp8AoDXewo4RT/bk9WuYFbzt3hQjUNr8fvoAAhZ5CAyxU0R3rDHg3RwjoIhgHQJ/jMMsGkRvjtMd0BjGGBjxVBNcb0AF0MB+VFCsOYF4TDA6ScBZelcK2AHwAma6gC4GgTIK1s5C7Aj4Hx7OuzNPx8AhAL0WUlxjYBKPSDY4OFoDQljMMJ57QZN9uMwHgxIFTwNA6xXUEJ/ORPcDXC6AAW34wPKNMVFgwFZFB+OhwGLsD6KobyLYx5fF0Dqg4f9kDmuBcSSYnMnuCOgAQoOmePaTMJ3mO6AGgU89JYQNizKGyArouNRAKGaOQJf/4IGqpl5dVdCJNWJwnEAUyOEMNH72+Cs4ZxoKGASJcd9bwlrYkRqXoCdAdkiPO77Sbh8LwclrMVhNBTwYRR2dQMkpDP8Vq66YbOAQoD5vjiZ42NPL3zfF0tS2wR3BlTZHP/TZ5LfTxZ4RXR/QDSbMQnBrUcQkF5qCEcGzMOk+zJcmgtlMnvLwfG4gGg2TSXsTEgrmVm1SIjGB4RVSPk6a0i3nJUT1o8omAUy03Apjqjr27ejrc8ATmfMCxMN17ow376m2Jdle+wozkoGRghlg6Af6uZ+W7i+88pzWmOd0ABo37mAWVmYDGslcBy3sk6H2iMFGfU16ibAEiEVUW+ZXWt7OtWfrcJP8oNwdMDJLA8UOtdbswGR4h2Op+779SGAECjUDXMRj1uYaL2WbmVtj/+cuHzsUD8KRgdEsN6N0zEl3DNE1jjzp8DG6LZH2ElvG87OIU7iDwCChkg75Atxz2TcWlbe3rMyLUZ3PABfY0eATM59Kuo2QDSBwmabi5gwno77/TYZ+z19edwfTqeF0njtgWDuqcwgQBrLP8ahgAh0yZI8pblwv4fo2Lb2zbTFiQigUdsPwjqPTnQWj8VxSF/D5J62IF/bdWwouq5hOATw8uB0f09Y2wRIdjjUQFI8FQlcxW4pWwcAZt1v4MMJZDboNB9Ya9lcpA2gOU4GAab9g5qxYJDZOG4XhkqXqdgldgkb/MOtoYBZB6aipg2YtAUz6cCcd2mi4Es4GJCuxflkUA8rIWoQRqMBYkmSyHtXLR0z2gMMo2vfZdP5QlfArAVSGrXhmqALLyV3BCQ0bDcbDTPG0fr+G6ymGyBsI3Znz/Nv9k4j7GhgJEYinznH/J0ACdLO/u1ycdwHY5RHY4SqJhwOSK/wPBz2DmO82zvWKkhGYOSeE4KPCwMSXOinAcbr3X+MxQhVTb3V1ARkuW/mBYgr7SpQRzgXxrhRWXyTT8QJog2YZRV5gBLaeBfXrWH0z8MZMZYfdcsQxYFNEcUAfcd9H1fHuQHj34GMHAkRfC+wN8WKr5OCL0bPdxLGvgYpS3bNaRyKqYWHO/L6T3mAYDIPDuCL0d5ofRnpBiqsAaRt1FHxlkRukGCIbj4hMIL5eP7VTrueOzPWVjVJq3wYPNW8xa0K6GXwbBFeXbeF8eG7wKh0N3FQ4P2gAb1uZ5LbAJkRus7FFWC8p4ydDLJOQvS6IaxVQfgV0c71H2AtzTpSE++TaOpOrdH7zS58QGbWO/vmP1p1TBi7Jhr5/aAhB7wLAVI7krWd7TLGVh3BxL3UxImQQb6n5K6A8IPo38B49T3XaYkZmmhuwChs4hKpHjR0BqRdYOylurEd37uJMWaJptV83uKkB+BLR3Xz9+z7IoypibczEkl9RtFwwHzhqxsosaGIbWW8ZImmxcSrG6j+gBXGuwgjJBq3rRKvtBEOAmQLnzEaOxuM7ypm4s27BZmUqpqhgHlwKoxR1CBvDQZJSNFqRgBMNvMoMUhRE2/YLRBcPGgYBzA3H4kxeu0mnuwW6ivxktWMBpjrKLFEI8qYJxpckvCZS1gLiPsBFg1S1MRfuwVSX/2PDVhINGDinrCJ7163XLA4cTPC8QErjGIm7vq2WtAQdhdZ5foRwLKJP0QYHd+WCw+heFU17YCO3/cRKrlBngVMvPxjWMfPxwGrJt7IeHlUJNy9bj79IGDOSE383mTiV9dRC3GCiXJnBw2fBywx3hoq8ZtWZzVfASwlQ/5uQS2db0gyu1I7LqAky7LUbD5YqzfxS/Hus+xMc2RAQrJDFtxqkJSxZD6l+/cKVjMiIHxI22w2RlLUtTOWKnHncVYrD+MhsIEKo/EAYU9rswx/S8pR/lxXdwuXi+N41/eLvsUnVQwHBL5nHAXJVbeUUZJxM6PCGD3P9+2aZzxgSXmOpiDjC9KTKPZUhOTeecJnfJl4zX3M2WlVOBIg48sPprInN9CfS7cepJkxO7KoI7THAZRKfKmO9LVvM0a5kREGJ+4loo0CKCH1WXM4GrIW86edns30vFAxAiAp78OKIyoydnxcQjrzwwFhgpra7CI2189krnswvgMCoe2JA2JM2toAEx399JEdMvkqIBZqU0wZk4eepJXDlwCFmqHL5pM8XETGIwLKTXxBEMWCo8wodhFAAHDHB6T6xcJ86aOL6Oevu9Qg8UcBgS8Mw7jrSHR8JoeubToOAWS3+3TnS+Y6Mcjk/EhueOzhAECClLNggPAN0s8NcnTAgXxvjJyLAL0BR+ArJOzzjncxpS8ge+jFcL5X4RPa9U9f6gvYejtXx7kumXgxsHsCUoMZjy97thtLhmqZsR8gNegwHn1kjEbhanMvQJaAo/gDI02Gvp0+Xawf4Of4Ukb6f9//bmQOICk+saemmqEVfhjGnxyJQT7u93sdYLlB5nVn4ovPjT/L9zLIuF5B9epmxyZO+WAx5QvibwwoROr2xZQQJExWoeNWGtGB/vIlPt4RcNrecXfok7e8x6bMJylf5eMAQiBvzp7v+w+7sgBF7vL5CiCmhya7TeW5jvjrfDzAFxcpf/PbfHxA1i9d2R7K+Ot8DYB1BYzxdb4ugLAD8YPw9wJSvvjrfOKAYND+9ydYHJAQ7V/hEwXEEjr/K3yCgLjpkTW/AfBfMOhs/B+RX1STiSd9ugAAAABJRU5ErkJggg==';
 const KINDS = { issue: { label: 'Замечание', color: '#e0604a' }, question: { label: 'Вопрос', color: '#d8a33f' }, idea: { label: 'Идея', color: '#4fae7f' } };
@@ -1119,7 +1124,18 @@ function renderSettings() {
     seg.querySelectorAll('button').forEach(b => { b.setAttribute('aria-pressed', String(!mixed && vals[0] === b.dataset.val)); b.classList.toggle('mixed', mixed && vals.includes(b.dataset.val)); });
     if (mixed) { const l = document.getElementById(seg.getAttribute('aria-labelledby')); if (l) { const t = document.createElement('span'); t.className = 'mixtag'; t.textContent = 'разные'; l.append(t); } }
   };
-  document.querySelectorAll('.seg[data-key]').forEach(seg => paint(seg, recs.map(r => String(r.settings[seg.dataset.key]))));
+  document.querySelectorAll('.seg[data-key]').forEach(seg => { if (seg.dataset.key !== 'units' || recs.length === 1) paint(seg, recs.map(r => String(r.settings[seg.dataset.key]))); });
+  /* units belong to each file: with several models every model gets its own row */
+  const many = recs.length > 1, rows = $('#unitrows');
+  $('.seg[data-key="units"]').hidden = many; rows.hidden = !many; rows.textContent = '';
+  $('#l-units').textContent = many ? 'Единицы файла — у каждой модели свои' : 'Единицы файла';
+  if (many) for (const r of recs) {
+    const row = document.createElement('div'); row.className = 'unitrow';
+    const nm = document.createElement('span'); nm.className = 'uname'; nm.textContent = r.name; nm.title = r.name;
+    const seg = document.createElement('div'); seg.className = 'seg'; seg.setAttribute('role', 'group'); seg.setAttribute('aria-label', 'Единицы: ' + r.name);
+    for (const [u, l] of [['mm', 'мм'], ['cm', 'см'], ['m', 'м'], ['in', 'дюйм'], ['ft', 'фут']]) { const b = document.createElement('button'); b.type = 'button'; b.dataset.rec = r.id; b.dataset.val = u; b.textContent = l; b.setAttribute('aria-pressed', String(r.settings.units === u)); seg.append(b); }
+    row.append(nm, seg); rows.append(row);
+  }
   paint($('#tablescale'), recs.map(r => String(r.settings.table)));
 }
 function plural(n, a, b, c) { const m = n % 10, h = n % 100; return m === 1 && h !== 11 ? a : m >= 2 && m <= 4 && (h < 12 || h > 14) ? b : c; }
@@ -1127,8 +1143,9 @@ function plural(n, a, b, c) { const m = n % 10, h = n % 100; return m === 1 && h
 document.querySelectorAll('.seg[data-key]').forEach(seg => seg.addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b || !targetRecs().length) return;
   const k = seg.dataset.key; let v = b.dataset.val; if (v === 'true' || v === 'false') v = v === 'true';
-  changeModelSetting(k, v);
+  changeModelSetting(k, v, k === 'units' && targetRecs().length > 1 ? [] : null);      // units are never set for several files at once
 }));
+$('#unitrows').addEventListener('click', e => { const b = e.target.closest('[data-rec]'); if (b) changeModelSetting('units', b.dataset.val, [recById(b.dataset.rec)].filter(Boolean)); });
 $('#targets').addEventListener('click', e => { const b = e.target.closest('[data-id]'); if (!b) return; state.setTarget = b.dataset.id; renderSettings(); });
 $('#tablescale').addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b || !shownRecs().length) return;
@@ -2639,8 +2656,8 @@ function transformNotes(rec, T, moveSec = true) {
   if (sec.on && moveSec) { sec.p.applyMatrix4(T); sec.n.transformDirection(T); }
   renderNotes();
 }
-function changeModelSetting(k, v) {
-  const recs = targetRecs().filter(r => r.settings[k] !== v); if (!recs.length) return;
+function changeModelSetting(k, v, only = null) {
+  const recs = (only || targetRecs()).filter(r => r.settings[k] !== v); if (!recs.length) return;
   if (k !== 'clay') clearSelection();
   for (const rec of recs) {
     const before = fileToLocal(rec);
@@ -2692,7 +2709,7 @@ function palClick(id) {
   else if (id.startsWith('m:')) { const i = +id.slice(2); showModel(i, !state.models[i].shown); }
   else if (id === 'mp:prev') state.palPage.models--; else if (id === 'mp:next') state.palPage.models++;
   else if (id === 'np:prev') state.palPage.notes--; else if (id === 'np:next') state.palPage.notes++;
-  else if (id.startsWith('u:')) changeModelSetting('units', id.slice(2));
+  else if (id.startsWith('u:')) changeModelSetting('units', id.slice(2), rec?.built ? [rec] : []);   // units: only the active model's file
   else if (id.startsWith('up:')) changeModelSetting('zUp', id.slice(3) === 'true');
   else if (id === 'clay' && rec?.built) changeModelSetting('clay', !rec.settings.clay);
   else if (id === 'shot') vrSnapshot();
