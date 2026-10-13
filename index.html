@@ -3,6 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
 <title>VRtrip</title>
 <meta name="author" content="Сергей Дмитриев, Rock Parametric">
 <meta name="description" content="VRtrip — просмотр архитектурных OBJ-моделей в Meta Quest 3 и в браузере. Автор: Сергей Дмитриев, Rock Parametric.">
@@ -171,7 +173,7 @@ h2{display:flex;align-items:center;gap:10px;margin:0;font:600 16px/1.2 var(--f-b
 .view{position:relative;min-width:0;min-height:0;overflow:hidden}
 #c{display:block;width:100%;height:100%;touch-action:none;outline:none}
 .view{container-type:inline-size}
-.topbar{position:absolute;top:12px;left:12px;right:12px;display:grid;grid-template-columns:minmax(0,1fr) auto minmax(max-content,1fr);align-items:start;gap:10px;pointer-events:none;z-index:5}
+.topbar{position:absolute;top:12px;left:12px;right:12px;display:grid;grid-template-columns:minmax(46px,1fr) auto minmax(max-content,1fr);align-items:start;gap:10px;pointer-events:none;z-index:5}
 .topbar>*{pointer-events:auto}
 .modebar{grid-column:3;justify-self:end;display:flex;gap:2px;padding:5px;background:var(--glass);border:1px solid var(--line);border-radius:12px;backdrop-filter:blur(6px)}
 .modebar .mode{min-height:0;height:52px;min-width:58px;padding:0 6px;gap:3px;border:0;border-radius:8px;background:transparent}
@@ -196,7 +198,7 @@ h2{display:flex;align-items:center;gap:10px;margin:0;font:600 16px/1.2 var(--f-b
 .sw{width:26px;height:26px;border-radius:50%;border:2px solid var(--line-strong);background:var(--sw);cursor:pointer;margin:0 2px;padding:0}
 .sw[aria-pressed="true"]{border-color:var(--fg);box-shadow:0 0 0 2px var(--accent)}
 .secui{position:absolute;top:84px;left:0;right:0;margin-inline:auto;width:fit-content;max-width:calc(100% - 24px);display:flex;flex-wrap:wrap;gap:6px;justify-content:center;align-items:center;padding:6px;background:var(--glass);border:1px solid var(--line);border-radius:12px;z-index:5}
-@container (max-width:1200px){.topbar{grid-template-columns:1fr}.toolbar{grid-column:1}.modebar{grid-column:1;justify-self:end}.secui{top:146px}}
+@container (max-width:1200px){.topbar{grid-template-columns:auto minmax(0,1fr)}.topbar>.toolbar{grid-column:2;justify-self:center}.view .topbar>.modebar{grid-column:2;grid-row:2;justify-self:end}.secui{top:146px}}
 .sec-info{font:12.5px/1.2 var(--f-mono);color:var(--muted);padding:0 6px;font-variant-numeric:tabular-nums}
 .chip{position:absolute;left:14px;bottom:14px;font:12px/1.35 var(--f-mono);color:var(--muted);background:var(--glass);border:1px solid var(--line);padding:7px 9px;border-radius:6px;pointer-events:none;max-width:calc(100% - 28px)}
 .tip{position:absolute;left:0;right:0;margin-inline:auto;width:fit-content;bottom:14px;max-width:min(560px,calc(100% - 300px));text-align:center;font-size:13.5px;background:var(--glass);border:1px solid var(--line-strong);padding:8px 12px;border-radius:8px;pointer-events:none;text-wrap:balance}
@@ -223,12 +225,26 @@ h2{display:flex;align-items:center;gap:10px;margin:0;font:600 16px/1.2 var(--f-b
 .spin{width:18px;height:18px;border-radius:50%;border:2px solid var(--line-strong);border-top-color:var(--accent);animation:spin .8s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion:reduce){.spin{animation-duration:2.4s}}
-@media (pointer:coarse){.whint{display:none}}
+@media (pointer:coarse){.whint{display:none}.chip{display:none!important}}
 
-@media (max-width:820px){
-  body{grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto;overflow:auto;height:auto;min-height:100%}
-  .view{grid-row:1;height:52vh;position:sticky;top:0;z-index:2}
-  body.walking .view{height:78vh}
+/* panel toggle: on wide screens it hides the panel for a full-width view; in compact landscape it opens a drawer */
+.panelbtn{grid-column:1;grid-row:1;justify-self:start;width:46px;height:46px;display:grid;place-items:center;border:1px solid var(--line);border-radius:12px;background:var(--glass);color:var(--fg);cursor:pointer;backdrop-filter:blur(6px)}
+.panelbtn svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round}
+.panelbtn:hover{border-color:var(--line-strong)}
+.topbar>.toolbar,.topbar>.modebar{grid-row:1}
+body.panel-off{grid-template-columns:0 minmax(0,1fr)}
+body.panel-off .panel{display:none}
+.scrim{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:59}
+@media (min-width:1700px){body{grid-template-columns:420px minmax(0,1fr)}}
+@container (max-width:900px){.tb span,.modebar .mode-t{display:none}.tb,.modebar .mode{min-width:44px}}
+@media (max-width:1180px) and (min-width:821px){body{grid-template-columns:330px minmax(0,1fr)}.panel{padding-inline:16px}}
+/* phones and small tablets in portrait: view on top, panel below */
+@media (max-width:820px), (orientation:portrait) and (max-width:1000px){
+  body,body.panel-off{grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto;overflow:auto;height:auto;min-height:100%}
+  body.panel-off .panel{display:flex}
+  .panelbtn{display:none}
+  .view{grid-row:1;height:52vh;height:52dvh;position:sticky;top:0;z-index:2}
+  body.walking .view{height:78vh;height:78dvh}
   .panel{grid-row:2;border-right:0;border-top:1px solid var(--line);overflow:visible;padding-inline:16px}
   .tb{min-width:44px;height:46px;font-size:10px}
   .tb span{display:none}
@@ -237,6 +253,50 @@ h2{display:flex;align-items:center;gap:10px;margin:0;font:600 16px/1.2 var(--f-b
   .tip{bottom:auto;top:calc(12px + 112px);max-width:calc(100% - 24px)}
   .joy{width:108px;height:108px}
 }
+/* phones in landscape (low height): the 3D view takes the whole screen, the panel slides in as a drawer */
+@media (orientation:landscape) and (max-height:600px){
+  body,body.panel-off{grid-template-columns:minmax(0,1fr);grid-template-rows:none;height:100%;overflow:hidden}
+  .view{height:100vh;height:100dvh}
+  .panel,body.panel-off .panel{display:flex;position:fixed;z-index:60;left:0;top:0;bottom:0;width:min(380px,86vw);padding:16px 16px 40px max(16px,env(safe-area-inset-left));transform:translateX(-102%);transition:transform .22s ease;box-shadow:12px 0 40px rgba(0,0,0,.45)}
+  body.drawer .panel{transform:none}
+  .topbar{top:8px;left:max(8px,env(safe-area-inset-left));right:max(8px,env(safe-area-inset-right));grid-template-columns:auto minmax(0,1fr) auto!important;gap:6px}
+  .topbar>.panelbtn{grid-column:1}
+  .topbar>.toolbar{grid-column:2!important;justify-self:center;flex-wrap:nowrap;overflow-x:auto;max-width:100%;scrollbar-width:none}
+  .view .topbar>.modebar{grid-column:3!important;grid-row:1!important;justify-self:end}
+  .panelbtn{width:42px;height:42px}
+  .toolbar,.modebar{padding:3px;gap:1px}
+  .tb{min-width:38px;height:40px;padding:0 4px}
+  .tb span{display:none}
+  .tb svg{width:20px;height:20px}
+  .sw{width:22px;height:22px}
+  .tb-sep{margin:5px 2px}
+  .modebar .mode{min-width:38px;height:40px;padding:0 4px}
+  .modebar .mode svg{width:20px;height:20px}
+  .modebar .mode-t{display:none}
+  .secui{top:60px}
+  .chip{display:none}
+  .tip{bottom:10px;max-width:calc(100% - 300px);font-size:12.5px;padding:6px 10px}
+  .joy{width:96px;height:96px;left:max(14px,env(safe-area-inset-left));bottom:12px}
+  .floors{right:max(14px,env(safe-area-inset-right));bottom:12px}
+  .floors .btn{min-height:36px;min-width:96px;font-size:13px}
+  .toast{left:50%;transform:translateX(-50%);top:60px;bottom:auto}
+}
+
+/* phone-in-headset VR (Homido, Cardboard): the view fills the screen, all other UI is hidden */
+body.cardboard{overflow:hidden}
+body.cardboard .view{position:fixed!important;inset:0;width:100vw;height:100vh;height:100dvh;z-index:100;background:#000}
+body.cardboard .topbar,body.cardboard .walkui,body.cardboard .chip,body.cardboard .tip,body.cardboard .secui,body.cardboard .panel{display:none!important}
+.cbui{position:absolute;inset:0;pointer-events:none;z-index:6;color:var(--fg)}
+.cb-bar{position:absolute;top:max(8px,env(safe-area-inset-top));left:50%;transform:translateX(-50%);display:flex;gap:6px;pointer-events:auto;transition:opacity .4s}
+.cb-bar.dim{opacity:.12}
+.cb-bar .btn{background:var(--glass);min-height:34px}
+.cb-set{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:min(440px,calc(100% - 24px));max-height:calc(100% - 24px);overflow:auto;display:flex;flex-direction:column;gap:10px;padding:14px;background:var(--panel);border:1px solid var(--line-strong);border-radius:12px;pointer-events:auto}
+.cb-range{display:grid;grid-template-columns:130px 1fr;gap:10px;align-items:center;font-size:13.5px;color:var(--muted)}
+.cb-range input{accent-color:var(--accent)}
+.cb-rot{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:24px;text-align:center;background:rgba(10,12,14,.92);pointer-events:auto}
+.cb-rot b{font-size:18px}
+.cb-rot span{color:var(--muted);max-width:30ch}
+@media (orientation:portrait){body.cardboard .cb-rot{display:flex}}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script type="importmap">
@@ -404,6 +464,7 @@ h2{display:flex;align-items:center;gap:10px;margin:0;font:600 16px/1.2 var(--f-b
       <dt>W A S D</dt><dd>В обзоре — плавный полёт по сцене, Shift — быстрее, Q / E — вниз / вверх. В прогулке — идти, Shift — бегом. На телефоне и в Quest — джойстик в углу.</dd>
       <dt>Выделение</dt><dd>Клик по части модели или по разметке — выделить, стрелки гизмо — передвинуть (вверх-вниз — зелёная). Delete — удалить разметку, Esc — снять выделение.</dd>
       <dt>Прогулка</dt><dd>Тянуть мышью — осмотреться, клик по полу — перейти.</dd>
+      <dt>VR очки</dt><dd>Телефон в очках Homido, Cardboard и похожих: смотрите головой. Взгляд на пол 1,5 с — переход туда. Касание экрана (кнопка очков) — перейти, удержание — идти вперёд. Bluetooth-джойстик: стик — идти, A — перейти. «Линзы» — пресет очков и подстройка, «По центру» — выровнять направление.</dd>
       <dt>R / F</dt><dd>Этаж выше / ниже. Q / E — вниз / вверх без гравитации.</dd>
       <dt>1–5</dt><dd>Инструменты. Ctrl+Z — отменить, Esc — прервать или выйти.</dd>
     </dl>
@@ -414,9 +475,11 @@ h2{display:flex;align-items:center;gap:10px;margin:0;font:600 16px/1.2 var(--f-b
   <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 </aside>
 
+<div class="scrim" id="scrim" hidden></div>
 <main class="view" id="view">
   <canvas id="c" tabindex="0" aria-label="3D-вид модели"></canvas>
   <div class="topbar">
+  <button type="button" class="panelbtn" id="panelbtn" aria-label="Показать или скрыть панель" aria-expanded="true" title="Панель: модели, масштаб, разметка"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
   <div class="toolbar" id="toolbar" role="toolbar" aria-label="Инструменты">
     <button type="button" class="tb" data-tool="nav" title="Выделение: клик по части модели или разметке, стрелки — передвинуть (1)"><svg viewBox="0 0 24 24"><path d="M5 3l14 7.5-6.2 1.8L10 19z"/></svg><span>Выделение</span></button>
     <button type="button" class="tb" data-tool="pin" title="Метка с комментарием (2)"><svg viewBox="0 0 24 24"><path d="M12 21s-6-6.2-6-11a6 6 0 0 1 12 0c0 4.8-6 11-6 11z"/><circle cx="12" cy="10" r="2.2"/></svg><span>Метка</span></button>
@@ -453,6 +516,10 @@ h2{display:flex;align-items:center;gap:10px;margin:0;font:600 16px/1.2 var(--f-b
     <button class="mode" id="m-phone" type="button" disabled title="AR через камеру телефона">
       <svg viewBox="0 0 32 32" aria-hidden="true"><rect x="9" y="3" width="14" height="26" rx="3"/><path d="M14 25.5h4"/><path d="M12 15l4-4 4 4M12.5 14.5V19h7v-4.5"/></svg>
       <span class="mode-t">AR телефон</span>
+    </button>
+    <button class="mode" id="m-cardboard" type="button" disabled title="VR-очки для телефона: Homido, Google Cardboard и похожие">
+      <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M3 10.5c0-1.4 1.1-2.5 2.5-2.5h21c1.4 0 2.5 1.1 2.5 2.5v11c0 1.4-1.1 2.5-2.5 2.5h-6.2l-2.6-4h-3.4l-2.6 4H5.5C4.1 24 3 22.9 3 21.5z"/><circle cx="10.5" cy="15.5" r="3"/><circle cx="21.5" cy="15.5" r="3"/></svg>
+      <span class="mode-t">VR очки</span>
     </button>
   </div>
   </div>
@@ -498,6 +565,27 @@ h2{display:flex;align-items:center;gap:10px;margin:0;font:600 16px/1.2 var(--f-b
       <button type="button" class="btn" id="ar-exit">Выйти</button>
     </div>
   </div>
+  <div class="cbui" id="cbui" hidden>
+    <div class="cb-bar" id="cb-bar">
+      <button type="button" class="btn small" id="cb-exit">✕ Выйти</button>
+      <button type="button" class="btn small" id="cb-center">⟲ По центру</button>
+      <button type="button" class="btn small" id="cb-gear">⚙ Линзы</button>
+    </div>
+    <div class="cb-set" id="cb-set" hidden>
+      <div class="field"><span class="lbl" id="l-cbp">Очки</span>
+        <div class="seg" id="cb-preset" role="group" aria-labelledby="l-cbp">
+          <button type="button" data-val="homido">Homido</button>
+          <button type="button" data-val="cardboard">Cardboard</button>
+          <button type="button" data-val="flat">Без поправки</button>
+        </div></div>
+      <label class="cb-range"><span>Искажение линз</span><input type="range" id="cb-k" min="0" max="2" step="0.05"></label>
+      <label class="cb-range"><span>Между линзами</span><input type="range" id="cb-shift" min="-0.08" max="0.08" step="0.005"></label>
+      <label class="cb-range"><span>Поле зрения</span><input type="range" id="cb-fov" min="60" max="120" step="1"></label>
+      <label class="check"><input type="checkbox" id="cb-gaze"><span>Переход взглядом<small>Смотрите на пол 1,5 с — перейдёте туда</small></span></label>
+      <button type="button" class="btn small primary" id="cb-done">Готово</button>
+    </div>
+    <div class="cb-rot" id="cb-rot"><b>Поверните телефон горизонтально</b><span>и вставьте его в очки: разделитель экрана — ровно между линзами</span></div>
+  </div>
   <div class="busy" id="busy" hidden><span class="spin"></span><span id="busytext"></span></div>
 </main>
 
@@ -523,7 +611,7 @@ const UP = new V3(0, 1, 0), DOWN = new V3(0, -1, 0);
 const UNITS = { mm: 0.001, cm: 0.01, m: 1, in: 0.0254, ft: 0.3048 };
 const TABLE_STEPS = [20, 50, 100, 200, 500, 1000];
 const EYE = 1.65, STEP = 0.45, RADIUS = 0.3, GRAV = 9.8;
-const APP_VERSION = '2.9';
+const APP_VERSION = '3.0';
 const BASE_COLORS = ['#f2efe8', '#d8a33f', '#e0604a', '#3f86c9'];
 const KINDS = { issue: { label: 'Замечание', color: '#e0604a' }, question: { label: 'Вопрос', color: '#d8a33f' }, idea: { label: 'Идея', color: '#4fae7f' } };
 const TOOLS = [['nav', 'Выделение'], ['pin', 'Метка'], ['measure', 'Рулетка'], ['pen', 'Карандаш'], ['erase', 'Ластик'], ['section', 'Сечение']];   // «Куб» временно скрыт: код инструмента сохранён
@@ -2309,6 +2397,7 @@ function enterWalk() {
   placeEntrance(); applyEnv(); updateTip(); onResize(); updateModeButtons(); canvas.focus({ preventScroll: true });
 }
 function exitWalk() {
+  if (cb.on) exitCardboard();
   state.view = 'orbit'; keys.clear(); joy.x = joy.y = 0; cancelTool();
   document.body.classList.remove('walking'); $('#walkui').hidden = true; updateCanvasCursor();
   camera.fov = 55; camera.rotation.set(0, 0, 0); controls.enabled = true;
@@ -2366,6 +2455,163 @@ joyEl.addEventListener('pointerdown', e => { joy.id = e.pointerId; joyEl.setPoin
 joyEl.addEventListener('pointermove', e => { if (e.pointerId === joy.id) joyMove(e); });
 const joyEnd = e => { if (e.pointerId !== joy.id) return; joy.id = null; joy.x = joy.y = 0; knob.style.transform = ''; };
 joyEl.addEventListener('pointerup', joyEnd); joyEl.addEventListener('pointercancel', joyEnd);
+
+/* panel toggle: drawer on landscape phones, collapse on larger screens */
+const compactMQ = matchMedia('(orientation:landscape) and (max-height:600px)');
+function setDrawer(open) { document.body.classList.toggle('drawer', open); $('#scrim').hidden = !open; $('#panelbtn').setAttribute('aria-expanded', String(open)); }
+$('#panelbtn').addEventListener('click', () => {
+  if (compactMQ.matches) setDrawer(!document.body.classList.contains('drawer'));
+  else { const off = document.body.classList.toggle('panel-off'); lsSet('vrtrip-panel-off', off ? '1' : '0'); $('#panelbtn').setAttribute('aria-expanded', String(!off)); requestAnimationFrame(onResize); }
+});
+$('#scrim').addEventListener('click', () => setDrawer(false));
+compactMQ.addEventListener?.('change', () => { setDrawer(false); requestAnimationFrame(onResize); });
+if (lsGet('vrtrip-panel-off') === '1') { document.body.classList.add('panel-off'); $('#panelbtn').setAttribute('aria-expanded', 'false'); }
+
+/* ================= VR glasses for a phone (Homido, Google Cardboard and similar) ================= */
+/* Split-screen stereo with a barrel pre-distortion for the lenses, head tracking from the phone's gyroscope,
+   gaze-to-go (look at a floor spot 1.5 s), screen tap / headset button = go, hold = walk, Bluetooth gamepad = stick + A */
+const CB_PRESETS = { homido: { k1: 0.22, k2: 0.12, fov: 96 }, cardboard: { k1: 0.34, k2: 0.55, fov: 90 }, flat: { k1: 0, k2: 0, fov: 80 } };
+const cb = Object.assign({ preset: 'homido', k: 1, shift: 0, fov: 96, gaze: true }, (() => { try { return JSON.parse(lsGet('vrtrip-cb') || '{}'); } catch { return {}; } })(),
+  { on: false, ipd: 0.064, q: new THREE.Quaternion(), raw: null, hasGyro: false, yawOff: 0, recenter: true, dwell: 0, spot: null, lock: null, target: null, touch: null, rt: null, wake: null, prevA: false, fsWas: false, barT: 0 });
+function saveCb() { lsSet('vrtrip-cb', JSON.stringify({ preset: cb.preset, k: cb.k, shift: cb.shift, fov: cb.fov, gaze: cb.gaze })); }
+const cbStereo = new THREE.StereoCamera();
+const cbMat = new THREE.ShaderMaterial({
+  uniforms: { tex: { value: null }, k1: { value: 0 }, k2: { value: 0 }, shift: { value: 0 }, eyeAspect: { value: 1 }, prog: { value: 0 } },
+  depthTest: false, depthWrite: false,
+  vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }',
+  fragmentShader: `uniform sampler2D tex; uniform float k1, k2, shift, eyeAspect, prog; varying vec2 vUv;
+  void main(){
+    float right = step(0.5, vUv.x);
+    float ec = mix(0.25, 0.75, right);
+    vec2 lens = vec2(ec + mix(shift, -shift, right), 0.5);
+    vec2 S = vec2(4.0 * eyeAspect, 2.0);
+    vec2 p = (vUv - lens) * S;
+    float r2 = dot(p, p);
+    vec2 src = vec2(ec, 0.5) + p * (1.0 + k1 * r2 + k2 * r2 * r2) / S;
+    vec4 col = vec4(0.0, 0.0, 0.0, 1.0);
+    if (src.y >= 0.0 && src.y <= 1.0 && src.x >= right * 0.5 && src.x <= 0.5 + right * 0.5) col = texture2D(tex, src);
+    float d = length(p);
+    col.rgb = mix(col.rgb, vec3(0.08), smoothstep(0.010, 0.013, d) * (1.0 - smoothstep(0.027, 0.030, d)));
+    col.rgb = mix(col.rgb, vec3(1.0), smoothstep(0.013, 0.016, d) * (1.0 - smoothstep(0.023, 0.026, d)));
+    float a = atan(p.x, p.y) / 6.2831853 + 0.5;
+    col.rgb = mix(col.rgb, vec3(0.85, 0.64, 0.25), step(a, prog) * smoothstep(0.034, 0.038, d) * (1.0 - smoothstep(0.047, 0.051, d)));
+    gl_FragColor = col;
+    #include <colorspace_fragment>
+  }`,
+});
+const cbScene = new THREE.Scene(), cbCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+{ const m = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), cbMat); m.frustumCulled = false; cbScene.add(m); }
+const _cbZ = new V3(0, 0, 1), _cbE = new THREE.Euler(), _cbQ0 = new THREE.Quaternion(), _cbQ1 = new THREE.Quaternion(-Math.SQRT1_2, 0, 0, Math.SQRT1_2);
+function onOrient(e) {
+  if (e.alpha == null) return;
+  cb.hasGyro = true; const D = THREE.MathUtils.DEG2RAD;
+  const orient = (screen.orientation?.angle ?? window.orientation ?? 0) * D;
+  _cbE.set(e.beta * D, e.alpha * D, -e.gamma * D, 'YXZ');
+  cb.raw = (cb.raw || new THREE.Quaternion()).setFromEuler(_cbE).multiply(_cbQ1).multiply(_cbQ0.setFromAxisAngle(_cbZ, -orient));
+}
+const yawOfQ = q => { const f = new V3(0, 0, -1).applyQuaternion(q); return Math.atan2(-f.x, -f.z); };
+function cbPre() {
+  if (cb.hasGyro && cb.raw) {
+    if (cb.recenter) { cb.yawOff = player.yaw - yawOfQ(cb.raw); cb.recenter = false; }
+    cb.q.setFromAxisAngle(UP, cb.yawOff).multiply(cb.raw);
+    player.yaw = yawOfQ(cb.q);                                   // walking follows the gaze
+  }
+  const gp = [...(navigator.getGamepads?.() || [])].find(g => g && g.connected);
+  let gx = 0, gy = 0, ga = false;
+  if (gp) { gx = Math.abs(gp.axes[0] || 0) > 0.15 ? gp.axes[0] : 0; gy = Math.abs(gp.axes[1] || 0) > 0.15 ? gp.axes[1] : 0; ga = !!gp.buttons[0]?.pressed; }
+  if (joy.id === null) { joy.x = gx; joy.y = cb.touch?.walking ? -0.8 : gy; }
+  if (ga && !cb.prevA) cbGo(); cb.prevA = ga;
+}
+function cbPost(dt) {
+  if (cb.hasGyro && cb.raw) camera.quaternion.copy(cb.q);
+  camera.updateMatrixWorld();
+  const o = camera.getWorldPosition(new V3()), dir = new V3(0, 0, -1).applyQuaternion(camera.getWorldQuaternion(new THREE.Quaternion()));
+  const h = hitScene(new THREE.Ray(o, dir));
+  const ok = !!h && h.normal.y > 0.7 && h.dist > 0.6 && h.dist < 40;
+  cb.target = ok ? h : null;
+  if (ok) {
+    marker.visible = true; marker.position.copy(h.world); marker.position.y += 0.01; marker.material.color.set(0xd8a33f);
+    if (cb.lock && cb.lock.distanceTo(h.world) < 0.7) cb.dwell = 0;
+    else {
+      cb.lock = null;
+      if (cb.spot && cb.spot.distanceTo(h.world) < 0.35) cb.dwell += dt; else { cb.spot = h.world.clone(); cb.dwell = 0; }
+      if (cb.gaze && cb.dwell >= 1.5 && $('#cb-set').hidden) cbGo();
+    }
+  } else { marker.visible = false; cb.dwell = 0; cb.spot = null; }
+  cbMat.uniforms.prog.value = cb.gaze && ok && !cb.lock ? Math.min(1, cb.dwell / 1.5) : 0;
+  if (cb.barT && performance.now() > cb.barT) { $('#cb-bar').classList.add('dim'); cb.barT = 0; }
+}
+function cbGo() {
+  const h = cb.target; if (!h) return;
+  player.x = h.local.x; player.z = h.local.z; player.y = h.local.y; player.vy = 0;
+  cb.lock = h.world.clone(); cb.dwell = 0; cb.spot = null; navigator.vibrate?.(25);
+}
+function cbRender() {
+  const sz = renderer.getDrawingBufferSize(new THREE.Vector2());
+  if (!cb.rt || cb.rt.width !== sz.x || cb.rt.height !== sz.y) { cb.rt?.dispose(); cb.rt = new THREE.WebGLRenderTarget(sz.x, sz.y, { samples: 4 }); cb.rt.texture.colorSpace = THREE.SRGBColorSpace; }
+  const w = Math.floor(sz.x / 2), h = sz.y, P = CB_PRESETS[cb.preset] || CB_PRESETS.homido;
+  camera.aspect = w / h; camera.fov = cb.fov; camera.focus = 100; camera.updateProjectionMatrix(); camera.updateMatrixWorld();
+  cbStereo.eyeSep = cb.ipd; cbStereo.update(camera);
+  for (const [cam, x] of [[cbStereo.cameraL, 0], [cbStereo.cameraR, w]]) {
+    cb.rt.viewport.set(x, 0, w, h); cb.rt.scissor.set(x, 0, w, h); cb.rt.scissorTest = true;
+    renderer.setRenderTarget(cb.rt); renderer.render(scene, cam);
+  }
+  renderer.setRenderTarget(null);
+  const u = cbMat.uniforms; u.tex.value = cb.rt.texture; u.k1.value = P.k1 * cb.k; u.k2.value = P.k2 * cb.k; u.shift.value = cb.shift; u.eyeAspect.value = w / h;
+  renderer.render(cbScene, cbCam);
+}
+function cbShowBar() { $('#cb-bar').classList.remove('dim'); cb.barT = performance.now() + 4000; }
+async function enterCardboard() {
+  if (!isReady()) return;
+  /* both requests must start inside the tap: iPhone asks for motion access, Android goes full screen */
+  const perm = (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') ? DeviceOrientationEvent.requestPermission().catch(() => 'denied') : Promise.resolve('granted');
+  const el = document.documentElement, fs = el.requestFullscreen ? el.requestFullscreen({ navigationUI: 'hide' }).catch(() => {}) : Promise.resolve();
+  clearSelection(); if (state.view !== 'walk') enterWalk();
+  Object.assign(cb, { on: true, recenter: true, hasGyro: false, raw: null, dwell: 0, spot: null, lock: null, touch: null });
+  document.body.classList.add('cardboard'); $('#cbui').hidden = false; $('#cb-set').hidden = true; paintCb();
+  window.addEventListener('deviceorientation', onOrient);
+  await fs; try { await screen.orientation?.lock?.('landscape'); } catch {}
+  try { cb.wake = await navigator.wakeLock?.request('screen'); } catch {}
+  if ((await perm) !== 'granted') toast('Нет доступа к датчикам движения. Разрешите «Движение и ориентация» для этого сайта.', 'warn');
+  cbShowBar(); onResize(); updateModeButtons();
+  setTimeout(() => { if (cb.on && !cb.hasGyro) toast('Телефон не передаёт повороты головы — осматривайтесь, проводя пальцем по экрану.', 'warn'); }, 2500);
+}
+function exitCardboard() {
+  if (!cb.on) return;
+  cb.on = false; document.body.classList.remove('cardboard'); $('#cbui').hidden = true;
+  window.removeEventListener('deviceorientation', onOrient); marker.visible = false; joy.x = joy.y = 0; cb.touch = null;
+  try { screen.orientation?.unlock?.(); } catch {}
+  if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {});
+  cb.wake?.release?.().catch(() => {}); cb.wake = null; cb.rt?.dispose(); cb.rt = null;
+  camera.fov = 70; player.pitch = -0.04; onResize(); updateModeButtons();
+}
+document.addEventListener('fullscreenchange', () => { if (document.fullscreenElement) cb.fsWas = true; else if (cb.on && cb.fsWas) { cb.fsWas = false; exitCardboard(); } });
+/* in the glasses: tap = go where you look, hold = walk forward; without a gyroscope the finger looks around as in the walk */
+$('#view').addEventListener('pointerdown', e => {
+  if (!cb.on || e.target.closest('#cbui .cb-bar, #cb-set, #cb-rot')) return;
+  cbShowBar();
+  if (!cb.hasGyro) return;
+  e.stopPropagation(); e.preventDefault();
+  const t = { id: e.pointerId, t0: performance.now(), walking: false };
+  t.timer = setTimeout(() => { if (cb.touch === t) t.walking = true; }, 350);
+  cb.touch = t;
+}, true);
+const cbUp = e => { const t = cb.touch; if (!cb.on || !t || e.pointerId !== t.id) return; clearTimeout(t.timer); if (!t.walking) cbGo(); cb.touch = null; joy.y = 0; };
+window.addEventListener('pointerup', cbUp, true); window.addEventListener('pointercancel', cbUp, true);
+function paintCb() {
+  $('#cb-preset').querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.val === cb.preset)));
+  $('#cb-k').value = cb.k; $('#cb-shift').value = cb.shift; $('#cb-fov').value = cb.fov; $('#cb-gaze').checked = cb.gaze;
+}
+$('#cb-preset').addEventListener('click', e => { const b = e.target.closest('[data-val]'); if (!b) return; cb.preset = b.dataset.val; cb.fov = CB_PRESETS[cb.preset].fov; cb.k = 1; saveCb(); paintCb(); });
+$('#cb-k').addEventListener('input', e => { cb.k = +e.target.value; saveCb(); });
+$('#cb-shift').addEventListener('input', e => { cb.shift = +e.target.value; saveCb(); });
+$('#cb-fov').addEventListener('input', e => { cb.fov = +e.target.value; saveCb(); });
+$('#cb-gaze').addEventListener('change', e => { cb.gaze = e.target.checked; saveCb(); });
+$('#cb-gear').addEventListener('click', () => { $('#cb-set').hidden = !$('#cb-set').hidden; });
+$('#cb-done').addEventListener('click', () => { $('#cb-set').hidden = true; cbShowBar(); });
+$('#cb-center').addEventListener('click', () => { cb.recenter = true; cbShowBar(); });
+$('#cb-exit').addEventListener('click', () => exitCardboard());
+$('#m-cardboard').addEventListener('click', () => (cb.on ? exitCardboard() : enterCardboard()));
 
 /* keyboard */
 const typing = e => /^(INPUT|TEXTAREA|SELECT)$/.test(e.target?.tagName);
@@ -3192,7 +3438,8 @@ function updateModeButtons() {
   const canMR = headset && xrSupport.ar, canVR = headset && (xrSupport.ar || xrSupport.vr), canXR = canMR || canVR || !!k;
   const set = (id, ok, why, pressed = false) => { const b = $(id); b.disabled = !ready; b.classList.toggle('na', !ok); b.setAttribute('aria-pressed', String(pressed)); modeWhy[id] = ok ? '' : why; };
   set('#m-orbit', true, '', state.view === 'orbit'); $('#m-orbit').disabled = false;
-  set('#m-walk', true, '', state.view === 'walk');
+  set('#m-walk', true, '', state.view === 'walk' && !cb.on);
+  set('#m-cardboard', isPhone, 'Режим для телефона в VR-очках (Homido, Google Cardboard и похожие). Откройте эту ссылку на телефоне.', cb.on);
   const noXR = !window.isSecureContext ? 'VR работает только на странице с адресом https://.' : 'Нужен шлем: откройте эту же ссылку в браузере Meta Quest 3.';
   set('#m-mr', canMR, isPhone ? 'Это режим для шлема Quest 3. На телефоне — «AR телефон».' : xrSupport.vr ? 'Сквозной режим в этом браузере недоступен — выберите «VR мир».' : noXR);
   set('#m-vr', canVR, isPhone ? 'Это режим для шлема Quest. На телефоне — «AR телефон».' : noXR);
@@ -3357,11 +3604,11 @@ renderer.setAnimationLoop((t, xrFrame) => {
   const dt = Math.min(clock.getDelta(), 0.1);
   if (state.view === 'ar') arUpdate(xrFrame);
   else if (state.view === 'xr') pollInput(dt);
-  else if (state.view === 'walk') walkUpdate(dt);
+  else if (state.view === 'walk') { if (cb.on) cbPre(); walkUpdate(dt); if (cb.on) cbPost(dt); }
   else { flyUpdate(dt); controls.update(); }
   if (sky.visible) { sky.position.copy(camera.getWorldPosition(_v)); sky.scale.setScalar(Math.min(1, camera.far * 0.9 / 1000)); }
   updateSection(); updateBillboards(); updateLabels(); updateCursor();
-  renderer.render(scene, camera);
+  if (cb.on) cbRender(); else renderer.render(scene, camera);
 });
 
 (async () => {
