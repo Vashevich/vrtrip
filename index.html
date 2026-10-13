@@ -291,6 +291,7 @@ body.panel-off .view{grid-column:2}
   .tb span{display:none}
   .tb svg{width:20px;height:20px}
   .sw{width:22px;height:22px}
+  .swatches{flex-wrap:nowrap}
   .tb-sep{margin:5px 2px}
   .modebar .mode{min-width:38px;height:40px;padding:0 4px}
   .modebar .mode svg{width:20px;height:20px}
@@ -709,6 +710,7 @@ import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { GTAOPass } from 'three/addons/postprocessing/GTAOPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import { Pass, FullScreenQuad } from 'three/addons/postprocessing/Pass.js';
 import { XREstimatedLight } from 'three/addons/webxr/XREstimatedLight.js';
 import { computeBoundsTree, disposeBoundsTree, acceleratedRaycast } from 'three-mesh-bvh';
 
@@ -723,7 +725,7 @@ const UP = new V3(0, 1, 0), DOWN = new V3(0, -1, 0);
 const UNITS = { mm: 0.001, cm: 0.01, m: 1, in: 0.0254, ft: 0.3048 };
 const TABLE_STEPS = [20, 50, 100, 200, 500, 1000];
 const EYE = 1.65, STEP = 0.45, RADIUS = 0.3, GRAV = 9.8;
-const APP_VERSION = '3.7';
+const APP_VERSION = '3.8';
 const BASE_COLORS = ['#f2efe8', '#d8a33f', '#e0604a', '#3f86c9'];
 const KINDS = { issue: { label: 'Замечание', color: '#e0604a' }, question: { label: 'Вопрос', color: '#d8a33f' }, idea: { label: 'Идея', color: '#4fae7f' } };
 const TOOLS = [['nav', 'Выделение'], ['pin', 'Метка'], ['measure', 'Рулетка'], ['pen', 'Карандаш'], ['erase', 'Ластик'], ['section', 'Сечение'], ['ref', 'Репер'], ['explode', 'Взрыв']];   // «Куб» временно скрыт: код инструмента сохранён
@@ -1451,7 +1453,7 @@ function sunDirLocal() {
   return N.multiplyScalar(Math.cos(A)).addScaledVector(E, Math.sin(A)).multiplyScalar(Math.cos(h)).addScaledVector(UP, Math.sin(h)).normalize();
 }
 scene.add(sun.target);
-sun.shadow.mapSize.set(2048, 2048); sun.shadow.bias = -0.0004;
+sun.shadow.mapSize.set(2048, 2048); sun.shadow.bias = -0.0004; sun.shadow.radius = 3;   // softer shadow edges
 /* shadow catcher: an invisible floor that only shows shadows — on the real floor in passthrough and AR, on the backdrop elsewhere */
 const catcher = new THREE.Mesh(new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2), new THREE.ShadowMaterial({ opacity: 0.34, depthWrite: false }));
 catcher.receiveShadow = true; catcher.matrixAutoUpdate = false; catcher.renderOrder = 1; scene.add(catcher);
@@ -1523,7 +1525,60 @@ function ensureEstLight() {
 function shadowsDirty() { shadowsVersion++; }
 /* screen-space ambient occlusion: browser views only (in the headset it would cost twice — once per eye) */
 let composer = null, gtao = null;
-function aoActive() { return VIS.ao && (state.view === 'orbit' || state.view === 'walk') && !cb.on && !renderer.xr.isPresenting; }
+function screenView() { return (state.view === 'orbit' || state.view === 'walk') && !cb.on && !renderer.xr.isPresenting; }
+function aoActive() { return VIS.ao && screenView(); }
+function outlineActive() { return VIS.edges && screenView(); }
+/* screen-space outline: edges from a normal + depth pass, ~2 px thick and smooth — catches the silhouettes of round things
+   (columns, pipes) that crease lines miss, and does not shimmer like 1-px lines */
+class ModelOutlinePass extends Pass {
+  constructor() {
+    super();
+    this.rt = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType }); this.rt.depthTexture = new THREE.DepthTexture(1, 1);
+    this.normalMat = new THREE.MeshNormalMaterial({ side: THREE.DoubleSide });
+    this.mat = new THREE.ShaderMaterial({
+      uniforms: { tDiffuse: { value: null }, tNormal: { value: null }, tDepth: { value: null }, res: { value: new THREE.Vector2(1, 1) }, near: { value: 0.1 }, far: { value: 1000 }, thick: { value: 1 }, ink: { value: new THREE.Color(0x1f2327) }, strength: { value: 0.9 } },
+      vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+      fragmentShader: `uniform sampler2D tDiffuse, tNormal, tDepth; uniform vec2 res; uniform float near, far, thick, strength; uniform vec3 ink; varying vec2 vUv;
+        float lin(vec2 uv){ float z = texture2D(tDepth, uv).x * 2.0 - 1.0; return 2.0 * near * far / (far + near - z * (far - near)); }
+        vec3 nrm(vec2 uv){ return texture2D(tNormal, uv).xyz * 2.0 - 1.0; }
+        void main(){
+          vec4 c = texture2D(tDiffuse, vUv);
+          float d0 = lin(vUv); vec3 n0 = nrm(vUv); float e = 0.0;
+          vec2 px = thick / res;
+          vec2 o[4]; o[0] = vec2(px.x, 0.0); o[1] = vec2(0.0, px.y); o[2] = vec2(px.x, px.y); o[3] = vec2(px.x, -px.y);
+          for (int i = 0; i < 4; i++) {
+            float a = lin(vUv + o[i]), b = lin(vUv - o[i]);
+            float lap = abs(a + b - 2.0 * d0) / max(d0, 1e-3);                       // depth step (silhouettes)
+            e = max(e, smoothstep(0.012, 0.04, lap));
+            vec3 na = nrm(vUv + o[i]), nb = nrm(vUv - o[i]);
+            e = max(e, smoothstep(0.18, 0.5, 1.0 - min(dot(na, n0), dot(nb, n0))));     // crease
+          }
+          gl_FragColor = vec4(mix(c.rgb, ink, e * strength), c.a);
+        }`,
+    });
+    this.quad = new FullScreenQuad(this.mat);
+  }
+  setSize(w, h) { this.rt.setSize(w, h); this.mat.uniforms.res.value.set(w, h); }
+  render(renderer, writeBuffer, readBuffer) {
+    const hide = [sky, ground, previewGrid, catcher, gizmo, secVis].filter(o => o.visible);
+    const lines = []; for (const r of shownRecs()) for (const m of r.meshes || []) if (m.userData.edges?.visible) lines.push(m.userData.edges);
+    const glass = []; for (const r of shownRecs()) for (const m of r.meshes || []) if (m.material.transparent && m.material.opacity < 0.5 && m.visible) glass.push(m);
+    [...hide, ...lines].forEach(o => { o.visible = false; });
+    const ov = scene.overrideMaterial, bg = scene.background, fog = scene.fog, sm = renderer.shadowMap.enabled;
+    this.normalMat.clippingPlanes = sec.on ? SEC_PLANES : null;
+    scene.overrideMaterial = this.normalMat; scene.background = null; scene.fog = null; renderer.shadowMap.enabled = false;
+    const cc = renderer.getClearColor(new THREE.Color()), ca = renderer.getClearAlpha();
+    renderer.setClearColor(0x000000, 0); renderer.setRenderTarget(this.rt); renderer.clear(); renderer.render(scene, camera);
+    renderer.setClearColor(cc, ca);
+    scene.overrideMaterial = ov; scene.background = bg; scene.fog = fog; renderer.shadowMap.enabled = sm;
+    [...hide, ...lines].forEach(o => { o.visible = true; });
+    const u = this.mat.uniforms;
+    u.tDiffuse.value = readBuffer.texture; u.tNormal.value = this.rt.texture; u.tDepth.value = this.rt.depthTexture;
+    u.near.value = camera.near; u.far.value = camera.far; u.thick.value = Math.max(1, renderer.getPixelRatio());
+    renderer.setRenderTarget(this.renderToScreen ? null : writeBuffer); this.quad.render(renderer);
+  }
+}
+let outlinePass = null;
 function ensureComposer() {
   if (composer) return composer;
   const sz = renderer.getDrawingBufferSize(new THREE.Vector2());
@@ -1531,22 +1586,26 @@ function ensureComposer() {
   composer = new EffectComposer(renderer, rt); composer.setPixelRatio(renderer.getPixelRatio());
   composer.addPass(new RenderPass(scene, camera));
   gtao = new GTAOPass(scene, camera, sz.x, sz.y);
-  gtao.updateGtaoMaterial({ radius: 0.6, distanceExponent: 1, thickness: 1, scale: 1, samples: 12, distanceFallOff: 1 });
-  gtao.updatePdMaterial({ lumaPhi: 10, depthPhi: 2, normalPhi: 3, radius: 6, rings: 2, samples: 12 });
-  gtao.blendIntensity = 0.85;
-  composer.addPass(gtao); composer.addPass(new OutputPass());
+  gtao.updateGtaoMaterial({ radius: 0.4, distanceExponent: 2, thickness: 1, scale: 1, samples: 16, distanceFallOff: 1 });   // soft contact shadow that fades out, no hard halo
+  gtao.updatePdMaterial({ lumaPhi: 10, depthPhi: 2, normalPhi: 3, radius: 10, rings: 3, samples: 16 });
+  gtao.blendIntensity = 0.7;
+  outlinePass = new ModelOutlinePass();
+  composer.addPass(gtao); composer.addPass(outlinePass); composer.addPass(new OutputPass());
   resizeComposer(); return composer;
 }
 function resizeComposer() { if (!composer) return; const v = $('#view'); composer.setPixelRatio(renderer.getPixelRatio()); composer.setSize(v.clientWidth, v.clientHeight); }
 /* UI objects (labels, markers, strokes, previews, gizmo) live on their own layer: with AO on they are drawn after the
    AO pass, so they are neither shaded by it nor tone-mapped */
 const UI_LAYER = 5;
+let lineState = null;
 camera.layers.enable(UI_LAYER);
 function toUI(o) { o.traverse(x => { if (x.material && x.material !== PICK_MAT && (x.isSprite || x.material.isMeshBasicMaterial || x.material.isLineBasicMaterial)) x.layers.set(UI_LAYER); }); return o; }
 function renderFrame() {
-  if (aoActive()) {
-    ensureComposer();
-    const z = sceneSize(); if (z) gtao.updateGtaoMaterial({ radius: THREE.MathUtils.clamp(Math.max(z.x, z.y, z.z) * 0.04, 0.05, 1.5) * holder.scale.x });
+  const crease = VIS.edges && !outlineActive();                  // 1-px crease lines only where the outline pass does not run (headset, glasses)
+  if (crease !== lineState) { lineState = crease; for (const r of shownRecs()) for (const m of r.meshes || []) if (m.userData.edges) m.userData.edges.visible = crease; }
+  if (aoActive() || outlineActive()) {
+    ensureComposer(); gtao.enabled = aoActive(); outlinePass.enabled = outlineActive();
+    const z = sceneSize(); if (z && gtao.enabled) { const r = THREE.MathUtils.clamp(Math.max(z.x, z.y, z.z) * 0.02, 0.03, 0.5) * holder.scale.x; if (Math.abs(r - (gtao._r || 0)) > 1e-4) { gtao._r = r; gtao.updateGtaoMaterial({ radius: r }); } }
     toUI(previewGroup);
     camera.layers.disable(UI_LAYER); composer.render();
     camera.layers.set(UI_LAYER); const ac = renderer.autoClear, bg = scene.background, sm = renderer.shadowMap.enabled;
@@ -1574,8 +1633,9 @@ async function applyEdgesOnce() {
       const e = new THREE.LineSegments(new THREE.EdgesGeometry(m.geometry, 25), EDGE_LINE); e.userData.sharedMat = true; e.raycast = () => {};
       m.add(e); m.userData.edges = e;
     }
-    m.userData.edges.visible = true;
+    m.userData.edges.visible = !outlineActive();
   }
+  lineState = null;
   for (const r of recs) for (const m of r.meshes) { const on = VIS.edges && r.shown; for (const mat of [m.material, m.userData.orig]) if (mat.polygonOffset !== on) { mat.polygonOffset = on; mat.polygonOffsetFactor = 1; mat.polygonOffsetUnits = 1; mat.needsUpdate = true; } }
   for (const mat of [CLAY, CLAY_GLASS]) if (mat.polygonOffset !== VIS.edges) { mat.polygonOffset = VIS.edges; mat.polygonOffsetFactor = 1; mat.polygonOffsetUnits = 1; mat.needsUpdate = true; }
 }
@@ -2789,6 +2849,12 @@ function exitWalk() {
 const walk = { v: new V3(), jump: false, eye: EYE };
 function walkUpdate(dt) {
   const k = c => keys.has(c);
+  if (freeLook) {                                          // fallback mouse-look: near the window edge the view keeps turning
+    const ex = aimEdge.x < 0.1 ? (aimEdge.x - 0.1) / 0.1 : aimEdge.x > 0.9 ? (aimEdge.x - 0.9) / 0.1 : 0;
+    const ey = aimEdge.y < 0.08 ? (aimEdge.y - 0.08) / 0.08 : aimEdge.y > 0.92 ? (aimEdge.y - 0.92) / 0.08 : 0;
+    if (ex) player.yaw -= THREE.MathUtils.clamp(ex, -1, 1) * 2.4 * dt;
+    if (ey) player.pitch = THREE.MathUtils.clamp(player.pitch - THREE.MathUtils.clamp(ey, -1, 1) * 1.4 * dt, -1.5, 1.5);
+  }
   let fwd = (k('KeyW') || k('ArrowUp') ? 1 : 0) - (k('KeyS') || k('ArrowDown') ? 1 : 0) - joy.y;
   let str = (k('KeyD') || k('ArrowRight') ? 1 : 0) - (k('KeyA') || k('ArrowLeft') ? 1 : 0) + joy.x;
   const m = Math.hypot(fwd, str); if (m > 1) { fwd /= m; str /= m; }
@@ -3065,6 +3131,7 @@ const CURSORS = {
   measure: 'crosshair', box: 'crosshair', ref: 'crosshair', explode: 'ns-resize', section: 'ns-resize',
 };
 function updateCanvasCursor(grabbing = false) {
+  if (typeof freeLook !== 'undefined' && freeLook) { canvas.style.cursor = 'none'; return; }      // aiming: the crosshair replaces the cursor
   canvas.style.cursor = grabbing ? 'grabbing' : CURSORS[state.tool] || (state.view === 'walk' ? 'grab' : 'default');
 }
 const ndc = new THREE.Vector2();
@@ -3073,12 +3140,12 @@ function rayAt(cx, cy) {
   ndc.set(((cx - r.left) / r.width) * 2 - 1, -((cy - r.top) / r.height) * 2 + 1);
   camera.updateMatrixWorld(); raycaster.setFromCamera(ndc, camera); return raycaster.ray.clone();
 }
-let freeLook = false;                                   // fallback when the browser refuses pointer lock (embedded browsers, quick re-lock after Esc)
+let freeLook = false; const aimEdge = { x: 0.5, y: 0.5 };                                   // fallback when the browser refuses pointer lock (embedded browsers, quick re-lock after Esc)
 const hardLocked = () => document.pointerLockElement === canvas;
 const locked = () => hardLocked() || freeLook;
 function aimChanged() {
   const on = locked();
-  gizmo.enabled = !on; $('#xhair').hidden = !on; canvas.style.cursor = freeLook ? 'none' : ''; updateTip();
+  gizmo.enabled = !on; $('#xhair').hidden = !on; updateCanvasCursor(); updateTip();
   if (!on) { hideCursor(); if (toy.on) setToy(false); } else if (state.view === 'walk' && !cb.on) setToy(true);
 }
 function startAim() {
@@ -3117,6 +3184,7 @@ canvas.addEventListener('pointerdown', e => {
 canvas.addEventListener('pointermove', e => {
   if (state.view === 'xr' || state.view === 'ar') return;
   if (locked()) {
+    if (freeLook) { const r = canvas.getBoundingClientRect(); aimEdge.x = (e.clientX - r.left) / r.width; aimEdge.y = (e.clientY - r.top) / r.height; }
     const k = 0.0022 * (lookSens || 1);
     player.yaw -= e.movementX * k; player.pitch = THREE.MathUtils.clamp(player.pitch - e.movementY * k, -1.5, 1.5);
     if (state.tool === 'erase' && pd?.tool && tool.erasing) { eraseAt(centerRay()); return; }
@@ -3157,7 +3225,7 @@ const endPointer = e => {
 };
 canvas.addEventListener('pointerup', e => { endPointer(e); controls.enabled = state.view === 'orbit'; });
 canvas.addEventListener('pointercancel', e => { endPointer(e); controls.enabled = state.view === 'orbit'; });
-canvas.addEventListener('pointerleave', () => { if (!pd && state.view !== 'xr') hideCursor(); });
+canvas.addEventListener('pointerleave', () => { if (!pd && state.view !== 'xr') hideCursor(); if (freeLook) { aimEdge.x = THREE.MathUtils.clamp(aimEdge.x, 0, 1); } });
 
 
 
