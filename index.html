@@ -240,6 +240,15 @@ h2{display:flex;align-items:center;gap:10px;margin:0;font:600 16px/1.2 var(--f-b
 #ar-rot-l,#ar-rot-r{font-size:22px}
 .ar-bottom .btn.primary{background:var(--accent)}
 .ar-bottom .seg{background:var(--glass)}
+.arui.pre #ar-mode,.arui.pre #ar-rot-l,.arui.pre #ar-rot-r,.arui.pre #ar-place,.arui.asking .ar-bottom:not(#ar-alignbar){display:none}
+.arui.pre .ar-top{justify-content:center}
+.arui.pre #ar-hint{font-size:17px;font-weight:600;text-align:center;padding:12px 16px}
+.ar-ask{position:absolute;left:50%;top:62%;transform:translateX(-50%);width:min(340px,calc(100% - 24px));display:flex;flex-direction:column;gap:10px;align-items:center;text-align:center;padding:14px;background:var(--glass);border:1px solid var(--line-strong);border-radius:14px;box-shadow:0 12px 32px rgba(0,0,0,.45);backdrop-filter:blur(8px)}
+.ar-ask::before{content:"";position:absolute;top:-8px;left:50%;width:14px;height:14px;transform:translateX(-50%) rotate(45deg);background:inherit;border-left:1px solid var(--line-strong);border-top:1px solid var(--line-strong)}
+.ar-ask b{font-size:16px;font-weight:600}
+.ar-ask-row{display:flex;flex-direction:column;gap:8px;width:100%}
+.ar-ask .btn{min-height:48px;width:100%;justify-content:center;background:var(--glass)}
+.ar-ask .btn.primary{background:var(--accent);color:var(--accent-ink)}
 .busy{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:12px;background:rgba(18,21,24,.6);font-weight:500;z-index:25}
 .spin{width:18px;height:18px;border-radius:50%;border:2px solid var(--line-strong);border-top-color:var(--accent);animation:spin .8s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
@@ -683,6 +692,13 @@ body.cardboard .topbar,body.cardboard .walkui,body.cardboard .chip,body.cardboar
       <button type="button" class="btn" id="ar-align">Реперы</button>
       <button type="button" class="btn" id="ar-exit">Выйти</button>
     </div>
+    <div class="ar-ask" id="ar-ask" hidden>
+      <b>Как поставить модель?</b>
+      <div class="ar-ask-row">
+        <button type="button" class="btn primary" id="ar-ask-full">1:1 — в натуральную величину</button>
+        <button type="button" class="btn" id="ar-ask-table">Оставить макетом</button>
+      </div>
+    </div>
     <div class="ar-bottom" id="ar-alignbar" hidden>
       <button type="button" class="btn primary" id="al-mark">Отметить</button>
       <button type="button" class="btn" id="al-skip">Пропустить</button>
@@ -745,7 +761,7 @@ const UP = new V3(0, 1, 0), DOWN = new V3(0, -1, 0);
 const UNITS = { mm: 0.001, cm: 0.01, m: 1, in: 0.0254, ft: 0.3048 };
 const TABLE_STEPS = [20, 50, 100, 200, 500, 1000];
 const EYE = 1.65, STEP = 0.45, RADIUS = 0.3, GRAV = 9.8;
-const APP_VERSION = '3.10';
+const APP_VERSION = '3.11';
 const BASE_COLORS = ['#f2efe8', '#d8a33f', '#e0604a', '#3f86c9'];
 const KINDS = { issue: { label: 'Замечание', color: '#e0604a' }, question: { label: 'Вопрос', color: '#d8a33f' }, idea: { label: 'Идея', color: '#4fae7f' } };
 const TOOLS = [['nav', 'Выделение'], ['pin', 'Метка'], ['measure', 'Рулетка'], ['pen', 'Карандаш'], ['erase', 'Ластик'], ['section', 'Сечение'], ['ref', 'Репер'], ['explode', 'Взрыв']];   // «Куб» временно скрыт: код инструмента сохранён
@@ -1505,7 +1521,7 @@ function updateLighting() {
     if (VIS.refl) hemi.intensity *= 0.72;                       // the environment already adds soft light
   }
   sun.position.copy(_sc).addScaledVector(dirW, R * 2); sun.target.position.copy(_sc); sun.target.updateMatrixWorld();
-  const cast = VIS.shadows && !night && sun.intensity > 0.01;
+  const cast = VIS.shadows && !night && sun.intensity > 0.01 && !ar.ghost;
   if (sun.castShadow !== cast) { sun.castShadow = cast; shadowKey = ''; }
   catcher.visible = cast;
   if (cast) {
@@ -3920,7 +3936,7 @@ function alignFinish() {
   const a = state.align; if (!a) return;
   if (!a.count) { alignCancel(); return; }
   state.align = null; const msg = alignSummary(a);
-  if (state.view === 'ar') { ar.placed = true; holder.visible = true; arHint(msg); arAlignBar(false); arScaleText(); }
+  if (state.view === 'ar') { arGhost(false); arPre(false); arAsk(false); ar.placed = true; holder.visible = true; arHint(msg); arAlignBar(false); arScaleText(); }
   else { palMessage = msg; layoutPalette(); clearTimeout(flash.t); flash.t = setTimeout(() => { palMessage = ''; drawPalette(); }, 9000); }
   buzz('right', 0.6, 50);
 }
@@ -3928,7 +3944,7 @@ function alignCancel() {
   const a = state.align; if (!a) return;
   state.align = null; state.alignRel = a.prev || null;
   if (!state.alignRel && state.view === 'xr') resetHolder(); else holdAlign();
-  if (state.view === 'ar') { arAlignBar(false); arHint(ar.placed ? 'Привязка отменена' : 'Наведите кольцо на пол и нажмите «Поставить»'); } else { flash('Привязка отменена'); }
+  if (state.view === 'ar') { arAlignBar(false); arHint(ar.placed ? 'Привязка отменена' : 'Наведите на пол или стол и коснитесь экрана'); } else { flash('Привязка отменена'); }
 }
 function alignClear() { state.align = null; state.alignRel = null; if (state.view === 'xr') { resetHolder(); if (state.mode === 'walk') toStart(); } flash('Привязка снята'); layoutPalette(); }
 function alignPaint() {
@@ -4422,11 +4438,11 @@ async function checkXR() {
 /* ================= phone AR ================= */
 /* Android (Chrome, ARCore): WebXR immersive-ar with hit-test and a DOM overlay.
    iPhone/iPad: the model is exported to USDZ in the browser and opened in Apple AR Quick Look. */
-const ar = { hitSource: null, placed: false, mode: 'table', overlay: false, touches: null };
+const ar = { hitSource: null, placed: false, mode: 'table', overlay: false, touches: null, ghost: false, asking: false, anchor: null, scale: 0 };
 const reticle = new THREE.Mesh(new THREE.RingGeometry(0.07, 0.095, 40).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xd8a33f }));
 reticle.add(new THREE.Mesh(new THREE.CircleGeometry(0.012, 20).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xffffff })));
 reticle.matrixAutoUpdate = false; reticle.visible = false; scene.add(reticle);
-function arHint(t) { $('#ar-hint').textContent = t; }
+function arHint(t) { const el = $('#ar-hint'); if (el.textContent !== t) el.textContent = t; }
 function arScaleText() { $('#ar-scale').textContent = ar.placed ? (holder.scale.x > 0.995 ? '1:1' : `1:${Math.round(1 / holder.scale.x)}`) : ''; }
 async function enterPhoneAR() {
   if (!isReady()) return;
@@ -4444,9 +4460,9 @@ async function enterPhoneAR() {
   state.view = 'ar'; controls.enabled = false; cancelTool();
   camera.position.set(0, 0, 0); camera.quaternion.identity(); camera.near = 0.02; camera.far = 2000; camera.updateProjectionMatrix();
   rig.position.set(0, 0, 0); rig.rotation.set(0, 0, 0);
-  ar.placed = false; ar.scale = 0; ar.overlay = !!session.domOverlayState; ar.mode = 'table'; paintArMode();
+  ar.placed = false; ar.scale = 0; ar.anchor = null; ar.overlay = !!session.domOverlayState; ar.mode = 'table'; paintArMode();
   holder.visible = false; resetHolder();
-  $('#arui').hidden = false; arHint('Медленно поводите телефоном, наводя на пол, — появится кольцо'); arScaleText();
+  $('#arui').hidden = false; arPre(true); arAsk(false); arHint('Медленно поводите телефоном, наводя на пол или стол, — модель будет искать, где встать'); arScaleText();
   applyEnv();
   const viewer = await session.requestReferenceSpace('viewer');
   ar.hitSource = await session.requestHitTestSource({ space: viewer });
@@ -4457,6 +4473,7 @@ function onArEnd() {
   state.align = null; state.alignRel = null; $('#ar-alignbar').hidden = true; document.querySelector('#arui .ar-bottom:not(#ar-alignbar)').hidden = false;
   ar.hitSource?.cancel?.(); ar.hitSource = null;
   renderer.xr.setReferenceSpaceType('local-floor');
+  arGhost(false); arPre(false); arAsk(false);
   state.view = 'orbit'; $('#arui').hidden = true; reticle.visible = false; holder.visible = true; resetHolder();
   controls.enabled = true; applyEnv(); frame(); onResize(); updateTip();
 }
@@ -4466,37 +4483,78 @@ function arUpdate(xrFrame) {
   const ref = renderer.xr.getReferenceSpace();
   const hits = xrFrame.getHitTestResults(ar.hitSource);
   const pose = hits.length ? hits[0].getPose(ref) : null;
-  if (pose) {
-    reticle.visible = true; reticle.matrix.fromArray(pose.transform.matrix);
-    if (!ar.placed) arHint(ar.overlay ? 'Нажмите «Поставить» или коснитесь экрана' : 'Коснитесь экрана, чтобы поставить модель');
-  } else reticle.visible = false;
+  if (pose) { reticle.visible = true; reticle.matrix.fromArray(pose.transform.matrix); }
+  else reticle.visible = false;
+  const free = !ar.placed && !state.align && !state.alignRel && activeRec()?.built;
+  if (free) {                                     // not placed yet: a see-through model rides on the ring, looking for a spot
+    if (reticle.visible) {
+      const p = new V3().setFromMatrixPosition(reticle.matrix), c = camera.getWorldPosition(new V3());
+      arGhost(true); arPose(p, c, 'table', arFitScale(p, c)); holder.visible = true;
+      arHint('Модель ищет место. Коснитесь экрана — она встанет сюда');
+    } else { holder.visible = false; arHint('Ищу поверхность — медленно поводите телефоном над полом или столом'); }
+  } else if (ar.ghost) { arGhost(false); if (!ar.placed) holder.visible = false; }
+  if (ar.asking) arAskFollow();
 }
+/* a round maquette scale 1:N so the whole model fits on screen at this distance */
+function arFitScale(p, c) {
+  const z = sceneSize() || activeRec().size, maxDim = Math.max(z.x, z.y, z.z), fit = Math.max(0.15, c.distanceTo(p) * 0.55);
+  const N = maxDim <= fit ? 1 : ([10, 20, 25, 50, 100, 200, 250, 500, 1000, 2000, 5000, 10000].find(n => maxDim / n <= fit) || 10000);
+  return 1 / N;
+}
+function arPose(p, c, mode, s) {
+  const dir = new V3(c.x - p.x, 0, c.z - p.z); if (dir.lengthSq() < 1e-6) dir.set(0, 0, 1); dir.normalize();
+  holder.rotation.set(0, Math.atan2(dir.x, dir.z), 0);
+  if (mode === 'full') {                          // 1:1 — the front edge of the building lands on the point, the building extends away from you
+    holder.scale.setScalar(1);
+    holder.position.copy(p).addScaledVector(dir, -(sceneSize() || activeRec().size).z / 2);
+  } else { holder.scale.setScalar(s); holder.position.copy(p); }
+}
+/* see-through preview while the model is still looking for a place */
+function arGhost(on) {
+  on = !!on; if (!!ar.ghost === on) return; ar.ghost = on;
+  holder.traverse(o => {
+    const ms = o.material ? (Array.isArray(o.material) ? o.material : [o.material]) : [];
+    for (const m of ms) {
+      if (on) { if (m.userData.arG) continue; m.userData.arG = { t: m.transparent, o: m.opacity }; m.transparent = true; m.opacity = m.opacity * 0.45; m.needsUpdate = true; }
+      else if (m.userData.arG) { m.transparent = m.userData.arG.t; m.opacity = m.userData.arG.o; delete m.userData.arG; m.needsUpdate = true; }
+    }
+  });
+}
+function arPre(on) { $('#arui').classList.toggle('pre', !!on); }
+function arAsk(on) { ar.asking = !!on; $('#ar-ask').hidden = !on; $('#arui').classList.toggle('asking', !!on); }
+function arAskFollow() {                          // keep the question just under the model's base
+  const el = $('#ar-ask'), xc = renderer.xr.getCamera(), cam = xc.cameras?.[0] || xc;
+  const v = holder.getWorldPosition(new V3()).project(cam);
+  if (!(v.z > -1 && v.z < 1)) return;
+  const W = innerWidth, H = innerHeight, w = el.offsetWidth, h = el.offsetHeight;
+  el.style.left = THREE.MathUtils.clamp((v.x * 0.5 + 0.5) * W, w / 2 + 12, W - w / 2 - 12) + 'px';
+  el.style.top = THREE.MathUtils.clamp((-v.y * 0.5 + 0.5) * H + 18, H * 0.22, H - h - 16) + 'px';
+}
+function arReplace() {
+  if (!ar.anchor) return;
+  if (ar.mode === 'table' && !ar.scale) ar.scale = arFitScale(ar.anchor.p, ar.anchor.c);
+  arPose(ar.anchor.p, ar.anchor.c, ar.mode, ar.scale); arScaleText(); arPlacedHint();
+}
+function arPlacedHint() { arHint(ar.mode === 'full' ? 'Здание стоит в натуральную величину — идите внутрь. Касание — переставить' : 'Два пальца — масштаб и поворот. Касание — переставить'); }
 function placeAtReticle() {
   const rec = activeRec(); if (!rec?.built) return;
   if (state.align) return;
   if (state.alignRel) { arHint('Модель привязана по реперам. Чтобы переставить вручную — «Реперы» → «Отмена» или выйдите из AR.'); return; }
   if (!reticle.visible) { arHint('Поверхность ещё не найдена — поводите телефоном над полом'); return; }
   const p = new V3().setFromMatrixPosition(reticle.matrix), c = camera.getWorldPosition(new V3());
-  const dir = new V3(c.x - p.x, 0, c.z - p.z); if (dir.lengthSq() < 1e-6) dir.set(0, 0, 1); dir.normalize();
-  const yaw = Math.atan2(dir.x, dir.z);
-  holder.rotation.set(0, yaw, 0);
-  if (ar.mode === 'full') {                     // 1:1 — the front edge of the building lands on the ring, the building extends away from you
-    holder.scale.setScalar(1);
-    holder.position.copy(p).addScaledVector(dir, -(sceneSize() || rec.size).z / 2);
-  } else {
-    if (!ar.scale) {                              // first placement: a round scale 1:N so the whole model fits on screen at this distance
-      const z = sceneSize() || rec.size, maxDim = Math.max(z.x, z.y, z.z), fit = Math.max(0.15, c.distanceTo(p) * 0.55);
-      const N = maxDim <= fit ? 1 : ([10, 20, 25, 50, 100, 200, 250, 500, 1000, 2000, 5000, 10000].find(n => maxDim / n <= fit) || 10000);
-      ar.scale = 1 / N;
-    }
-    holder.scale.setScalar(ar.scale);
-    holder.position.copy(p);
-  }
-  holder.visible = true; ar.placed = true; arScaleText();
-  arHint(ar.mode === 'full' ? 'Здание стоит в натуральную величину — идите внутрь. Касание — переставить' : 'Два пальца — масштаб и поворот. Касание — переставить');
+  const first = !ar.placed;
+  arGhost(false);
+  ar.anchor = { p: p.clone(), c: c.clone() };
+  if (!ar.scale) ar.scale = arFitScale(p, c);
+  arPose(p, c, ar.mode, ar.scale);
+  holder.visible = true; ar.placed = true; arPre(false); arScaleText();
+  if (first && ar.overlay) { arAsk(true); arHint('Модель стоит. Касание в другом месте — переставить'); }
+  else if (!ar.asking) arPlacedHint();
 }
 function paintArMode() { $('#ar-mode').querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.val === ar.mode))); }
-$('#ar-mode').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; ar.mode = b.dataset.val; paintArMode(); if (ar.placed) placeAtReticle(); });
+$('#ar-mode').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; ar.mode = b.dataset.val; paintArMode(); if (ar.placed && !state.alignRel) arReplace(); });
+$('#ar-ask-full').addEventListener('click', () => { ar.mode = 'full'; paintArMode(); arAsk(false); arReplace(); });
+$('#ar-ask-table').addEventListener('click', () => { ar.mode = 'table'; paintArMode(); arAsk(false); arReplace(); });
 $('#ar-place').addEventListener('click', () => placeAtReticle());
 $('#ar-exit').addEventListener('click', () => renderer.xr.getSession()?.end());
 $('#ar-rot-l').addEventListener('click', () => { holder.rotation.y += Math.PI / 12; });
