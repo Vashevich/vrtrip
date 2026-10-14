@@ -745,7 +745,7 @@ const UP = new V3(0, 1, 0), DOWN = new V3(0, -1, 0);
 const UNITS = { mm: 0.001, cm: 0.01, m: 1, in: 0.0254, ft: 0.3048 };
 const TABLE_STEPS = [20, 50, 100, 200, 500, 1000];
 const EYE = 1.65, STEP = 0.45, RADIUS = 0.3, GRAV = 9.8;
-const APP_VERSION = '3.9';
+const APP_VERSION = '3.10';
 const BASE_COLORS = ['#f2efe8', '#d8a33f', '#e0604a', '#3f86c9'];
 const KINDS = { issue: { label: 'Замечание', color: '#e0604a' }, question: { label: 'Вопрос', color: '#d8a33f' }, idea: { label: 'Идея', color: '#4fae7f' } };
 const TOOLS = [['nav', 'Выделение'], ['pin', 'Метка'], ['measure', 'Рулетка'], ['pen', 'Карандаш'], ['erase', 'Ластик'], ['section', 'Сечение'], ['ref', 'Репер'], ['explode', 'Взрыв']];   // «Куб» временно скрыт: код инструмента сохранён
@@ -4444,7 +4444,7 @@ async function enterPhoneAR() {
   state.view = 'ar'; controls.enabled = false; cancelTool();
   camera.position.set(0, 0, 0); camera.quaternion.identity(); camera.near = 0.02; camera.far = 2000; camera.updateProjectionMatrix();
   rig.position.set(0, 0, 0); rig.rotation.set(0, 0, 0);
-  ar.placed = false; ar.overlay = !!session.domOverlayState; ar.mode = 'table'; paintArMode();
+  ar.placed = false; ar.scale = 0; ar.overlay = !!session.domOverlayState; ar.mode = 'table'; paintArMode();
   holder.visible = false; resetHolder();
   $('#arui').hidden = false; arHint('Медленно поводите телефоном, наводя на пол, — появится кольцо'); arScaleText();
   applyEnv();
@@ -4484,7 +4484,12 @@ function placeAtReticle() {
     holder.scale.setScalar(1);
     holder.position.copy(p).addScaledVector(dir, -(sceneSize() || rec.size).z / 2);
   } else {
-    holder.scale.setScalar(1 / (rec.settings.table || 100));
+    if (!ar.scale) {                              // first placement: a round scale 1:N so the whole model fits on screen at this distance
+      const z = sceneSize() || rec.size, maxDim = Math.max(z.x, z.y, z.z), fit = Math.max(0.15, c.distanceTo(p) * 0.55);
+      const N = maxDim <= fit ? 1 : ([10, 20, 25, 50, 100, 200, 250, 500, 1000, 2000, 5000, 10000].find(n => maxDim / n <= fit) || 10000);
+      ar.scale = 1 / N;
+    }
+    holder.scale.setScalar(ar.scale);
     holder.position.copy(p);
   }
   holder.visible = true; ar.placed = true; arScaleText();
@@ -4509,7 +4514,7 @@ arTouch.addEventListener('touchstart', e => {
 arTouch.addEventListener('touchmove', e => {
   e.preventDefault(); const g = ar.touches; if (!g?.two || e.touches.length < 2 || !ar.placed) return;
   const [a, b] = e.touches;
-  if (ar.mode === 'table') { holder.scale.setScalar(THREE.MathUtils.clamp(g.s0 * tdist(a, b) / g.d0, 1 / 5000, 1)); arScaleText(); }
+  if (ar.mode === 'table') { holder.scale.setScalar(THREE.MathUtils.clamp(g.s0 * tdist(a, b) / g.d0, 1 / 10000, 1)); ar.scale = holder.scale.x; arScaleText(); }
   holder.rotation.y = g.r0 - (tang(a, b) - g.a0);
 }, { passive: false });
 arTouch.addEventListener('touchend', e => {
@@ -4533,11 +4538,16 @@ async function openQuickLook() {
         const mesh = new THREE.Mesh(m.geometry, mats.get(src)); mesh.applyMatrix4(M); root.add(mesh);
       }
     }
+    /* Quick Look opens the file at 100 %, so a building would be life-size and fill the whole screen.
+       Export it as a maquette at a round scale (1:N) that fits about half a metre — it lands on the floor fully visible. */
+    const z = sceneSize() || rec.size, maxDim = Math.max(z.x, z.y, z.z);
+    const N = maxDim <= 0.6 ? 1 : ([10, 20, 25, 50, 100, 200, 250, 500, 1000, 2000, 5000, 10000].find(n => maxDim / n <= 0.5) || 10000);
+    root.scale.setScalar(1 / N); root.updateMatrixWorld(true);
     const data = await new USDZExporter().parse(root, { quickLookCompatible: true });
     const url = URL.createObjectURL(new Blob([data], { type: 'model/vnd.usdz+zip' }));
     const a = document.createElement('a'); a.rel = 'ar'; a.href = url + '#allowsContentScaling=1'; a.appendChild(document.createElement('img'));
     document.body.append(a); a.click(); setTimeout(() => { a.remove(); URL.revokeObjectURL(url); }, 60000);
-    toast('Модель открывается в AR. Наведите камеру на пол; в AR щипком можно сменить масштаб, «100%» — натуральная величина.', 'ok');
+    toast(N > 1 ? `Модель открывается в AR макетом 1:${N} — целиком на экране. Щипком можно увеличить; натуральная величина — ${(N * 100).toLocaleString('ru-RU')} %.` : 'Модель открывается в AR. Наведите камеру на пол.', 'ok');
   } catch (e) { console.error(e); toast('Не удалось подготовить модель для AR: ' + e.message, 'bad'); }
   finally { busy(false); }
 }
