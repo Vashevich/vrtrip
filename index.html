@@ -265,15 +265,35 @@ body.panel-off .view{grid-column:2}
   body.panel-off .panel{display:flex}
   body.panel-off .view{grid-column:1}
   #panelbtn{display:none}
-  .view{grid-row:1;height:52vh;height:52dvh;position:sticky;top:0;z-index:2}
-  body.walking .view{height:78vh;height:78dvh}
+  .view{grid-row:1;height:64vh;height:64dvh;position:sticky;top:0;z-index:2}
+  body.walking .view{height:80vh;height:80dvh}
   .panel{grid-row:2;border-right:0;border-top:1px solid var(--line);overflow:visible;padding-inline:16px}
-  .tb{min-width:44px;height:46px;font-size:10px}
+  /* the controls sit at the bottom of the view in two slim rows, so the model stays visible above them */
+  .topbar,.view .topbar{top:0;bottom:0;left:0;right:0;display:flex!important;flex-direction:column;justify-content:flex-end;align-items:stretch;gap:6px;padding:8px}
+  .topbar>.lbtns{position:absolute;top:8px;left:8px;flex-direction:row}
+  .panelbtn{width:40px;height:40px;border-radius:10px}
+  .topbar>.toolbar,.view .topbar>.toolbar{order:1;width:auto;max-width:100%;justify-self:auto;flex-wrap:nowrap;justify-content:flex-start;overflow-x:auto;scrollbar-width:none;padding:3px;gap:1px}
+  .toolbar::-webkit-scrollbar{display:none}
+  .topbar>.toolbar{-webkit-mask-image:linear-gradient(to right,#000 88%,transparent);mask-image:linear-gradient(to right,#000 88%,transparent)}
+  .topbar>.toolbar.end{-webkit-mask-image:none;mask-image:none}
+  .topbar>.modebar,.view .topbar>.modebar{order:2;align-self:center;padding:3px;gap:1px}
+  .swatches{flex-wrap:nowrap}
+  .sw{width:24px;height:24px}
+  .tb{min-width:40px;height:40px;font-size:10px;padding:0 4px;flex:none}
+  .tb svg{width:20px;height:20px}
   .tb span{display:none}
-  .modebar .mode{min-width:44px;height:46px}
+  .tb-sep{margin:5px 2px}
+  .modebar .mode{min-width:40px;height:38px;padding:0 4px}
+  .modebar .mode svg{width:20px;height:20px}
   .modebar .mode-t{display:none}
-  .tip{bottom:auto;top:calc(12px + 112px);max-width:calc(100% - 24px)}
-  .joy{width:108px;height:108px}
+  .secui,.view .secui{top:8px;left:104px;right:8px;margin:0;width:auto;max-width:none;justify-content:flex-start;padding:4px;gap:4px}
+  .secui .btn{min-height:32px;padding:0 9px;font-size:12.5px}
+  .tip{top:auto;bottom:108px;max-width:calc(100% - 24px);font-size:12.5px;padding:6px 10px}
+  .chip{display:none}
+  .joy{width:96px;height:96px;bottom:108px}
+  .floors{bottom:108px}
+  .floors .btn{min-height:34px;min-width:92px;font-size:12.5px}
+  .toast{bottom:auto;top:56px;left:50%;transform:translateX(-50%)}
 }
 /* phones in landscape (low height): the 3D view takes the whole screen, the panel slides in as a drawer */
 @media (orientation:landscape) and (max-height:600px){
@@ -725,7 +745,7 @@ const UP = new V3(0, 1, 0), DOWN = new V3(0, -1, 0);
 const UNITS = { mm: 0.001, cm: 0.01, m: 1, in: 0.0254, ft: 0.3048 };
 const TABLE_STEPS = [20, 50, 100, 200, 500, 1000];
 const EYE = 1.65, STEP = 0.45, RADIUS = 0.3, GRAV = 9.8;
-const APP_VERSION = '3.8';
+const APP_VERSION = '3.9';
 const BASE_COLORS = ['#f2efe8', '#d8a33f', '#e0604a', '#3f86c9'];
 const KINDS = { issue: { label: 'Замечание', color: '#e0604a' }, question: { label: 'Вопрос', color: '#d8a33f' }, idea: { label: 'Идея', color: '#4fae7f' } };
 const TOOLS = [['nav', 'Выделение'], ['pin', 'Метка'], ['measure', 'Рулетка'], ['pen', 'Карандаш'], ['erase', 'Ластик'], ['section', 'Сечение'], ['ref', 'Репер'], ['explode', 'Взрыв']];   // «Куб» временно скрыт: код инструмента сохранён
@@ -2058,7 +2078,7 @@ function renderClearPop() {
 $('#tb-clear').addEventListener('click', e => {
   e.stopPropagation(); const pop = $('#clearpop'); renderClearPop(); pop.hidden = !pop.hidden; if (pop.hidden) return;
   const v = $('#view').getBoundingClientRect(), b = e.currentTarget.getBoundingClientRect();
-  pop.style.top = `${b.bottom - v.top + 8}px`; pop.style.left = `${THREE.MathUtils.clamp(b.left + b.width / 2 - v.left, 132, v.width - 132)}px`;
+  const ph = pop.offsetHeight || 380; pop.style.top = `${b.bottom - v.top + 8 + ph > v.height ? Math.max(8, b.top - v.top - ph - 8) : b.bottom - v.top + 8}px`; pop.style.left = `${THREE.MathUtils.clamp(b.left + b.width / 2 - v.left, 132, v.width - 132)}px`;
 });
 $('#clearpop').addEventListener('click', e => { const b = e.target.closest('[data-clear]'); if (!b || b.disabled) return; $('#clearpop').hidden = true; clearKind(b.dataset.clear); });
 document.addEventListener('pointerdown', e => { if (!e.target.closest('#clearpop, #tb-clear')) $('#clearpop').hidden = true; });
@@ -2923,6 +2943,8 @@ $('#panelbtn').addEventListener('click', () => {
   else { const off = document.body.classList.toggle('panel-off'); lsSet('vrtrip-panel-off', off ? '1' : '0'); $('#panelbtn').setAttribute('aria-expanded', String(!off)); requestAnimationFrame(onResize); }
 });
 $('#scrim').addEventListener('click', () => setDrawer(false));
+/* scrollable tool row on phones: the fade on the right edge disappears once you have scrolled to the end */
+$('#toolbar').addEventListener('scroll', e => { const t = e.currentTarget; t.classList.toggle('end', t.scrollLeft + t.clientWidth >= t.scrollWidth - 4); }, { passive: true });
 compactMQ.addEventListener?.('change', () => { setDrawer(false); requestAnimationFrame(onResize); });
 if (lsGet('vrtrip-panel-off') === '1') { document.body.classList.add('panel-off'); $('#panelbtn').setAttribute('aria-expanded', 'false'); }
 
