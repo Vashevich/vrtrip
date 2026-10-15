@@ -1,0 +1,15 @@
+newmtl concrete
+Kd 0.82 0.8 0.76
+d 1
+
+newmtl columns
+Kd 0.15 0.15 0.17
+d 1
+
+newmtl glass
+Kd 0.55 0.75 0.85
+d 0.35
+
+newmtl wood
+Kd 0.72 0.45 0.22
+d 1

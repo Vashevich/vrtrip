@@ -312,7 +312,8 @@ body.panel-off .view{grid-column:2}
   body.drawer .panel{transform:none}
   .topbar{top:8px;left:max(8px,env(safe-area-inset-left));right:max(8px,env(safe-area-inset-right));grid-template-columns:auto minmax(0,1fr) auto!important;gap:6px}
   .topbar>.lbtns{grid-column:1}
-  .topbar>.toolbar{grid-column:2!important;justify-self:center;flex-wrap:nowrap;overflow-x:auto;max-width:100%;scrollbar-width:none}
+  .topbar>.toolbar{grid-column:2!important;justify-self:center;flex-wrap:nowrap;justify-content:flex-start;overflow-x:auto;max-width:100%;scrollbar-width:none;-webkit-mask-image:linear-gradient(to right,#000 90%,transparent);mask-image:linear-gradient(to right,#000 90%,transparent)}
+  .topbar>.toolbar.end{-webkit-mask-image:none;mask-image:none}
   .view .topbar>.modebar{grid-column:3!important;grid-row:1!important;justify-self:end}
   .panelbtn{width:42px;height:42px}
   .toolbar,.modebar{padding:3px;gap:1px}
@@ -761,7 +762,7 @@ const UP = new V3(0, 1, 0), DOWN = new V3(0, -1, 0);
 const UNITS = { mm: 0.001, cm: 0.01, m: 1, in: 0.0254, ft: 0.3048 };
 const TABLE_STEPS = [20, 50, 100, 200, 500, 1000];
 const EYE = 1.65, STEP = 0.45, RADIUS = 0.3, GRAV = 9.8;
-const APP_VERSION = '3.11';
+const APP_VERSION = '3.12';
 const BASE_COLORS = ['#f2efe8', '#d8a33f', '#e0604a', '#3f86c9'];
 const KINDS = { issue: { label: 'Замечание', color: '#e0604a' }, question: { label: 'Вопрос', color: '#d8a33f' }, idea: { label: 'Идея', color: '#4fae7f' } };
 const TOOLS = [['nav', 'Выделение'], ['pin', 'Метка'], ['measure', 'Рулетка'], ['pen', 'Карандаш'], ['erase', 'Ластик'], ['section', 'Сечение'], ['ref', 'Репер'], ['explode', 'Взрыв']];   // «Куб» временно скрыт: код инструмента сохранён
@@ -784,7 +785,7 @@ let toastTimer;
 function toast(msg, kind = '', action = null) {
   const t = $('#toast'); t.textContent = msg; t.className = 'toast ' + kind; t.hidden = false;
   if (action) { const b = document.createElement('button'); b.type = 'button'; b.className = 'toast-act'; b.textContent = action.label; b.addEventListener('click', () => { t.hidden = true; action.fn(); }); t.append(b); }
-  clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.hidden = true; }, kind === 'bad' ? 9000 : 5000);
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.hidden = true; }, kind === 'bad' || kind === 'warn' ? 9000 : 5000);
 }
 function busy(msg) { $('#busy').hidden = !msg; if (msg) $('#busytext').textContent = msg; }
 function download(blob, name) {
@@ -1098,6 +1099,17 @@ function defaultSettings(fmt, d, hasMtl) {
 }
 
 /* ================= model build ================= */
+/* broken files ("v 1 2", "nan") give NaN coordinates that poison bounds, shadows and the section plane */
+function fixBadVerts(obj) {
+  let bad = 0;
+  obj.traverse(o => {
+    const p = o.geometry?.attributes?.position; if (!p) return;
+    const a = p.array;
+    for (let i = 0; i < a.length; i++) if (!Number.isFinite(a[i])) { a[i] = 0; bad++; }
+    if (bad) { p.needsUpdate = true; o.geometry.boundingBox = null; o.geometry.boundingSphere = null; }
+  });
+  return bad;
+}
 function rawBox(meshes) { const b = new THREE.Box3(); for (const m of meshes) b.union(m.geometry.boundingBox); return b; }
 function autoTable(size) { const d = Math.max(size.x, size.y, size.z); for (const n of TABLE_STEPS) if (d / n <= 1.0) return n; return 1000; }
 
@@ -1109,6 +1121,7 @@ async function buildModel(rec) {
     const find = n => map.get(base(safeDecode(n.trim().replace(/^"|"$/g, ''))).toLowerCase());
     const objF = find(rec.objName);
     if (!objF) throw new Error(`Файл ${rec.objName} не найден.`);
+    if (!objF.blob.size) throw new Error('Файл пустой (0 байт) — экспортируйте модель ещё раз.');
     busy(`Разбираю ${rec.objName}…`); await pause();
     const manager = new THREE.LoadingManager();
     manager.setURLModifier(u => {
@@ -1139,6 +1152,8 @@ async function buildModel(rec) {
     }
   }
   busy('Оптимизирую для шлема…'); await pause();
+  const badVerts = fixBadVerts(obj);
+  if (badVerts) { rec.warned = true; toast(`В файле повреждённые координаты (${badVerts} шт.) — заменены нулями. Модель может выглядеть неточно; лучше экспортировать её заново.`, 'warn'); }
   const meshes = optimize(obj);
   if (!meshes.length) throw new Error('В файле не нашлось поверхностей: только линии или точки. Экспортируйте модель как сетку (mesh).');
   rec.meshes = meshes; rec.urls = urls;
@@ -1223,7 +1238,7 @@ async function addFromFiles(fileList) {
         restored += rec.notes.length;
       }
       try { await buildModel(rec); } catch (e) { toast(`${o.name}: ${e.message}`, 'bad'); console.error(e); continue; }
-      await addModel(rec); added++; if (rec.hadMissing) warned = true;
+      await addModel(rec); added++; if (rec.hadMissing || rec.warned) warned = true;
     }
     if (added && restored) toast(`Модель открыта вместе с разметкой: ${restored} шт.`, 'ok');
     else if (added && !warned) toast(added > 1 ? `Добавлено моделей: ${added}` : `Модель «${objs[0].name.replace(/\.[^.]+$/, '')}» загружена`, 'ok');
@@ -1246,7 +1261,7 @@ async function addFromUrl(url) {
     if (MODEL_RE.test(name) && !/\.obj$/i.test(name)) {
       const rec = { id: uid(), name: name.replace(/\.[^.]+$/, ''), objName: name, files: [{ name, blob }], settings: null };
       busy('Разбираю модель…'); await buildModel(rec); await addModel(rec);
-      if (!rec.hadMissing) toast(`Модель «${rec.name}» загружена`, 'ok');
+      if (!rec.hadMissing && !rec.warned) toast(`Модель «${rec.name}» загружена`, 'ok');
       return;
     }
     if (!/\.obj$/i.test(name)) name = name.replace(/\.[^.]*$/, '') + '.obj';
@@ -1264,7 +1279,7 @@ async function addFromUrl(url) {
     const rec = { id: uid(), name: name.replace(/\.[^.]+$/, ''), objName: name, files, settings: null };
     busy('Разбираю модель…');
     await buildModel(rec); await addModel(rec);
-    if (!rec.hadMissing) toast(`Модель «${rec.name}» загружена`, 'ok');
+    if (!rec.hadMissing && !rec.warned) toast(`Модель «${rec.name}» загружена`, 'ok');
   } catch (e) { toast(e.message, 'bad'); console.error(e); }
   finally { busy(false); }
 }
@@ -3143,6 +3158,7 @@ const typing = e => /^(INPUT|TEXTAREA|SELECT)$/.test(e.target?.tagName);
 window.addEventListener('keydown', e => {
   if (typing(e) || state.view === 'xr') return;
   if ((e.ctrlKey || e.metaKey) && e.code === 'KeyZ') { e.preventDefault(); undo(); return; }
+  if (e.code === 'Escape' && !$('#dlg').hidden) { closeDialog(null); return; }
   if (e.code === 'Escape' && freeLook) { stopAim(); return; }
   if (e.code === 'Escape') { if (sel) clearSelection(); else if (tool.phase !== 'idle' || tool.pen) cancelTool(); else if (state.tool !== 'nav') setTool('nav'); else if (state.view === 'walk') exitWalk(); return; }
   if (/^Digit[1-9]$/.test(e.code) && isReady() && TOOLS[+e.code.slice(5) - 1]) { setTool(TOOLS[+e.code.slice(5) - 1][0]); return; }
