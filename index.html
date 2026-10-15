@@ -267,6 +267,7 @@ body.panel-off .view{grid-column:2}
 .scrim{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:59}
 @media (min-width:1700px){body{grid-template-columns:420px minmax(0,1fr)}}
 @container (max-width:1020px){.tb span,.modebar .mode-t{display:none}.tb,.modebar .mode{min-width:44px}}
+@container (max-width:900px){.toolbar{gap:1px;padding:4px}.tb{min-width:40px;height:44px;padding:0 3px}.sw{width:24px;height:24px;margin:0 1px}}       /* keep the tools on one row instead of a lone button wrapping below */
 @media (max-width:1180px) and (min-width:821px){body{grid-template-columns:330px minmax(0,1fr)}.panel{padding-inline:16px}}
 /* phones and small tablets in portrait: view on top, panel below */
 @media (max-width:820px), (orientation:portrait) and (max-width:1000px){
@@ -747,6 +748,7 @@ import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { GTAOPass } from 'three/addons/postprocessing/GTAOPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import { SMAAPass } from 'three/addons/postprocessing/SMAAPass.js';
 import { Pass, FullScreenQuad } from 'three/addons/postprocessing/Pass.js';
 import { XREstimatedLight } from 'three/addons/webxr/XREstimatedLight.js';
 import { computeBoundsTree, disposeBoundsTree, acceleratedRaycast } from 'three-mesh-bvh';
@@ -762,7 +764,7 @@ const UP = new V3(0, 1, 0), DOWN = new V3(0, -1, 0);
 const UNITS = { mm: 0.001, cm: 0.01, m: 1, in: 0.0254, ft: 0.3048 };
 const TABLE_STEPS = [20, 50, 100, 200, 500, 1000];
 const EYE = 1.65, STEP = 0.45, RADIUS = 0.3, GRAV = 9.8;
-const APP_VERSION = '3.12';
+const APP_VERSION = '3.13';
 const BASE_COLORS = ['#f2efe8', '#d8a33f', '#e0604a', '#3f86c9'];
 const KINDS = { issue: { label: 'Замечание', color: '#e0604a' }, question: { label: 'Вопрос', color: '#d8a33f' }, idea: { label: 'Идея', color: '#4fae7f' } };
 const TOOLS = [['nav', 'Выделение'], ['pin', 'Метка'], ['measure', 'Рулетка'], ['pen', 'Карандаш'], ['erase', 'Ластик'], ['section', 'Сечение'], ['ref', 'Репер'], ['explode', 'Взрыв']];   // «Куб» временно скрыт: код инструмента сохранён
@@ -1585,31 +1587,69 @@ class ModelOutlinePass extends Pass {
   constructor() {
     super();
     this.rt = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType }); this.rt.depthTexture = new THREE.DepthTexture(1, 1);
+    this.clean = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, depthBuffer: false, minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter });
     this.normalMat = new THREE.MeshNormalMaterial({ side: THREE.DoubleSide });
-    this.mat = new THREE.ShaderMaterial({
-      uniforms: { tDiffuse: { value: null }, tNormal: { value: null }, tDepth: { value: null }, res: { value: new THREE.Vector2(1, 1) }, near: { value: 0.1 }, far: { value: 1000 }, thick: { value: 1 }, ink: { value: new THREE.Color(0x1f2327) }, strength: { value: 0.9 } },
-      vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
-      fragmentShader: `uniform sampler2D tDiffuse, tNormal, tDepth; uniform vec2 res; uniform float near, far, thick, strength; uniform vec3 ink; varying vec2 vUv;
+    const VS = 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }';
+    const LIN = `uniform sampler2D tNormal, tDepth; uniform vec2 res; uniform float near, far;
         float lin(vec2 uv){ float z = texture2D(tDepth, uv).x * 2.0 - 1.0; return 2.0 * near * far / (far + near - z * (far - near)); }
         vec3 nrm(vec2 uv){ return texture2D(tNormal, uv).xyz * 2.0 - 1.0; }
-        void main(){
-          vec4 c = texture2D(tDiffuse, vUv);
-          float d0 = lin(vUv); vec3 n0 = nrm(vUv); float e = 0.0;
+        /* seams between touching parts (T-junctions, side faces of the neighbouring box) leave one-pixel specks:
+           a farther surface or a face at another angle showing through. They turned into dark dots on the outline.
+           A pixel that disagrees with both opposite neighbours, while those two agree, takes a neighbour's place */
+        bool odd(vec2 uv, vec2 p, float d, vec3 n){
+          float a = lin(uv + p), b = lin(uv - p);
+          if (max(a, b) < d * 0.99) return true;                                      // hole: both sides nearer
+          vec3 na = nrm(uv + p), nb = nrm(uv - p);
+          return abs(a - b) < d * 0.01 && dot(na, nb) > 0.95 && dot(n, na) < 0.85 && dot(n, nb) < 0.85;   // stray face
+        }
+        vec2 fill(vec2 uv){
+          float d = lin(uv); vec3 n = nrm(uv); vec2 p = vec2(1.0 / res.x, 0.0), q = vec2(0.0, 1.0 / res.y);
+          if (odd(uv, p, d, n)) return lin(uv + p) < lin(uv - p) ? uv + p : uv - p;
+          if (odd(uv, q, d, n)) return lin(uv + q) < lin(uv - q) ? uv + q : uv - q;
+          return uv;
+        }`;
+    // pass 1: cleaned normal (rgb) + linear depth (a) per pixel
+    this.cleanMat = new THREE.ShaderMaterial({
+      uniforms: { tNormal: { value: null }, tDepth: { value: null }, res: { value: new THREE.Vector2(1, 1) }, near: { value: 0.1 }, far: { value: 1000 } },
+      vertexShader: VS,
+      fragmentShader: LIN + `
+        varying vec2 vUv;
+        void main(){ vec2 u = fill(vUv); gl_FragColor = vec4(texture2D(tNormal, u).xyz * 2.0 - 1.0, lin(u)); }`,
+    });
+    // pass 2: edges from the cleaned buffer, drawn over the colour
+    this.mat = new THREE.ShaderMaterial({
+      defines: { TAPS: matchMedia('(pointer:coarse)').matches ? 1 : 4 },          // phones: one tap, SMAA smooths the rest
+      uniforms: { tDiffuse: { value: null }, tClean: { value: null }, tNormal: { value: null }, tDepth: { value: null }, res: { value: new THREE.Vector2(1, 1) }, near: { value: 0.1 }, far: { value: 1000 }, thick: { value: 1 }, ink: { value: new THREE.Color(0x1f2327) }, strength: { value: 0.9 } },
+      vertexShader: VS,
+      fragmentShader: LIN + `
+        uniform sampler2D tDiffuse, tClean; uniform float thick, strength; uniform vec3 ink; varying vec2 vUv;
+        vec4 C(vec2 uv){ return texture2D(tClean, uv); }
+        float edgeAt(vec2 uv){
+          vec4 c0 = C(uv); float d0 = c0.a; vec3 n0 = c0.xyz; float e = 0.0;
           vec2 px = thick / res;
           vec2 o[4]; o[0] = vec2(px.x, 0.0); o[1] = vec2(0.0, px.y); o[2] = vec2(px.x, px.y); o[3] = vec2(px.x, -px.y);
           for (int i = 0; i < 4; i++) {
-            float a = lin(vUv + o[i]), b = lin(vUv - o[i]);
-            float lap = abs(a + b - 2.0 * d0) / max(d0, 1e-3);                       // depth step (silhouettes)
+            vec4 A = C(uv + o[i]), B = C(uv - o[i]);
+            float lap = abs(A.a + B.a - 2.0 * d0) / max(d0, 1e-3);                     // depth step (silhouettes)
             e = max(e, smoothstep(0.012, 0.04, lap));
-            vec3 na = nrm(vUv + o[i]), nb = nrm(vUv - o[i]);
-            e = max(e, smoothstep(0.18, 0.5, 1.0 - min(dot(na, n0), dot(nb, n0))));     // crease
+            e = max(e, smoothstep(0.18, 0.5, 1.0 - min(dot(A.xyz, n0), dot(B.xyz, n0))));  // crease
           }
+          return e;
+        }
+        void main(){
+          vec4 c = texture2D(tDiffuse, fill(vUv));                // the crack pixel takes its neighbour's colour too
+          #if TAPS > 1
+          vec2 h = 0.45 / res;                                  // 4 sub-pixel taps → the line gets real coverage, no stair-steps
+          float e = 0.25 * (edgeAt(vUv + vec2(-h.x, -h.y * 0.3)) + edgeAt(vUv + vec2(h.x, h.y * 0.3)) + edgeAt(vUv + vec2(h.x * 0.3, -h.y)) + edgeAt(vUv + vec2(-h.x * 0.3, h.y)));
+          #else
+          float e = edgeAt(vUv);
+          #endif
           gl_FragColor = vec4(mix(c.rgb, ink, e * strength), c.a);
         }`,
     });
-    this.quad = new FullScreenQuad(this.mat);
+    this.quad = new FullScreenQuad(this.mat); this.cleanQuad = new FullScreenQuad(this.cleanMat);
   }
-  setSize(w, h) { this.rt.setSize(w, h); this.mat.uniforms.res.value.set(w, h); }
+  setSize(w, h) { this.rt.setSize(w, h); this.clean.setSize(w, h); this.mat.uniforms.res.value.set(w, h); this.cleanMat.uniforms.res.value.set(w, h); }
   render(renderer, writeBuffer, readBuffer) {
     const hide = [sky, ground, previewGrid, catcher, gizmo, secVis].filter(o => o.visible);
     const lines = []; for (const r of shownRecs()) for (const m of r.meshes || []) if (m.userData.edges?.visible) lines.push(m.userData.edges);
@@ -1623,8 +1663,11 @@ class ModelOutlinePass extends Pass {
     renderer.setClearColor(cc, ca);
     scene.overrideMaterial = ov; scene.background = bg; scene.fog = fog; renderer.shadowMap.enabled = sm;
     [...hide, ...lines].forEach(o => { o.visible = true; });
+    const cu = this.cleanMat.uniforms;
+    cu.tNormal.value = this.rt.texture; cu.tDepth.value = this.rt.depthTexture; cu.near.value = camera.near; cu.far.value = camera.far;
+    renderer.setRenderTarget(this.clean); this.cleanQuad.render(renderer);
     const u = this.mat.uniforms;
-    u.tDiffuse.value = readBuffer.texture; u.tNormal.value = this.rt.texture; u.tDepth.value = this.rt.depthTexture;
+    u.tDiffuse.value = readBuffer.texture; u.tClean.value = this.clean.texture; u.tNormal.value = this.rt.texture; u.tDepth.value = this.rt.depthTexture;
     u.near.value = camera.near; u.far.value = camera.far; u.thick.value = Math.max(1, renderer.getPixelRatio());
     renderer.setRenderTarget(this.renderToScreen ? null : writeBuffer); this.quad.render(renderer);
   }
@@ -1642,6 +1685,7 @@ function ensureComposer() {
   gtao.blendIntensity = 0.7;
   outlinePass = new ModelOutlinePass();
   composer.addPass(gtao); composer.addPass(outlinePass); composer.addPass(new OutputPass());
+  composer.addPass(new SMAAPass(sz.x, sz.y));      // post passes work per pixel — smooth the stair-steps on outlines and edges
   resizeComposer(); return composer;
 }
 function resizeComposer() { if (!composer) return; const v = $('#view'); composer.setPixelRatio(renderer.getPixelRatio()); composer.setSize(v.clientWidth, v.clientHeight); }
