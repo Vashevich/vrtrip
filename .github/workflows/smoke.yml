@@ -12,9 +12,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - run: pip install playwright==1.47.0 trimesh numpy
+      - run: pip install playwright==1.47.0
       - run: python -m playwright install --with-deps chromium
-      - run: python tests/make_models.py --no-heavy
       - run: (python -m http.server 8766 &) && sleep 2
       - run: python -u tests/smoke.py
       - if: always()
