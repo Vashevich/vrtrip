@@ -752,6 +752,7 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { GTAOPass } from 'three/addons/postprocessing/GTAOPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { SMAAPass } from 'three/addons/postprocessing/SMAAPass.js';
+import { TAARenderPass } from 'three/addons/postprocessing/TAARenderPass.js';
 import { Pass, FullScreenQuad } from 'three/addons/postprocessing/Pass.js';
 import { XREstimatedLight } from 'three/addons/webxr/XREstimatedLight.js';
 import { computeBoundsTree, disposeBoundsTree, acceleratedRaycast } from 'three-mesh-bvh';
@@ -767,7 +768,7 @@ const UP = new V3(0, 1, 0), DOWN = new V3(0, -1, 0);
 const UNITS = { mm: 0.001, cm: 0.01, m: 1, in: 0.0254, ft: 0.3048 };
 const TABLE_STEPS = [20, 50, 100, 200, 500, 1000];
 const EYE = 1.65, STEP = 0.45, RADIUS = 0.3, GRAV = 9.8;
-const APP_VERSION = '3.14';
+const APP_VERSION = '3.15';
 const BASE_COLORS = ['#f2efe8', '#d8a33f', '#e0604a', '#3f86c9'];
 const KINDS = { issue: { label: 'Замечание', color: '#e0604a' }, question: { label: 'Вопрос', color: '#d8a33f' }, idea: { label: 'Идея', color: '#4fae7f' } };
 const TOOLS = [['nav', 'Выделение'], ['pin', 'Метка'], ['measure', 'Рулетка'], ['pen', 'Карандаш'], ['erase', 'Ластик'], ['section', 'Сечение'], ['ref', 'Репер'], ['explode', 'Взрыв']];   // «Куб» временно скрыт: код инструмента сохранён
@@ -941,6 +942,8 @@ const state = {
   grab: null, snapLatch: false, floorLatch: false, vy: 0, uiCapture: false, prevTrig: false,
 };
 const xrSupport = { ar: false, vr: false };
+let renderPass = null, taa = null;
+const aa = { sig: 0, still: 0, input: 0, restart: 0, last: 0, ms: 16 };          // still-frame anti-aliasing state (see aaStill)
 const activeRec = () => state.models[state.active] || null;
 /* exposition: any number of models can be in the scene at once; the "active" one is the last one switched on */
 const shownRecs = () => state.models.filter(r => r.shown && r.built);
@@ -1358,7 +1361,7 @@ function mountScene() {
   holder.add(previewGroup, secVis);
   lsSet('vrtrip-shown', JSON.stringify(state.models.filter(r => r.shown).map(r => r.id)));
 }
-function afterSceneChange() { explodeReset(true); shadowsDirty(); if (VIS.edges) applyEdges(); renderList(); renderSettings(); renderNotes(); renderToolbar(); updateModeButtons(); if (state.view === 'xr') layoutPalette(); }
+function afterSceneChange() { aa.input = performance.now(); explodeReset(true); shadowsDirty(); if (VIS.edges) applyEdges(); renderList(); renderSettings(); renderNotes(); renderToolbar(); updateModeButtons(); if (state.view === 'xr') layoutPalette(); }
 /* switch one model on or off in the scene (the exposition list works like checkboxes) */
 async function showModel(i, on, { frameAll = false } = {}) {
   const rec = state.models[i]; if (!rec) return;
@@ -1506,6 +1509,7 @@ window.addEventListener('drop', e => {
 /* ================= environment ================= */
 /* the chosen environment applies to every mode that draws its own world (not to passthrough or phone AR) */
 function applyEnv() {
+  aa.input = performance.now();
   const p = ENV[prefs.env] || ENV.graphite;
   const world = state.view === 'orbit' || state.view === 'walk' || (state.view === 'xr' && !state.passthrough);
   const L = world ? p : ENV.graphite;
@@ -1621,6 +1625,7 @@ function ensureEstLight() {
 function shadowsDirty() { shadowsVersion++; }
 /* screen-space ambient occlusion: browser views only (in the headset it would cost twice — once per eye) */
 let composer = null, gtao = null;
+const COARSE = matchMedia('(pointer:coarse)').matches;
 function screenView() { return (state.view === 'orbit' || state.view === 'walk') && !cb.on && !renderer.xr.isPresenting; }
 function aoActive() { return VIS.ao && screenView(); }
 function outlineActive() { return VIS.edges && screenView(); }
@@ -1721,7 +1726,11 @@ function ensureComposer() {
   const sz = renderer.getDrawingBufferSize(new THREE.Vector2());
   const rt = new THREE.WebGLRenderTarget(sz.x, sz.y, { type: THREE.HalfFloatType, samples: 4 });
   composer = new EffectComposer(renderer, rt); composer.setPixelRatio(renderer.getPixelRatio());
-  composer.addPass(new RenderPass(scene, camera));
+  renderPass = new RenderPass(scene, camera); composer.addPass(renderPass);
+  // when nothing moves, the picture is refined over a few frames from 32 jittered samples — edges come out smooth
+  // as on a render, and a still frame costs no more than a moving one
+  taa = new TAARenderPass(scene, camera, 0x000000, 0); taa.sampleLevel = 1; taa.accumulate = true; taa.enabled = false;
+  composer.addPass(taa);
   gtao = new GTAOPass(scene, camera, sz.x, sz.y);
   gtao.updateGtaoMaterial({ radius: 0.4, distanceExponent: 2, thickness: 1, scale: 1, samples: 16, distanceFallOff: 1 });   // soft contact shadow that fades out, no hard halo
   gtao.updatePdMaterial({ lumaPhi: 10, depthPhi: 2, normalPhi: 3, radius: 10, rings: 3, samples: 16 });
@@ -1731,7 +1740,29 @@ function ensureComposer() {
   composer.addPass(new SMAAPass(sz.x, sz.y));      // post passes work per pixel — smooth the stair-steps on outlines and edges
   resizeComposer(); return composer;
 }
-function resizeComposer() { if (!composer) return; const v = $('#view'); composer.setPixelRatio(renderer.getPixelRatio()); composer.setSize(v.clientWidth, v.clientHeight); }
+function resizeComposer() {
+  if (!composer) return; const v = $('#view'); composer.setPixelRatio(renderer.getPixelRatio()); composer.setSize(v.clientWidth, v.clientHeight);
+  const pr = renderer.getPixelRatio(); taa.holdRenderTarget?.setSize(Math.floor(v.clientWidth * pr), Math.floor(v.clientHeight * pr)); taa.accumulateIndex = -1;
+}
+/* still-frame detection for TAA: anything that changes the picture (camera, model, sun, explode, balls, input) restarts it */
+for (const ev of ['pointermove', 'pointerdown', 'wheel', 'keydown']) addEventListener(ev, () => { aa.input = performance.now(); }, { passive: true, capture: true });
+function aaSig() {
+  let h = 0, k = 1;
+  const add = a => { for (let i = 0; i < a.length; i++) h += a[i] * (k += 0.618); };
+  add(camera.matrixWorld.elements); add(camera.projectionMatrix.elements); add(holder.matrixWorld.elements); add(sun.position.toArray());
+  h += shadowsVersion * 7.1 + shownRecs().length * 13.3 + expl.cur * 17.7 + (toy.balls.length + toy.flyers.length + toy.drops.length) * 19.9 + (sec.on ? 23.3 : 0);
+  return h;
+}
+function aaStill() {
+  const now = performance.now(), h = aaSig();
+  if (!taa.enabled && aa.last) aa.ms += (Math.min(now - aa.last, 200) - aa.ms) * 0.05;      // frame time while moving
+  aa.last = now;
+  if (aa.ms > 34) return false;                      // slow graphics (under ~30 fps): no refinement, speed first
+  if (h !== aa.sig || now - aa.input < 200 || toy.flyers.length || toy.drops.length || expl.cur !== expl.target) { aa.sig = h; aa.still = 0; return false; }
+  if (++aa.still < 3) return false;
+  if (taa.accumulateIndex >= 32 && now - aa.restart > 2000) { taa.accumulateIndex = -1; aa.restart = now; }   // safety net: refresh every 2 s
+  return true;
+}
 /* UI objects (labels, markers, strokes, previews, gizmo) live on their own layer: with AO on they are drawn after the
    AO pass, so they are neither shaded by it nor tone-mapped */
 const UI_LAYER = 5;
@@ -1743,8 +1774,9 @@ function renderFrame() {
   const gn = $('#gridnote'), gnOff = state.view !== 'orbit' || !(previewGrid.visible || ground.visible) || !shownRecs().length; if (gn.hidden !== gnOff) gn.hidden = gnOff;
   const crease = VIS.edges && !outlineActive();                  // 1-px crease lines only where the outline pass does not run (headset, glasses)
   if (crease !== lineState) { lineState = crease; for (const r of shownRecs()) for (const m of r.meshes || []) if (m.userData.edges) m.userData.edges.visible = crease; }
-  if (aoActive() || outlineActive()) {
+  if (aoActive() || outlineActive() || (screenView() && !COARSE)) {          // computers always go through the composer: SMAA + still-frame AA
     ensureComposer(); gtao.enabled = aoActive(); outlinePass.enabled = outlineActive();
+    const still = aaStill(); if (still && !taa.enabled) { taa.accumulateIndex = -1; aa.restart = performance.now(); } renderPass.enabled = !still; taa.enabled = still;
     const z = sceneSize(); if (z && gtao.enabled) { const r = THREE.MathUtils.clamp(Math.max(z.x, z.y, z.z) * 0.02, 0.03, 0.5) * holder.scale.x; if (Math.abs(r - (gtao._r || 0)) > 1e-4) { gtao._r = r; gtao.updateGtaoMaterial({ radius: r }); } }
     toUI(previewGroup);
     camera.layers.disable(UI_LAYER); composer.render();
