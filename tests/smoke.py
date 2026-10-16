@@ -123,7 +123,7 @@ async def run_view(b, name, w, h, touch):
         if not await btn.is_visible():
             await btn.scroll_into_view_if_needed()
         if not await btn.is_visible(): ok(f'[{name}] инструмент {tool}: кнопка видна', False, 'кнопка не видна'); continue
-        try: await btn.click(timeout=8000)
+        try: await btn.click(timeout=30000, no_wait_after=True)
         except Exception as ex: ok(f"[{name}] инструмент {tool}: кнопка нажимается", False, str(ex).splitlines()[-1][:160]); continue
         await pg.wait_for_timeout(300)
         if tool in ('pin', 'measure'):

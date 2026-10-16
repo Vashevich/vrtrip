@@ -753,6 +753,9 @@ import { GTAOPass } from 'three/addons/postprocessing/GTAOPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { SMAAPass } from 'three/addons/postprocessing/SMAAPass.js';
 import { TAARenderPass } from 'three/addons/postprocessing/TAARenderPass.js';
+import { LineSegments2 } from 'three/addons/lines/LineSegments2.js';
+import { LineSegmentsGeometry } from 'three/addons/lines/LineSegmentsGeometry.js';
+import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
 import { Pass, FullScreenQuad } from 'three/addons/postprocessing/Pass.js';
 import { XREstimatedLight } from 'three/addons/webxr/XREstimatedLight.js';
 import { computeBoundsTree, disposeBoundsTree, acceleratedRaycast } from 'three-mesh-bvh';
@@ -763,12 +766,12 @@ THREE.Mesh.prototype.raycast = acceleratedRaycast;
 
 /* ================= constants & helpers ================= */
 const $ = s => document.querySelector(s);
-const V3 = THREE.Vector3;
+const V3 = THREE.Vector3, V2 = THREE.Vector2;
 const UP = new V3(0, 1, 0), DOWN = new V3(0, -1, 0);
 const UNITS = { mm: 0.001, cm: 0.01, m: 1, in: 0.0254, ft: 0.3048 };
 const TABLE_STEPS = [20, 50, 100, 200, 500, 1000];
 const EYE = 1.65, STEP = 0.45, RADIUS = 0.3, GRAV = 9.8;
-const APP_VERSION = '3.15';
+const APP_VERSION = '3.16';
 const BASE_COLORS = ['#f2efe8', '#d8a33f', '#e0604a', '#3f86c9'];
 const KINDS = { issue: { label: 'Замечание', color: '#e0604a' }, question: { label: 'Вопрос', color: '#d8a33f' }, idea: { label: 'Идея', color: '#4fae7f' } };
 const TOOLS = [['nav', 'Выделение'], ['pin', 'Метка'], ['measure', 'Рулетка'], ['pen', 'Карандаш'], ['erase', 'Ластик'], ['section', 'Сечение'], ['ref', 'Репер'], ['explode', 'Взрыв']];   // «Куб» временно скрыт: код инструмента сохранён
@@ -1358,7 +1361,7 @@ async function ensureBuilt(rec) {
 function mountScene() {
   holder.clear();
   for (const r of shownRecs()) holder.add(r.root, r.notesGroup);
-  holder.add(previewGroup, secVis);
+  holder.add(previewGroup, secVis, secCap);
   lsSet('vrtrip-shown', JSON.stringify(state.models.filter(r => r.shown).map(r => r.id)));
 }
 function afterSceneChange() { aa.input = performance.now(); explodeReset(true); shadowsDirty(); if (VIS.edges) applyEdges(); renderList(); renderSettings(); renderNotes(); renderToolbar(); updateModeButtons(); if (state.view === 'xr') layoutPalette(); }
@@ -1736,7 +1739,12 @@ function ensureComposer() {
   gtao.updatePdMaterial({ lumaPhi: 10, depthPhi: 2, normalPhi: 3, radius: 10, rings: 3, samples: 16 });
   gtao.blendIntensity = 0.7;
   outlinePass = new ModelOutlinePass();
-  composer.addPass(gtao); composer.addPass(outlinePass); composer.addPass(new OutputPass());
+  // fat section lines are instanced quads: keep them out of the AO and outline helper passes (they render with an override material)
+  const fn = f => Object.assign(new Pass(), { needsSwap: false, render: f });
+  composer.addPass(fn(() => { capLines.visible = false; }));
+  composer.addPass(gtao); composer.addPass(outlinePass);
+  composer.addPass(fn(() => { capLines.visible = cap.lines; }));
+  composer.addPass(new OutputPass());
   composer.addPass(new SMAAPass(sz.x, sz.y));      // post passes work per pixel — smooth the stair-steps on outlines and edges
   resizeComposer(); return composer;
 }
@@ -1750,7 +1758,7 @@ function aaSig() {
   let h = 0, k = 1;
   const add = a => { for (let i = 0; i < a.length; i++) h += a[i] * (k += 0.618); };
   add(camera.matrixWorld.elements); add(camera.projectionMatrix.elements); add(holder.matrixWorld.elements); add(sun.position.toArray());
-  h += shadowsVersion * 7.1 + shownRecs().length * 13.3 + expl.cur * 17.7 + (toy.balls.length + toy.flyers.length + toy.drops.length) * 19.9 + (sec.on ? 23.3 : 0);
+  h += shadowsVersion * 7.1 + cap.ver * 29.3 + shownRecs().length * 13.3 + expl.cur * 17.7 + (toy.balls.length + toy.flyers.length + toy.drops.length) * 19.9 + (sec.on ? 23.3 : 0);
   return h;
 }
 function aaStill() {
@@ -2588,7 +2596,8 @@ function partOfHit(rec, h) {
   for (const [pid, st, c] of list) if (v >= st && v < st + c) return rec.parts.get(pid) || null;
   return null;
 }
-function refitMesh(m) { const g = m.geometry; g.computeBoundingBox(); g.computeBoundingSphere(); g.boundsTree?.refit?.(); m.frustumCulled = true; }
+let geoVer = 0;
+function refitMesh(m) { const g = m.geometry; g.computeBoundingBox(); g.computeBoundingSphere(); g.boundsTree?.refit?.(); m.frustumCulled = true; geoVer++; }
 function shiftPart(part, d, final = true) {
   const touched = new Set();
   for (const [m, st, c] of part.ranges) {
@@ -2880,6 +2889,125 @@ function updateSection() {
   const z = sceneSize(), S = Math.max(z.x, z.y, z.z, 1) * 1.3;
   secVis.position.copy(sec.p); secVis.quaternion.setFromUnitVectors(UP, sec.n); secVis.scale.setScalar(S);
   secFill.material.opacity = sec.hover || sec.mode === 'drag' ? 0.22 : 0.08;
+}
+
+/* section poché, as on architectural drawings: where the plane cuts a closed solid the cut is filled black, and every
+   cut edge — including a single surface (a sheet with no thickness) — is drawn as a thick black line.
+   The cut is computed on the CPU from the model's BVH (only triangles near the plane are visited) and rebuilt only
+   when the plane or the geometry changes. Segments get a consistent direction from the triangle normal, so outer
+   contours and holes come out with opposite winding. */
+const CAP_FILL = new THREE.MeshBasicMaterial({ color: 0x151515, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 });
+const CAP_LINE = new LineMaterial({ color: 0x0b0b0b, linewidth: 2.5, worldUnits: false });
+const capFill = new THREE.Mesh(new THREE.BufferGeometry(), CAP_FILL);
+const capLines = new LineSegments2(new LineSegmentsGeometry(), CAP_LINE);
+for (const o of [capFill, capLines]) { o.raycast = () => {}; o.frustumCulled = false; o.renderOrder = 1; }
+const secCap = new THREE.Group(); secCap.add(capFill, capLines); secCap.visible = false;
+const cap = { key: '', t: 0, ver: 0, lines: false };
+const _cs = new V2();
+function capKey() {
+  const parts = [sec.p.toArray().map(v => v.toFixed(5)).join(), sec.n.toArray().map(v => v.toFixed(5)).join(), geoVer];
+  for (const r of shownRecs()) { parts.push(r.id); r.root.updateMatrixWorld(); for (const m of r.meshes) parts.push(m.visible ? 1 : 0); parts.push(r.root.matrix.elements.reduce((a, v, i) => a + v * (i + 1), 0).toFixed(6), r.xf.matrix.elements.reduce((a, v, i) => a + v * (i + 1), 0).toFixed(6)); }
+  return parts.join('|');
+}
+function updateSectionCap() {
+  const on = sec.on && !!activeRec()?.built && expl.cur === expl.target && !expl.settle;
+  secCap.visible = on;
+  if (!on) return;
+  renderer.getDrawingBufferSize(_cs); CAP_LINE.resolution.copy(_cs); CAP_LINE.linewidth = 2.5 * renderer.getPixelRatio();
+  const k = capKey(); if (k === cap.key) return;
+  const now = performance.now(); if (sec.drag && now - cap.t < 60) return;          // while dragging the blade: ~15 updates a second
+  cap.key = k; cap.t = now; buildSectionCap(); cap.ver++;
+}
+function buildSectionCap() {
+  holder.updateMatrixWorld(); holderInv.copy(holder.matrixWorld).invert();
+  const n = sec.n.clone().normalize(), p0 = sec.p.clone();
+  const z = sceneSize() || new V3(10, 10, 10), size = Math.max(z.x, z.y, z.z, 0.01);
+  const segs = { solid: [], glass: [] };                // flat arrays: x1,y1,z1,x2,y2,z2
+  const M = new THREE.Matrix4(), Minv = new THREE.Matrix4(), plane = new THREE.Plane(), hp = new THREE.Plane().setFromNormalAndCoplanarPoint(n, p0);
+  const A = new V3(), B = new V3(), C = new V3(), N = new V3(), e1 = new V3(), e2 = new V3(), P = [new V3(), new V3()], dir = new V3();
+  const cut = (a, b, da, db, out) => {                  // canonical order → the shared edge of two triangles gives bit-identical points
+    if (a.x > b.x || (a.x === b.x && (a.y > b.y || (a.y === b.y && a.z > b.z)))) { const t = a; a = b; b = t; const s = da; da = db; db = s; }
+    const t = da / (da - db); out.set(a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t, a.z + (b.z - a.z) * t);
+  };
+  for (const r of shownRecs()) for (const m of r.meshes) {
+    if (!m.visible || !m.geometry.boundsTree) continue;
+    const mat = Array.isArray(m.material) ? m.material[0] : m.material, glass = mat.transparent && mat.opacity < 0.6;
+    const out = glass ? segs.glass : segs.solid;
+    M.multiplyMatrices(holderInv, m.matrixWorld); Minv.copy(M).invert(); plane.copy(hp).applyMatrix4(Minv);
+    m.geometry.boundsTree.shapecast({
+      intersectsBounds: box => plane.intersectsBox(box),
+      intersectsTriangle: tri => {
+        A.copy(tri.a).applyMatrix4(M); B.copy(tri.b).applyMatrix4(M); C.copy(tri.c).applyMatrix4(M);
+        const da = n.dot(A) - n.dot(p0), db = n.dot(B) - n.dot(p0), dc = n.dot(C) - n.dot(p0);
+        const sa = da >= 0, sb = db >= 0, sc = dc >= 0;
+        if (sa === sb && sb === sc) return false;
+        let i = 0;
+        if (sa !== sb) cut(A, B, da, db, P[i++]);
+        if (sb !== sc) cut(B, C, db, dc, P[i++]);
+        if (i < 2 && sc !== sa) cut(C, A, dc, da, P[i++]);
+        if (P[0].distanceToSquared(P[1]) < 1e-18) return false;
+        N.crossVectors(e1.subVectors(B, A), e2.subVectors(C, A)); dir.crossVectors(n, N);
+        const [q0, q1] = dir.dot(e1.subVectors(P[1], P[0])) >= 0 ? P : [P[1], P[0]];
+        out.push(q0.x, q0.y, q0.z, q1.x, q1.y, q1.z);
+        return false;
+      },
+    });
+  }
+  // --- chain segments into loops (exact keys first, then stitch small gaps)
+  const chainUp = arr => {
+    const cnt = arr.length / 6, key = (o) => arr[o] + ',' + arr[o + 1] + ',' + arr[o + 2];
+    const byStart = new Map(), byEnd = new Map(), used = new Uint8Array(cnt);
+    for (let i = 0; i < cnt; i++) { const ks = key(i * 6), ke = key(i * 6 + 3); (byStart.get(ks) || byStart.set(ks, []).get(ks)).push(i); (byEnd.get(ke) || byEnd.set(ke, []).get(ke)).push(i); }
+    const take = (list) => { if (!list) return -1; for (const j of list) if (!used[j]) { used[j] = 1; return j; } return -1; };
+    const chains = [];
+    for (let i = 0; i < cnt; i++) {
+      if (used[i]) continue; used[i] = 1;
+      const pts = [i * 6, i * 6 + 3];                   // offsets into arr
+      let closed = false;
+      for (;;) { const j = take(byStart.get(key(pts[pts.length - 1]))); if (j < 0) break; pts.push(j * 6 + 3); if (key(j * 6 + 3) === key(pts[0])) { closed = true; break; } }
+      if (!closed) for (;;) { const j = take(byEnd.get(key(pts[0]))); if (j < 0) break; pts.unshift(j * 6); }
+      chains.push({ pts: pts.map(o => new V3(arr[o], arr[o + 1], arr[o + 2])), closed });
+    }
+    // stitch open chains whose ends nearly meet (T-junctions, tiny gaps in the model)
+    const tol2 = (size * 2e-4) ** 2; let open = chains.filter(c => !c.closed);
+    for (let guard = 0; open.length && guard < 4000; guard++) {
+      const c = open[0], end = c.pts[c.pts.length - 1];
+      if (c.pts.length > 2 && end.distanceToSquared(c.pts[0]) < tol2) { c.closed = true; c.pts.pop(); open.shift(); continue; }
+      let best = null, bd = tol2;
+      for (const o of open) if (o !== c) { const d = end.distanceToSquared(o.pts[0]); if (d < bd) { bd = d; best = o; } }
+      if (!best) { open.shift(); continue; }
+      c.pts.push(...best.pts); chains.splice(chains.indexOf(best), 1); open = open.filter(o => o !== best);
+    }
+    for (const c of chains) if (c.closed && c.pts.length > 1 && c.pts[c.pts.length - 1].distanceToSquared(c.pts[0]) < 1e-18) c.pts.pop();
+    return chains;
+  };
+  const solid = chainUp(segs.solid);
+  // --- fill closed loops: outer contours (CCW around n) with their holes
+  const u = Math.abs(n.y) < 0.9 ? new V3(0, 1, 0).cross(n).normalize() : new V3(1, 0, 0).cross(n).normalize(), v = new V3().crossVectors(n, u);
+  const to2 = q => new V2(e1.subVectors(q, p0).dot(u), e1.dot(v));
+  const area = pts => { let a = 0; for (let i = 0, j = pts.length - 1; i < pts.length; j = i++) a += (pts[j].x - pts[i].x) * (pts[j].y + pts[i].y); return a / 2; };
+  const inside = (pt, poly) => { let c = false; for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) { const a = poly[i], b = poly[j]; if ((a.y > pt.y) !== (b.y > pt.y) && pt.x < (b.x - a.x) * (pt.y - a.y) / (b.y - a.y) + a.x) c = !c; } return c; };
+  const minA = (size * 1e-4) ** 2;
+  const loops = solid.filter(c => c.closed && c.pts.length >= 3).map(c => { const p2 = c.pts.map(to2); return { p2, a: area(p2) }; }).filter(l => Math.abs(l.a) > minA);
+  const outers = loops.filter(l => l.a > 0), holes = loops.filter(l => l.a < 0);
+  for (const o of outers) o.holes = [];
+  for (const h of holes) {
+    let best = null; for (const o of outers) if (o.a > -h.a && inside(h.p2[0], o.p2) && (!best || o.a < best.a)) best = o;
+    if (best) best.holes.push(h.p2); else { h.p2.reverse(); h.a = -h.a; h.holes = []; outers.push(h); }   // flipped normals: still a solid
+  }
+  const pos = [], off = n.clone().multiplyScalar(-size * 2e-5);                       // a hair towards the cut-away side
+  for (const o of outers) {
+    let tris; try { tris = THREE.ShapeUtils.triangulateShape(o.p2, o.holes); } catch { continue; }
+    const all = [o.p2, ...o.holes].flat();
+    for (const t of tris) for (const k of t) { const q = all[k]; pos.push(p0.x + u.x * q.x + v.x * q.y + off.x, p0.y + u.y * q.x + v.y * q.y + off.y, p0.z + u.z * q.x + v.z * q.y + off.z); }
+  }
+  capFill.geometry.dispose(); capFill.geometry = new THREE.BufferGeometry(); capFill.geometry.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  // --- thick lines: every cut edge, solids and sheets alike (glass too, it is a line on a drawing)
+  const lp = [], off2 = off.clone().multiplyScalar(2);
+  for (const arr of [segs.solid, segs.glass]) for (let i = 0; i < arr.length; i += 3) lp.push(arr[i] + off2.x, arr[i + 1] + off2.y, arr[i + 2] + off2.z);
+  capLines.geometry.dispose(); capLines.geometry = new LineSegmentsGeometry();
+  if (lp.length) capLines.geometry.setPositions(lp);
+  capLines.visible = cap.lines = lp.length > 0; capFill.visible = pos.length > 0;
 }
 function secFromWorld(pW, nW, faceAway) {
   holder.updateMatrixWorld(); holderInv.copy(holder.matrixWorld).invert();
@@ -4766,7 +4894,7 @@ renderer.setAnimationLoop((t, xrFrame) => {
   else { flyUpdate(dt); controls.update(); }
   explodeUpdate(dt);
   if (sky.visible) { sky.position.copy(camera.getWorldPosition(_v)); sky.scale.setScalar(Math.min(1, camera.far * 0.9 / 1000)); }
-  updateSection(); updateBillboards(); updateLabels(); updateCursor(); updateLighting();
+  updateSection(); updateSectionCap(); updateBillboards(); updateLabels(); updateCursor(); updateLighting();
   if (cb.on) cbRender(); else renderFrame();
 });
 
