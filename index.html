@@ -53,6 +53,11 @@ button,label,.seg,.mode,.tb{touch-action:manipulation}
 .credit{display:flex;align-items:center;gap:10px;margin:0;font-size:12.5px;line-height:1.35;color:var(--muted)}
 .credit img{width:40px;height:40px;flex:none}
 .credit b{color:var(--fg);font-weight:600}
+.credit a{color:var(--accent)}
+.suggest{display:grid;grid-template-columns:auto 1fr;grid-template-rows:auto auto;column-gap:10px;align-items:center;margin-top:12px;padding:9px 12px;border:1px solid var(--line);border-radius:10px;color:var(--fg);text-decoration:none;background:var(--bg)}
+.suggest:hover{border-color:var(--accent)}
+.suggest svg{grid-row:1/3;width:22px;height:22px;fill:#2aabee}
+.suggest span{font-weight:600;font-size:14px}.suggest small{color:var(--muted);font-size:12px}
 .swatches{display:flex;gap:4px;align-items:center;flex-wrap:wrap}
 .sw.add{background:var(--raise);color:var(--fg);display:grid;place-items:center;font-size:17px;line-height:1;border-style:dashed}
 .dlg-colors{display:flex;flex-wrap:wrap;gap:6px}
@@ -387,6 +392,7 @@ body.cardboard .topbar,body.cardboard .walkui,body.cardboard .chip,body.cardboar
     <div class="mark">VR<span>trip</span></div>
     <div class="update" id="update" hidden><span>Вышла новая версия VRtrip <b id="upd-ver"></b>.</span><button type="button" class="btn small primary" id="upd-btn">Обновить</button></div>
     <p class="lede">Архитектурные 3D-модели в Meta Quest&nbsp;3 и в браузере: прогулка от первого лица, макет на столе, сквозной режим, разметка и комментарии.</p>
+    <a class="suggest" href="https://t.me/VRtrip_AR_MR" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21.5 4.5 2.8 11.7c-.9.4-.9 1.6.1 1.9l4.6 1.4 1.8 5.5c.3.8 1.3 1 1.9.4l2.6-2.5 4.8 3.5c.7.5 1.7.1 1.9-.7L22.9 5.9c.2-1-.6-1.8-1.4-1.4Z"/></svg><span>Предложить улучшение</span><small>Telegram-канал VRtrip</small></a>
   </header>
 
 
@@ -519,6 +525,12 @@ body.cardboard .topbar,body.cardboard .walkui,body.cardboard .chip,body.cardboar
         </div></div>
     </div>
     <div class="field">
+      <span class="lbl" id="l-people">Люди — ходят вокруг и внутри</span>
+      <div class="seg" id="peopleseg" role="group" aria-labelledby="l-people">
+        <button type="button" data-val="none">Нет</button><button type="button" data-val="few">Немного</button><button type="button" data-val="many">Толпа</button>
+      </div>
+    </div>
+    <div class="field">
       <span class="lbl" id="l-sun">Солнце</span>
       <div class="seg" id="sunmode" role="group" aria-labelledby="l-sun">
         <button type="button" data-val="preset">Как в фоне</button>
@@ -608,7 +620,7 @@ body.cardboard .topbar,body.cardboard .walkui,body.cardboard .chip,body.cardboar
   </details>
 
   <p class="foot">Модели и заметки хранятся только в этом браузере и остаются после перезагрузки. Для плавной работы в шлеме держите модель в пределах 1–2 млн треугольников.</p>
-  <p class="credit"><span><b>Сергей Дмитриев</b> · Rock Parametric<br>VRtrip <span id="ver"></span> © 2026</span></p>
+  <p class="credit"><span><b>Сергей Дмитриев</b> · Rock Parametric<br>VRtrip <span id="ver"></span> © 2026 · <a href="https://t.me/VRtrip_AR_MR" target="_blank" rel="noopener">идеи и ошибки — в Telegram</a></span></p>
   <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 </aside>
 
@@ -804,7 +816,7 @@ const UP = new V3(0, 1, 0), DOWN = new V3(0, -1, 0);
 const UNITS = { mm: 0.001, cm: 0.01, m: 1, in: 0.0254, ft: 0.3048 };
 const TABLE_STEPS = [20, 50, 100, 200, 500, 1000];
 const EYE = 1.65, STEP = 0.45, RADIUS = 0.3, GRAV = 9.8;
-const APP_VERSION = '3.19';
+const APP_VERSION = '3.20';
 const BASE_COLORS = ['#f2efe8', '#d8a33f', '#e0604a', '#3f86c9'];
 const KINDS = { issue: { label: 'Замечание', color: '#e0604a' }, question: { label: 'Вопрос', color: '#d8a33f' }, idea: { label: 'Идея', color: '#4fae7f' } };
 const TOOLS = [['nav', 'Выделение'], ['pin', 'Метка'], ['measure', 'Рулетка'], ['pen', 'Карандаш'], ['erase', 'Ластик'], ['section', 'Сечение'], ['ref', 'Репер'], ['explode', 'Взрыв']];   // «Куб» временно скрыт: код инструмента сохранён
@@ -864,7 +876,7 @@ const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch {} };
 
 const SEASON_BY_MONTH = ['winter', 'winter', 'spring', 'spring', 'spring', 'summer', 'summer', 'summer', 'autumn', 'autumn', 'autumn', 'winter'];
 const prefs = { gravity: lsGet('vrtrip-gravity') !== '0', collide: lsGet('vrtrip-collide') !== '0', env: lsGet('vrtrip-env') || 'graphite',
-  season: lsGet('vrtrip-season') || SEASON_BY_MONTH[new Date().getMonth()], clouds: lsGet('vrtrip-clouds') || 'cloudy', precip: lsGet('vrtrip-precip') || 'none' };
+  season: lsGet('vrtrip-season') || SEASON_BY_MONTH[new Date().getMonth()], clouds: lsGet('vrtrip-clouds') || 'cloudy', precip: lsGet('vrtrip-precip') || 'none', people: lsGet('vrtrip-people') || 'none' };
 let customColors = (() => { try { const a = JSON.parse(lsGet('vrtrip-colors') || '[]'); return Array.isArray(a) ? a.filter(c => /^#[0-9a-f]{6}$/i.test(c)).slice(-8) : []; } catch { return []; } })();
 const allColors = () => [...BASE_COLORS, ...customColors];
 /* visual settings: sun by place and time, shadows, reflections, ambient occlusion (screen), edge lines */
@@ -874,7 +886,7 @@ const VIS = (() => {
 })();
 VIS.envI = 0.55;
 function saveVis() { const { envI, ...v } = VIS; lsSet('vrtrip-vis', JSON.stringify(v)); }
-function savePrefs() { lsSet('vrtrip-gravity', prefs.gravity ? '1' : '0'); lsSet('vrtrip-collide', prefs.collide ? '1' : '0'); lsSet('vrtrip-env', prefs.env); lsSet('vrtrip-season', prefs.season); lsSet('vrtrip-clouds', prefs.clouds); lsSet('vrtrip-precip', prefs.precip); }
+function savePrefs() { lsSet('vrtrip-gravity', prefs.gravity ? '1' : '0'); lsSet('vrtrip-collide', prefs.collide ? '1' : '0'); lsSet('vrtrip-env', prefs.env); lsSet('vrtrip-season', prefs.season); lsSet('vrtrip-clouds', prefs.clouds); lsSet('vrtrip-precip', prefs.precip); lsSet('vrtrip-people', prefs.people); }
 
 /* ================= renderer & scene ================= */
 const canvas = $('#c');
@@ -1057,6 +1069,93 @@ function skyUpdate(dt) {
   if (scene.fog) { fog.color.copy(u.bottom.value); fog.near = prefs.precip === 'none' ? 120 : 40; fog.far = prefs.precip === 'none' ? 1000 : 260; }
 }
 const CLOAD = () => isReal() ? CLOUD_K[prefs.clouds] ?? 0.5 : 0;
+/* people walking around (and through) the installation: architectural clay figures at real scale, instanced so a
+   crowd is a handful of draw calls. They pick random spots around the model, avoid walls with a ray at waist height,
+   step up onto low slabs and stairs, pause now and then. No shadows (that would redraw the shadow map every frame). */
+const PEOPLE_N = { none: 0, few: 8, many: 26 };
+const PEOPLE_COLORS = ['#ece8df', '#d9d4ca', '#bfc8ce', '#cdbca6', '#9aa5ad', '#adb99f', '#dcc9b3', '#868f97', '#c3a99a', '#e4dccb'];
+const people = { list: [], group: new THREE.Group(), m: null, ray: new THREE.Raycaster(), key: '' };
+people.ray.firstHitOnly = true; people.group.visible = false;
+const _pm = new THREE.Matrix4(), _pb = new THREE.Matrix4(), _pq = new THREE.Quaternion(), _pe = new THREE.Euler(), _ps = new V3(), _po = new V3(), _pd = new V3(), _pc = new THREE.Color();
+function peopleMeshes() {
+  const max = PEOPLE_N.many, mat = new THREE.MeshStandardMaterial({ roughness: 0.85, metalness: 0 });
+  const mk = (geo, count) => { const m = new THREE.InstancedMesh(geo, mat, count); m.instanceMatrix.setUsage(THREE.DynamicDrawUsage); m.frustumCulled = false; m.count = 0; m.raycast = () => {}; people.group.add(m); return m; };
+  people.m = {
+    body: mk(new THREE.CapsuleGeometry(0.16, 0.42, 4, 12), max),
+    head: mk(new THREE.SphereGeometry(0.105, 16, 12), max),
+    leg: mk(new THREE.CapsuleGeometry(0.068, 0.73, 4, 8).translate(0, -0.435, 0), max * 2),     // pivots at the hip
+    arm: mk(new THREE.CapsuleGeometry(0.048, 0.52, 4, 8).translate(0, -0.31, 0), max * 2),     // pivots at the shoulder
+  };
+}
+/* rays in model (holder) space against the shown models; returns the distance in model units or Infinity */
+function peopleRay(o, d, far) {
+  const k = holder.scale.x || 1;
+  people.ray.set(_po.copy(o).applyMatrix4(holder.matrixWorld), _pd.copy(d).transformDirection(holder.matrixWorld));
+  people.ray.far = far * k; const h = people.ray.intersectObjects(allMeshes(), false)[0];
+  return h ? h.distance / k : Infinity;
+}
+const UPV = new V3(0, 1, 0), DOWNV = new V3(0, -1, 0);
+function peopleFree(x, z) {                            // standing room: nothing low overhead, not on top of a wall or a table
+  if (peopleRay(new V3(x, 0.05, z), UPV, 2.05) < 2.05) return false;
+  const d = peopleRay(new V3(x, 2.1, z), DOWNV, 2.1); return !(d < 2.1 - 0.45);
+}
+function peopleSpot(z) {
+  const ex = z.x / 2 + Math.max(4, z.x * 0.45), ez = z.z / 2 + Math.max(4, z.z * 0.45);
+  for (let i = 0; i < 30; i++) { const x = (Math.random() * 2 - 1) * ex, zz = (Math.random() * 2 - 1) * ez; if (peopleFree(x, zz)) return new V3(x, 0, zz); }
+  return new V3((Math.random() < 0.5 ? -1 : 1) * ex, 0, (Math.random() * 2 - 1) * ez);
+}
+function peopleReset() {
+  const z = sceneSize(), n = z ? PEOPLE_N[prefs.people] || 0 : 0;
+  people.key = prefs.people + '|' + (z ? z.toArray().map(v => v.toFixed(2)).join() : '');
+  people.list.length = 0; people.group.visible = n > 0; if (!n) return;
+  if (!people.m) peopleMeshes();
+  holder.updateMatrixWorld();
+  for (let i = 0; i < n; i++) {
+    const p = peopleSpot(z), s = 0.9 + Math.random() * 0.17;
+    people.list.push({ p, t: peopleSpot(z), yaw: Math.random() * 6.28, sp: 1.0 + Math.random() * 0.5, ph: Math.random() * 6.28, s, wait: Math.random() * 2, swing: 0, look: 0 });
+    _pc.set(PEOPLE_COLORS[i % PEOPLE_COLORS.length]);
+    people.m.body.setColorAt(i, _pc); people.m.head.setColorAt(i, _pc);
+    for (const j of [i * 2, i * 2 + 1]) { people.m.leg.setColorAt(j, _pc.clone().multiplyScalar(0.82)); people.m.arm.setColorAt(j, _pc); }
+  }
+  for (const m of Object.values(people.m)) { m.count = m === people.m.leg || m === people.m.arm ? n * 2 : n; if (m.instanceColor) m.instanceColor.needsUpdate = true; }
+  if (people.group.parent !== holder) holder.add(people.group);
+}
+function peopleUpdate(dt) {
+  const z = sceneSize(), want = z && PEOPLE_N[prefs.people] ? prefs.people + '|' + z.toArray().map(v => v.toFixed(2)).join() : (prefs.people + '|');
+  if (want !== people.key) peopleReset();
+  if (!people.list.length || !people.group.visible) return;
+  if (people.group.parent !== holder) holder.add(people.group);
+  holder.updateMatrixWorld();
+  const M = people.m;
+  people.list.forEach((q, i) => {
+    let moving = false;
+    if (q.wait > 0) q.wait -= dt;
+    else {
+      const dx = q.t.x - q.p.x, dz = q.t.z - q.p.z, dist = Math.hypot(dx, dz);
+      if (dist < 0.4) { q.wait = Math.random() < 0.4 ? 1 + Math.random() * 3 : 0; q.t = peopleSpot(z); }
+      else {
+        const want = Math.atan2(dx, dz); let dy = want - q.yaw; dy = Math.atan2(Math.sin(dy), Math.cos(dy)); q.yaw += dy * Math.min(1, dt * 4);
+        const fx = Math.sin(q.yaw), fz = Math.cos(q.yaw);
+        if ((q.look -= dt) <= 0) {                     // look ahead a few times a second: a wall in front → choose another goal
+          q.look = 0.2;
+          if (peopleRay(_ps.set(q.p.x, q.p.y + 1.0, q.p.z), new V3(fx, 0, fz), 0.7) < 0.7) { q.t = peopleSpot(z); q.wait = 0.3; }
+        }
+        if (q.wait <= 0) {
+          q.p.x += fx * q.sp * dt; q.p.z += fz * q.sp * dt; moving = true;
+          const d = peopleRay(_ps.set(q.p.x, q.p.y + 0.55, q.p.z), DOWNV, 1.4);      // step up / down: stairs, low slabs
+          const fy = d < 1.4 ? q.p.y + 0.55 - d : 0; q.p.y += (fy - q.p.y) * Math.min(1, dt * 10);
+        }
+      }
+    }
+    q.swing += ((moving ? Math.sin(q.ph += q.sp * dt * 3.4) * 0.5 : 0) - q.swing) * Math.min(1, dt * (moving ? 30 : 6));
+    _pb.compose(q.p, _pq.setFromAxisAngle(UPV, q.yaw), _ps.setScalar(q.s));
+    const put = (mesh, idx, x, y, rx) => { _pm.compose(_po.set(x, y, 0), _pq.setFromEuler(_pe.set(rx, 0, 0)), _ps.setScalar(1)); mesh.setMatrixAt(idx, _pm.premultiply(_pb)); };
+    put(M.body, i, 0, 1.17, 0); put(M.head, i, 0, 1.66, 0);
+    put(M.leg, i * 2, -0.09, 0.88, q.swing); put(M.leg, i * 2 + 1, 0.09, 0.88, -q.swing);
+    put(M.arm, i * 2, -0.215, 1.43, -q.swing * 0.8); put(M.arm, i * 2 + 1, 0.215, 1.43, q.swing * 0.8);
+  });
+  for (const m of Object.values(M)) m.instanceMatrix.needsUpdate = true;
+}
 /* compass rose on the floor next to the model — shows where north is when the sun is set by place */
 const compass = (() => {
   const c = document.createElement('canvas'); c.width = c.height = 256; const x = c.getContext('2d');
@@ -1527,7 +1626,7 @@ async function ensureBuilt(rec) {
 function mountScene() {
   holder.clear();
   for (const r of shownRecs()) holder.add(r.root, r.notesGroup);
-  holder.add(previewGroup, secVis, secCap, compass);
+  holder.add(previewGroup, secVis, secCap, compass, people.group);
   lsSet('vrtrip-shown', JSON.stringify(state.models.filter(r => r.shown).map(r => r.id)));
 }
 function afterSceneChange() { aa.input = performance.now(); explodeReset(true); shadowsDirty(); if (VIS.edges) applyEdges(); renderList(); renderSettings(); renderNotes(); renderToolbar(); updateModeButtons(); if (state.view === 'xr') layoutPalette(); }
@@ -1657,9 +1756,9 @@ function renderPrefs() {
   $('#p-gravity').checked = prefs.gravity; $('#p-collide').checked = prefs.collide;
   $('#envseg').querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.val === prefs.env)));
   $('#nature').hidden = prefs.env !== 'sky';
-  for (const [id, k] of [['#seasonseg', 'season'], ['#cloudseg', 'clouds'], ['#precipseg', 'precip']]) $(id).querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.val === prefs[k])));
+  for (const [id, k] of [['#seasonseg', 'season'], ['#cloudseg', 'clouds'], ['#precipseg', 'precip'], ['#peopleseg', 'people']]) $(id).querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.val === prefs[k])));
 }
-for (const [id, k] of [['#seasonseg', 'season'], ['#cloudseg', 'clouds'], ['#precipseg', 'precip']])
+for (const [id, k] of [['#seasonseg', 'season'], ['#cloudseg', 'clouds'], ['#precipseg', 'precip'], ['#peopleseg', 'people']])
   $(id).addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; prefs[k] = b.dataset.val; savePrefs(); renderPrefs(); applyEnv(); shadowsDirty(); });
 $('#p-gravity').addEventListener('change', e => { prefs.gravity = e.target.checked; savePrefs(); player.vy = 0; drawPalette(); });
 $('#p-collide').addEventListener('change', e => { prefs.collide = e.target.checked; savePrefs(); });
@@ -1962,7 +2061,7 @@ function aaStill() {
   if (!taa.enabled && aa.last) aa.ms += (Math.min(now - aa.last, 200) - aa.ms) * 0.05;      // frame time while moving
   aa.last = now;
   if (aa.ms > 34) return false;                      // slow graphics (under ~30 fps): no refinement, speed first
-  if (weather.on || (sky.visible && CLOAD() > 0)) { aa.still = 0; return false; }
+  if (weather.on || people.list.length || (sky.visible && CLOAD() > 0)) { aa.still = 0; return false; }
   if (h !== aa.sig || now - aa.input < 200 || toy.flyers.length || toy.drops.length || expl.cur !== expl.target) { aa.sig = h; aa.still = 0; return false; }
   if (++aa.still < 3) return false;
   if (taa.accumulateIndex >= 32 && now - aa.restart > 2000) { taa.accumulateIndex = -1; aa.restart = now; }   // safety net: refresh every 2 s
@@ -5149,7 +5248,7 @@ renderer.setAnimationLoop((t, xrFrame) => {
   else { flyUpdate(dt); controls.update(); }
   explodeUpdate(dt);
   if (sky.visible) { sky.position.copy(camera.getWorldPosition(_v)); sky.scale.setScalar(Math.min(1, camera.far * 0.9 / 1000)); }
-  updateSection(); updateSectionCap(); updateBillboards(); updateLabels(); updateCursor(); updateLighting(); compassUpdate(); skyUpdate(dt); weatherUpdate(dt);
+  updateSection(); updateSectionCap(); updateBillboards(); updateLabels(); updateCursor(); updateLighting(); compassUpdate(); skyUpdate(dt); weatherUpdate(dt); peopleUpdate(dt);
   if (cb.on) cbRender(); else renderFrame();
 });
 
