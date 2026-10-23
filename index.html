@@ -351,6 +351,12 @@ body.cardboard .topbar,body.cardboard .walkui,body.cardboard .chip,body.cardboar
 .cb-range input{accent-color:var(--accent)}
 .cb-range b{color:var(--fg);font-weight:500;font-variant-numeric:tabular-nums;margin-left:4px}
 .sunplace{display:flex;flex-direction:column;gap:8px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--bg)}
+.nature{gap:10px}
+#envseg{display:grid;grid-template-columns:1fr 1fr}
+.nature .nrow{display:flex;flex-direction:column;gap:5px;font-size:12.5px;color:var(--muted)}
+.nature .seg{display:flex;flex-wrap:nowrap}.nature .seg button{flex:1 1 0;min-width:0;padding:7px 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13px}
+.sunplace .city{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:end}
+.sunplace .city label{min-width:0}.sunplace .city input{width:100%;min-width:0;background:var(--panel);border:1px solid var(--line);color:var(--fg);border-radius:7px;padding:7px 9px;font:14px var(--f-body)}
 .sunplace .geo{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;gap:8px;align-items:end}
 .sunplace .geo label{min-width:0}.sunplace .geo input{width:100%}
 .sunplace label{display:flex;flex-direction:column;gap:4px;font-size:12.5px;color:var(--muted)}
@@ -490,29 +496,56 @@ body.cardboard .topbar,body.cardboard .walkui,body.cardboard .chip,body.cardboar
     <summary><h2><span class="step">05</span>Окружение</h2></summary>
     <div class="sec-body">
     <div class="field">
-      <span class="lbl" id="l-env">Фон и свет — во всех режимах</span>
+      <span class="lbl" id="l-env">Фон — во всех режимах</span>
       <div class="seg" id="envseg" role="group" aria-labelledby="l-env">
         <button type="button" data-val="graphite">Графит</button>
-        <button type="button" data-val="sky">Небо</button>
+        <button type="button" data-val="sky">Реалистично</button>
         <button type="button" data-val="studio">Студия</button>
         <button type="button" data-val="evening">Вечер</button>
       </div>
+    </div>
+    <div class="sunplace nature" id="nature">
+      <div class="nrow"><span id="l-season">Время года</span>
+        <div class="seg" id="seasonseg" role="group" aria-labelledby="l-season">
+          <button type="button" data-val="spring">Весна</button><button type="button" data-val="summer">Лето</button><button type="button" data-val="autumn">Осень</button><button type="button" data-val="winter">Зима</button>
+        </div></div>
+      <div class="nrow"><span id="l-clouds">Небо</span>
+        <div class="seg" id="cloudseg" role="group" aria-labelledby="l-clouds">
+          <button type="button" data-val="clear">Ясно</button><button type="button" data-val="cloudy">Облака</button><button type="button" data-val="overcast">Пасмурно</button>
+        </div></div>
+      <div class="nrow"><span id="l-precip">Осадки</span>
+        <div class="seg" id="precipseg" role="group" aria-labelledby="l-precip">
+          <button type="button" data-val="none">Нет</button><button type="button" data-val="rain">Дождь</button><button type="button" data-val="snow">Снег</button>
+        </div></div>
     </div>
     <div class="field">
       <span class="lbl" id="l-sun">Солнце</span>
       <div class="seg" id="sunmode" role="group" aria-labelledby="l-sun">
         <button type="button" data-val="preset">Как в фоне</button>
-        <button type="button" data-val="place">По месту и времени</button>
+        <button type="button" data-val="place">По городу и времени</button>
       </div>
     </div>
     <div class="sunplace" id="sunplace">
+      <div class="city">
+        <label>Город<input type="search" id="sun-city" list="sun-cities" placeholder="Например, Казань" autocomplete="off" enterkeyhint="search"></label>
+        <button type="button" class="btn small" id="sun-city-go">Найти</button>
+      </div>
+      <datalist id="sun-cities"></datalist>
       <div class="geo">
         <label>Широта<input type="number" id="sun-lat" step="0.0001" min="-90" max="90" inputmode="decimal"></label>
         <label>Долгота<input type="number" id="sun-lng" step="0.0001" min="-180" max="180" inputmode="decimal"></label>
         <button type="button" class="btn small" id="sun-geo" title="Взять координаты этого устройства">Здесь</button>
       </div>
       <label class="cb-range"><span>Дата</span><input type="date" id="sun-date"></label>
-      <label class="cb-range"><span>Время <b id="sun-time-t"></b></span><input type="range" id="sun-time" min="180" max="1380" step="5"></label>
+      <div class="chips" id="sun-days" role="group" aria-label="Быстрый выбор даты">
+        <button type="button" data-day="today">Сегодня</button>
+        <button type="button" data-day="03-21" title="Весеннее равноденствие">21 марта</button>
+        <button type="button" data-day="04-22" title="Расчётная дата инсоляции для средней полосы">22 апреля</button>
+        <button type="button" data-day="06-22" title="Летнее солнцестояние — самое высокое солнце">22 июня</button>
+        <button type="button" data-day="12-22" title="Зимнее солнцестояние — самое низкое солнце">22 декабря</button>
+      </div>
+      <label class="cb-range"><span>Время <b id="sun-time-t"></b></span><input type="range" id="sun-time" min="0" max="1435" step="5"></label>
+      <div class="chips"><button type="button" id="sun-now" aria-pressed="false" title="Солнце стоит там, где оно в этом городе прямо сейчас, и движется вместе с часами">Сейчас — живое солнце</button></div>
       <label class="cb-range"><span>Север <b id="sun-north-t"></b></span><input type="range" id="sun-north" min="0" max="359" step="1"></label>
       <p class="note" id="sun-info"></p>
     </div>
@@ -771,7 +804,7 @@ const UP = new V3(0, 1, 0), DOWN = new V3(0, -1, 0);
 const UNITS = { mm: 0.001, cm: 0.01, m: 1, in: 0.0254, ft: 0.3048 };
 const TABLE_STEPS = [20, 50, 100, 200, 500, 1000];
 const EYE = 1.65, STEP = 0.45, RADIUS = 0.3, GRAV = 9.8;
-const APP_VERSION = '3.18';
+const APP_VERSION = '3.19';
 const BASE_COLORS = ['#f2efe8', '#d8a33f', '#e0604a', '#3f86c9'];
 const KINDS = { issue: { label: 'Замечание', color: '#e0604a' }, question: { label: 'Вопрос', color: '#d8a33f' }, idea: { label: 'Идея', color: '#4fae7f' } };
 const TOOLS = [['nav', 'Выделение'], ['pin', 'Метка'], ['measure', 'Рулетка'], ['pen', 'Карандаш'], ['erase', 'Ластик'], ['section', 'Сечение'], ['ref', 'Репер'], ['explode', 'Взрыв']];   // «Куб» временно скрыт: код инструмента сохранён
@@ -829,17 +862,19 @@ const loadAll = () => idb('readonly', s => s.getAll());
 const lsGet = k => { try { return localStorage.getItem(k); } catch { return null; } };
 const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch {} };
 
-const prefs = { gravity: lsGet('vrtrip-gravity') !== '0', collide: lsGet('vrtrip-collide') !== '0', env: lsGet('vrtrip-env') || 'graphite' };
+const SEASON_BY_MONTH = ['winter', 'winter', 'spring', 'spring', 'spring', 'summer', 'summer', 'summer', 'autumn', 'autumn', 'autumn', 'winter'];
+const prefs = { gravity: lsGet('vrtrip-gravity') !== '0', collide: lsGet('vrtrip-collide') !== '0', env: lsGet('vrtrip-env') || 'graphite',
+  season: lsGet('vrtrip-season') || SEASON_BY_MONTH[new Date().getMonth()], clouds: lsGet('vrtrip-clouds') || 'cloudy', precip: lsGet('vrtrip-precip') || 'none' };
 let customColors = (() => { try { const a = JSON.parse(lsGet('vrtrip-colors') || '[]'); return Array.isArray(a) ? a.filter(c => /^#[0-9a-f]{6}$/i.test(c)).slice(-8) : []; } catch { return []; } })();
 const allColors = () => [...BASE_COLORS, ...customColors];
 /* visual settings: sun by place and time, shadows, reflections, ambient occlusion (screen), edge lines */
 const VIS = (() => {
-  const d = { sunMode: 'preset', lat: 55.751, lng: 37.618, date: '', min: 13 * 60, north: 0, shadows: true, refl: true, ao: !matchMedia('(pointer:coarse)').matches, edges: false };
+  const d = { sunMode: 'preset', lat: 55.751, lng: 37.618, city: 'Москва', tz: 'Europe/Moscow', live: false, date: '', min: 13 * 60, north: 0, shadows: true, refl: true, ao: !matchMedia('(pointer:coarse)').matches, edges: false };
   try { return Object.assign(d, JSON.parse(lsGet('vrtrip-vis') || '{}')); } catch { return d; }
 })();
 VIS.envI = 0.55;
 function saveVis() { const { envI, ...v } = VIS; lsSet('vrtrip-vis', JSON.stringify(v)); }
-function savePrefs() { lsSet('vrtrip-gravity', prefs.gravity ? '1' : '0'); lsSet('vrtrip-collide', prefs.collide ? '1' : '0'); lsSet('vrtrip-env', prefs.env); }
+function savePrefs() { lsSet('vrtrip-gravity', prefs.gravity ? '1' : '0'); lsSet('vrtrip-collide', prefs.collide ? '1' : '0'); lsSet('vrtrip-env', prefs.env); lsSet('vrtrip-season', prefs.season); lsSet('vrtrip-clouds', prefs.clouds); lsSet('vrtrip-precip', prefs.precip); }
 
 /* ================= renderer & scene ================= */
 const canvas = $('#c');
@@ -875,9 +910,30 @@ const ENV = {
 };
 const skyMat = new THREE.ShaderMaterial({
   side: THREE.BackSide, depthWrite: false, fog: false,
-  uniforms: { top: { value: new THREE.Color() }, bottom: { value: new THREE.Color() } },
+  uniforms: { top: { value: new THREE.Color() }, bottom: { value: new THREE.Color() }, cloud: { value: 0 }, t: { value: 0 }, sunDir: { value: new V3(0, 1, 0) }, sunCol: { value: new THREE.Color(0) }, cloudCol: { value: new THREE.Color(1, 1, 1) } },
   vertexShader: 'varying vec3 vP; void main(){ vP = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
-  fragmentShader: 'uniform vec3 top; uniform vec3 bottom; varying vec3 vP; void main(){ float h = clamp(vP.y, 0.0, 1.0); gl_FragColor = vec4(mix(bottom, top, pow(h, 0.55)), 1.0);\n#include <colorspace_fragment>\n}',
+  /* gradient sky + sun disc + drifting fbm clouds (cloud: 0 clear … 1 overcast) */
+  fragmentShader: `uniform vec3 top, bottom, sunDir, sunCol, cloudCol; uniform float cloud, t; varying vec3 vP;
+    float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+    float noise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);
+      return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), f.x), mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), f.x), f.y); }
+    float fbm(vec2 p){ float v = 0.0, a = 0.5; for (int i = 0; i < 5; i++) { v += a * noise(p); p = p * 2.03 + vec2(17.1, 9.3); a *= 0.5; } return v; }
+    void main(){
+      vec3 d = normalize(vP); float h = clamp(d.y, 0.0, 1.0);
+      vec3 col = mix(bottom, top, pow(h, 0.55));
+      float sd = max(dot(d, normalize(sunDir)), 0.0);
+      col += sunCol * (smoothstep(0.9993, 0.9997, sd) * 6.0 + pow(sd, 10.0) * 0.22) * (1.0 - cloud * 0.9);
+      if (cloud > 0.001 && d.y > 0.0) {
+        vec2 uv = d.xz / (d.y + 0.12) * 1.5 + vec2(t * 0.010, t * 0.004);
+        float n = fbm(uv), cov = mix(0.64, 0.2, cloud);
+        float c = smoothstep(cov, cov + 0.26, n) * smoothstep(0.0, 0.1, d.y);
+        vec3 cc = mix(cloudCol, cloudCol * 0.6, smoothstep(0.45, 1.0, n) * cloud);
+        col = mix(col, cc, c * (0.6 + 0.4 * cloud));
+        col = mix(col, cloudCol * 0.8, clamp((cloud - 0.7) * 2.5, 0.0, 1.0) * 0.75 * smoothstep(0.0, 0.2, d.y));
+      }
+      gl_FragColor = vec4(col, 1.0);
+      #include <colorspace_fragment>
+    }`,
 });
 const sky = new THREE.Mesh(new THREE.SphereGeometry(1000, 32, 16), skyMat); sky.frustumCulled = false; sky.renderOrder = -10; sky.visible = false; scene.add(sky);
 const ground = new THREE.Group();
@@ -910,6 +966,116 @@ function makeGrid(radius, color, aMinor, aMajor) {
 }
 const vrGrid = makeGrid(100, 0x2a2f2d, 0.35, 0.75); vrGrid.position.y = -0.002; vrGrid.material.polygonOffset = false;   // lies just above the ground disc
 ground.add(groundMesh, vrGrid); ground.visible = false; scene.add(ground);
+/* «Реалистично»: grass (or snow) on the ground, tinted by the season; procedural, tiles every ~1.5 m */
+function groundTex(kind) {
+  const c = document.createElement('canvas'); c.width = c.height = 256; const x = c.getContext('2d');
+  x.fillStyle = kind === 'snow' ? '#f4f6f8' : '#c9c9c9'; x.fillRect(0, 0, 256, 256);
+  let seed = kind === 'snow' ? 7 : 3; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  if (kind === 'snow') for (let i = 0; i < 900; i++) { const g = 225 + rnd() * 30 | 0; x.fillStyle = `rgba(${g},${g},${g + 4},0.6)`; x.beginPath(); x.arc(rnd() * 256, rnd() * 256, 1 + rnd() * 4, 0, 7); x.fill(); }
+  else for (let i = 0; i < 7000; i++) {
+    const px = rnd() * 256, py = rnd() * 256, a = (rnd() - 0.5) * 0.9, L = 3 + rnd() * 6, g = 130 + rnd() * 125 | 0;
+    x.strokeStyle = `rgb(${g},${g},${g})`; x.lineWidth = 0.8 + rnd(); x.beginPath(); x.moveTo(px, py); x.lineTo(px + Math.sin(a) * L, py - Math.cos(a) * L); x.stroke();
+  }
+  const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(1200, 1200); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8;
+  return t;
+}
+const GROUND_TEX = {};
+const SEASON = { spring: '#a3cf62', summer: '#74a547', autumn: '#bba253', winter: '#ffffff' };
+const CLOUD_K = { clear: 0, cloudy: 0.5, overcast: 1 };
+const isReal = () => prefs.env === 'sky';
+/* rain and snow: a box of particles that travels with the camera; plain CPU update, a few thousand points */
+const weather = { group: new THREE.Group(), rain: null, snow: null, on: false, t: 0 };
+weather.group.visible = false; scene.add(weather.group);
+const WB = 16, WH = 18;                                // half-width and height of the box around the camera
+function weatherInit(kind) {
+  if (kind === 'rain' && !weather.rain) {
+    const N = 2600, pos = new Float32Array(N * 6), p = new Float32Array(N * 3);
+    for (let i = 0; i < N; i++) { p[i * 3] = (Math.random() * 2 - 1) * WB; p[i * 3 + 1] = Math.random() * WH; p[i * 3 + 2] = (Math.random() * 2 - 1) * WB; }
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    weather.rain = new THREE.LineSegments(g, new THREE.LineBasicMaterial({ color: 0xaebccb, transparent: true, opacity: 0.42, depthWrite: false }));
+    weather.rain.userData.p = p; weather.rain.frustumCulled = false; weather.group.add(weather.rain);
+  }
+  if (kind === 'snow' && !weather.snow) {
+    const N = 3200, pos = new Float32Array(N * 3), ph = new Float32Array(N);
+    for (let i = 0; i < N; i++) { pos[i * 3] = (Math.random() * 2 - 1) * WB; pos[i * 3 + 1] = Math.random() * WH; pos[i * 3 + 2] = (Math.random() * 2 - 1) * WB; ph[i] = Math.random() * 6.28; }
+    const c = document.createElement('canvas'); c.width = c.height = 32; const x = c.getContext('2d');
+    const gr = x.createRadialGradient(16, 16, 0, 16, 16, 16); gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(0.5, 'rgba(255,255,255,0.8)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); x.fillStyle = gr; x.fillRect(0, 0, 32, 32);
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    weather.snow = new THREE.Points(g, new THREE.PointsMaterial({ size: 0.07, map: new THREE.CanvasTexture(c), transparent: true, depthWrite: false, sizeAttenuation: true }));
+    weather.snow.userData.ph = ph; weather.snow.frustumCulled = false; weather.group.add(weather.snow);
+  }
+}
+const _wc = new V3();
+function weatherUpdate(dt) {
+  const worldView = state.view === 'orbit' || state.view === 'walk' || (state.view === 'xr' && !state.passthrough);
+  const kind = isReal() && worldView ? prefs.precip : 'none';
+  weather.on = kind !== 'none'; weather.group.visible = weather.on;
+  if (!weather.on) return;
+  weatherInit(kind); weather.t += dt;
+  if (weather.rain) weather.rain.visible = kind === 'rain';
+  if (weather.snow) weather.snow.visible = kind === 'snow';
+  camera.getWorldPosition(_wc);
+  const y0 = Math.max(0, _wc.y - 6);                    // from the ground (or a bit below the eye) up
+  const wrap = (v, c) => c + ((((v - c + WB) % (2 * WB)) + 2 * WB) % (2 * WB)) - WB;
+  if (kind === 'rain') {
+    const p = weather.rain.userData.p, a = weather.rain.geometry.attributes.position.array, N = p.length / 3;
+    for (let i = 0; i < N; i++) {
+      let x = p[i * 3] + 0.6 * dt, y = p[i * 3 + 1] - 11 * dt, z = p[i * 3 + 2];
+      if (y < y0) y += WH; x = wrap(x, _wc.x); z = wrap(z, _wc.z);
+      p[i * 3] = x; p[i * 3 + 1] = y; p[i * 3 + 2] = z;
+      a[i * 6] = x; a[i * 6 + 1] = y; a[i * 6 + 2] = z; a[i * 6 + 3] = x - 0.02; a[i * 6 + 4] = y + 0.38; a[i * 6 + 5] = z;
+    }
+    weather.rain.geometry.attributes.position.needsUpdate = true;
+  } else {
+    const a = weather.snow.geometry.attributes.position.array, ph = weather.snow.userData.ph, N = ph.length, t = weather.t;
+    for (let i = 0; i < N; i++) {
+      let x = a[i * 3] + Math.sin(t * 0.7 + ph[i]) * 0.35 * dt + 0.15 * dt, y = a[i * 3 + 1] - (0.7 + (ph[i] % 1) * 0.5) * dt, z = a[i * 3 + 2] + Math.cos(t * 0.5 + ph[i]) * 0.3 * dt;
+      if (y < y0) y += WH; a[i * 3] = wrap(x, _wc.x); a[i * 3 + 1] = y; a[i * 3 + 2] = wrap(z, _wc.z);
+    }
+    weather.snow.geometry.attributes.position.needsUpdate = true;
+  }
+}
+/* sky colour follows the sun when it is set by city and time: day blue → golden hour → night; clouds grey it out */
+const SKYC = { day: ['#4f87c6', '#dce6ec', '#ffffff'], gold: ['#5d72a0', '#f1a96f', '#ffd6b5'], night: ['#060a15', '#151c2b', '#2b3242'] };
+const _c1 = new THREE.Color(), _c2 = new THREE.Color(), _c3 = new THREE.Color(), _sw = new V3();
+function skyUpdate(dt) {
+  if (!sky.visible || !isReal()) return;
+  const u = skyMat.uniforms, cl = CLOAD();
+  let top, bot, cc, b = 1;
+  const mixC = (A, B, f) => [0, 1, 2].map(i => _c1.set(A[i]).lerp(_c2.set(B[i]), f).getHexString());
+  if (VIS.sunMode === 'place' && !sunState.aim) {
+    const h = sunState.alt * 180 / Math.PI;
+    const m = h >= 12 ? SKYC.day : h >= 0 ? mixC(SKYC.gold, SKYC.day, h / 12).map(x => '#' + x) : h >= -6 ? mixC(SKYC.night, SKYC.gold, (h + 6) / 6).map(x => '#' + x) : SKYC.night;
+    [top, bot, cc] = m; b = h >= 6 ? 1 : h >= -6 ? 0.15 + 0.85 * (h + 6) / 12 : 0.15;
+  } else [top, bot, cc] = SKYC.day;
+  u.top.value.set(top).lerp(_c3.set('#8d969e').multiplyScalar(b), cl * 0.8);
+  u.bottom.value.set(bot).lerp(_c3.set('#b8bec3').multiplyScalar(b), cl * 0.8);
+  u.cloudCol.value.set(cc).lerp(_c3.set('#cfd3d7').multiplyScalar(b), cl * 0.6);
+  u.cloud.value = cl; u.t.value += dt;
+  u.sunDir.value.copy(sun.position).sub(sun.target.position).normalize();
+  u.sunCol.value.copy(sun.color).multiplyScalar(Math.min(1, sun.intensity / 2));
+  if (scene.fog) { fog.color.copy(u.bottom.value); fog.near = prefs.precip === 'none' ? 120 : 40; fog.far = prefs.precip === 'none' ? 1000 : 260; }
+}
+const CLOAD = () => isReal() ? CLOUD_K[prefs.clouds] ?? 0.5 : 0;
+/* compass rose on the floor next to the model — shows where north is when the sun is set by place */
+const compass = (() => {
+  const c = document.createElement('canvas'); c.width = c.height = 256; const x = c.getContext('2d');
+  x.translate(128, 128); x.lineWidth = 5; x.strokeStyle = 'rgba(255,255,255,0.85)'; x.beginPath(); x.arc(0, 0, 92, 0, 7); x.stroke();
+  x.fillStyle = '#d8a33f'; x.beginPath(); x.moveTo(0, -84); x.lineTo(18, 0); x.lineTo(-18, 0); x.closePath(); x.fill();
+  x.fillStyle = 'rgba(255,255,255,0.85)'; x.beginPath(); x.moveTo(0, 84); x.lineTo(18, 0); x.lineTo(-18, 0); x.closePath(); x.fill();
+  x.font = 'bold 34px system-ui, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.lineWidth = 6; x.strokeStyle = 'rgba(20,24,28,0.75)';
+  for (const [t, X, Y] of [['С', 0, -112], ['В', 112, 0], ['Ю', 0, 112], ['З', -112, 0]]) { x.strokeText(t, X, Y); x.fillStyle = t === 'С' ? '#ffcf6b' : '#ffffff'; x.fillText(t, X, Y); }
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4;
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ map: t, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }));
+  m.raycast = () => {}; m.visible = false; m.renderOrder = 2; return m;
+})();
+function compassUpdate() {
+  const z = sceneSize();
+  compass.visible = !!z && VIS.sunMode === 'place' && state.view !== 'ar';
+  if (!compass.visible) return;
+  const r = THREE.MathUtils.clamp(Math.max(z.x, z.z) * 0.14, 0.25, 40);
+  compass.scale.setScalar(r * 2); compass.position.set(-z.x / 2 - r * 1.1, 0.004, z.z / 2 + r * 1.1); compass.rotation.y = -VIS.north * Math.PI / 180;
+}
 const fog = new THREE.Fog(0xdfe7ea, 120, 1000);
 const previewGrid = makeGrid(10, 0xc8d0d6, 0.07, 0.2); scene.add(previewGrid);
 /* grid cell follows the model's unit system: 1 m (or 1 ft); ×10 for sites, ÷10 for small objects */
@@ -1361,7 +1527,7 @@ async function ensureBuilt(rec) {
 function mountScene() {
   holder.clear();
   for (const r of shownRecs()) holder.add(r.root, r.notesGroup);
-  holder.add(previewGroup, secVis, secCap);
+  holder.add(previewGroup, secVis, secCap, compass);
   lsSet('vrtrip-shown', JSON.stringify(state.models.filter(r => r.shown).map(r => r.id)));
 }
 function afterSceneChange() { aa.input = performance.now(); explodeReset(true); shadowsDirty(); if (VIS.edges) applyEdges(); renderList(); renderSettings(); renderNotes(); renderToolbar(); updateModeButtons(); if (state.view === 'xr') layoutPalette(); }
@@ -1490,7 +1656,11 @@ $('#tablescale').addEventListener('click', e => {
 function renderPrefs() {
   $('#p-gravity').checked = prefs.gravity; $('#p-collide').checked = prefs.collide;
   $('#envseg').querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.val === prefs.env)));
+  $('#nature').hidden = prefs.env !== 'sky';
+  for (const [id, k] of [['#seasonseg', 'season'], ['#cloudseg', 'clouds'], ['#precipseg', 'precip']]) $(id).querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.val === prefs[k])));
 }
+for (const [id, k] of [['#seasonseg', 'season'], ['#cloudseg', 'clouds'], ['#precipseg', 'precip']])
+  $(id).addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; prefs[k] = b.dataset.val; savePrefs(); renderPrefs(); applyEnv(); shadowsDirty(); });
 $('#p-gravity').addEventListener('change', e => { prefs.gravity = e.target.checked; savePrefs(); player.vy = 0; drawPalette(); });
 $('#p-collide').addEventListener('change', e => { prefs.collide = e.target.checked; savePrefs(); });
 $('#envseg').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; prefs.env = b.dataset.val; savePrefs(); renderPrefs(); applyEnv(); });
@@ -1519,15 +1689,22 @@ function applyEnv() {
   hemi.color.set(L.hemiSky); hemi.groundColor.set(L.hemiGround); hemi.intensity = L.hemi;
   sun.color.set(L.sun); sun.intensity = L.sunI; sun.position.set(...L.sunPos);
   if (!world) { sky.visible = ground.visible = previewGrid.visible = false; scene.background = null; scene.fog = null; return; }
+  skyMat.uniforms.cloud.value = 0;
   if (p.flat) {                                     // graphite: plain dark backdrop, the fitted grid in the overview
-    sky.visible = false; scene.background = PREVIEW_BG; scene.fog = null;
+    sky.visible = false; scene.background = PREVIEW_BG; scene.fog = null; vrGrid.visible = true;
+    if (groundMesh.material.map) { groundMesh.material.map = null; groundMesh.material.needsUpdate = true; }
     previewGrid.visible = state.view === 'orbit'; ground.visible = state.view !== 'orbit';
     groundMesh.material.color.set(p.ground); vrGrid.material.uniforms.aMinor.value = p.grid * 0.6; vrGrid.material.uniforms.aMajor.value = Math.min(1, p.grid * 1.5);
     return;
   }
   sky.visible = ground.visible = true; previewGrid.visible = false; scene.background = null;
-  skyMat.uniforms.top.value.set(p.top); skyMat.uniforms.bottom.value.set(p.bottom);
-  groundMesh.material.color.set(p.ground); vrGrid.material.uniforms.aMinor.value = p.grid * 0.6; vrGrid.material.uniforms.aMajor.value = Math.min(1, p.grid * 1.5);
+  skyMat.uniforms.top.value.set(p.top); skyMat.uniforms.bottom.value.set(p.bottom); skyMat.uniforms.cloud.value = CLOAD();
+  vrGrid.visible = !isReal();                           // realistic: grass and sky, no grid
+  if (isReal()) {
+    const k = prefs.season === 'winter' ? 'snow' : 'grass';
+    groundMesh.material.map = GROUND_TEX[k] ||= groundTex(k); groundMesh.material.color.set(SEASON[prefs.season] || SEASON.summer); groundMesh.material.needsUpdate = true;
+  } else { if (groundMesh.material.map) { groundMesh.material.map = null; groundMesh.material.needsUpdate = true; } groundMesh.material.color.set(p.ground); }
+  vrGrid.material.uniforms.aMinor.value = p.grid * 0.6; vrGrid.material.uniforms.aMajor.value = Math.min(1, p.grid * 1.5);
   fog.color.set(p.bottom); fog.near = p.fog[0]; fog.far = p.fog[1]; scene.fog = state.view === 'orbit' ? null : fog;
 }
 
@@ -1542,10 +1719,27 @@ function sunPosition(date, lat, lng) {
   const phi = rad * lat, H = rad * (280.16 + 360.9856235 * d) + rad * lng - ra;
   return { azimuth: Math.atan2(Math.sin(H), Math.cos(H) * Math.sin(phi) - Math.tan(dec) * Math.cos(phi)) + Math.PI, altitude: Math.asin(Math.sin(phi) * Math.sin(dec) + Math.cos(phi) * Math.cos(dec) * Math.cos(H)) };
 }
-function visDate() {
-  const t = VIS.date ? new Date(VIS.date + 'T00:00') : new Date(); t.setHours(0, 0, 0, 0);
-  return new Date(t.getTime() + VIS.min * 60000);
+/* the clock of the chosen city: date + minutes are local time there (IANA zone from the city search, or UTC±N
+   estimated from the longitude for hand-typed coordinates), so the sun is right whatever the device clock says */
+function tzOffsetMin(tz, utcMs) {
+  const fx = /^UTC([+-]\d+(?:\.\d+)?)$/.exec(tz || ''); if (fx) return +fx[1] * 60;
+  try {
+    const p = Object.fromEntries(new Intl.DateTimeFormat('en-US', { timeZone: tz, hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' }).formatToParts(new Date(utcMs)).map(x => [x.type, x.value]));
+    return (Date.UTC(+p.year, +p.month - 1, +p.day, +p.hour % 24, +p.minute, +p.second) - Math.floor(utcMs / 1000) * 1000) / 60000;
+  } catch { return -new Date(utcMs).getTimezoneOffset(); }
 }
+function cityNow() {                                   // { date: 'YYYY-MM-DD', min } — now, on the city's clock
+  const t = Date.now() + tzOffsetMin(VIS.tz, Date.now()) * 60000, d = new Date(t);
+  return { date: d.toISOString().slice(0, 10), min: d.getUTCHours() * 60 + d.getUTCMinutes() };
+}
+function visDate() {
+  const [y, m, dd] = (VIS.date || cityNow().date).split('-').map(Number);
+  const guess = Date.UTC(y, m - 1, dd, 0, VIS.min);
+  let utc = guess - tzOffsetMin(VIS.tz, guess) * 60000;
+  utc = guess - tzOffsetMin(VIS.tz, utc) * 60000;      // second pass: right across daylight-saving changes
+  return new Date(utc);
+}
+const tzLabel = () => { const o = tzOffsetMin(VIS.tz, visDate().getTime()), h = Math.trunc(o / 60), mm = Math.abs(o % 60); return `UTC${o >= 0 ? '+' : '−'}${Math.abs(h)}${mm ? ':' + String(mm).padStart(2, '0') : ''}`; };
 /* direction towards the sun in model space (north = −Z turned by VIS.north clockwise); null when it is below the horizon */
 const sunState = { alt: 1, aim: null };
 function sunDirLocal() {
@@ -1586,6 +1780,8 @@ function updateLighting() {
       hemi.intensity = base.hemi * (night ? 0.35 : 0.55 + 0.45 * f);
     } else { sun.intensity = base.sunI; sun.color.set(base.sun); hemi.intensity = base.hemi; }
     if (VIS.refl) hemi.intensity *= 0.72;                       // the environment already adds soft light
+    const cl = (state.view === 'orbit' || state.view === 'walk' || (state.view === 'xr' && !state.passthrough)) ? CLOAD() : 0;
+    if (cl) { sun.intensity *= 1 - 0.78 * cl; hemi.intensity *= 1 + 0.12 * cl; }   // clouds: soft, weak shadows
   }
   sun.position.copy(_sc).addScaledVector(dirW, R * 2); sun.target.position.copy(_sc); sun.target.updateMatrixWorld();
   const cast = VIS.shadows && !night && sun.intensity > 0.01 && !ar.ghost;
@@ -1702,7 +1898,7 @@ class ModelOutlinePass extends Pass {
   }
   setSize(w, h) { this.rt.setSize(w, h); this.clean.setSize(w, h); this.mat.uniforms.res.value.set(w, h); this.cleanMat.uniforms.res.value.set(w, h); }
   render(renderer, writeBuffer, readBuffer) {
-    const hide = [sky, ground, previewGrid, catcher, gizmo, secVis].filter(o => o.visible);
+    const hide = [sky, ground, previewGrid, catcher, gizmo, secVis, compass].filter(o => o.visible);
     const lines = []; for (const r of shownRecs()) for (const m of r.meshes || []) if (m.userData.edges?.visible) lines.push(m.userData.edges);
     const glass = []; for (const r of shownRecs()) for (const m of r.meshes || []) if (m.material.transparent && m.material.opacity < 0.5 && m.visible) glass.push(m);
     [...hide, ...lines].forEach(o => { o.visible = false; });
@@ -1741,9 +1937,9 @@ function ensureComposer() {
   outlinePass = new ModelOutlinePass();
   // fat section lines are instanced quads: keep them out of the AO and outline helper passes (they render with an override material)
   const fn = f => Object.assign(new Pass(), { needsSwap: false, render: f });
-  composer.addPass(fn(() => { capLines.visible = false; }));
+  composer.addPass(fn(() => { capLines.visible = false; weather.group.visible = false; }));
   composer.addPass(gtao); composer.addPass(outlinePass);
-  composer.addPass(fn(() => { capLines.visible = cap.lines; }));
+  composer.addPass(fn(() => { capLines.visible = cap.lines; weather.group.visible = weather.on; }));
   composer.addPass(new OutputPass());
   composer.addPass(new SMAAPass(sz.x, sz.y));      // post passes work per pixel — smooth the stair-steps on outlines and edges
   resizeComposer(); return composer;
@@ -1766,6 +1962,7 @@ function aaStill() {
   if (!taa.enabled && aa.last) aa.ms += (Math.min(now - aa.last, 200) - aa.ms) * 0.05;      // frame time while moving
   aa.last = now;
   if (aa.ms > 34) return false;                      // slow graphics (under ~30 fps): no refinement, speed first
+  if (weather.on || (sky.visible && CLOAD() > 0)) { aa.still = 0; return false; }
   if (h !== aa.sig || now - aa.input < 200 || toy.flyers.length || toy.drops.length || expl.cur !== expl.target) { aa.sig = h; aa.still = 0; return false; }
   if (++aa.still < 3) return false;
   if (taa.accumulateIndex >= 32 && now - aa.restart > 2000) { taa.accumulateIndex = -1; aa.restart = now; }   // safety net: refresh every 2 s
@@ -1779,7 +1976,7 @@ camera.layers.enable(UI_LAYER);
 function toUI(o) { o.traverse(x => { if (x.material && x.material !== PICK_MAT && (x.isSprite || x.material.isMeshBasicMaterial || x.material.isLineBasicMaterial)) x.layers.set(UI_LAYER); }); return o; }
 function renderFrame() {
   updateGrid();
-  const gn = $('#gridnote'), gnOff = state.view !== 'orbit' || !(previewGrid.visible || ground.visible) || !shownRecs().length; if (gn.hidden !== gnOff) gn.hidden = gnOff;
+  const gn = $('#gridnote'), gnOff = state.view !== 'orbit' || isReal() || !(previewGrid.visible || ground.visible) || !shownRecs().length; if (gn.hidden !== gnOff) gn.hidden = gnOff;
   const crease = VIS.edges && !outlineActive();                  // 1-px crease lines only where the outline pass does not run (headset, glasses)
   if (crease !== lineState) { lineState = crease; for (const r of shownRecs()) for (const m of r.meshes || []) if (m.userData.edges) m.userData.edges.visible = crease; }
   if (aoActive() || outlineActive() || (screenView() && !COARSE)) {          // computers always go through the composer: SMAA + still-frame AA
@@ -1828,23 +2025,81 @@ function renderVis() {
   $('#sunmode').querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.val === VIS.sunMode)));
   $('#sunplace').hidden = VIS.sunMode !== 'place';
   $('#sun-lat').value = VIS.lat; $('#sun-lng').value = VIS.lng;
-  $('#sun-date').value = VIS.date || new Date().toISOString().slice(0, 10);
+  if (document.activeElement !== $('#sun-city')) $('#sun-city').value = VIS.city || '';
+  $('#sun-date').value = VIS.date || cityNow().date;
+  const md = ($('#sun-date').value || '').slice(5), today = !VIS.date;
+  $('#sun-days').querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.day === 'today' ? today : !today && b.dataset.day === md)));
+  $('#sun-now').setAttribute('aria-pressed', String(!!VIS.live));
   $('#sun-time').value = VIS.min; $('#sun-time-t').textContent = hhmm(VIS.min);
   $('#sun-north').value = VIS.north; $('#sun-north-t').textContent = `${VIS.north}°`;
   const sp = sunPosition(visDate(), VIS.lat, VIS.lng), az = Math.round(sp.azimuth * 180 / Math.PI) % 360, h = Math.round(sp.altitude * 180 / Math.PI);
-  $('#sun-info').textContent = h < 0 ? `Солнце за горизонтом (${h}°) — ночь` : `Солнце: азимут ${az}° от севера, высота ${h}° над горизонтом. Время — по часам этого устройства. Север модели — ось −Z (в Rhino это +Y), ползунок «Север» поворачивает его.`;
+  const where = `${VIS.city || `${VIS.lat}, ${VIS.lng}`} · время местное, ${tzLabel()}${/^UTC/.test(VIS.tz || '') ? ' (примерно, по долготе)' : ''}`;
+  $('#sun-info').textContent = h < 0 ? `${where}. Солнце за горизонтом (${h}°) — ночь.` : `${where}. Солнце: азимут ${az}° от севера, высота ${h}° над горизонтом. Север модели — ось −Z (в Rhino это +Y), ползунок «Север» поворачивает модель относительно сторон света — смотрите на розу на полу.`;
   $('#v-shadows').checked = VIS.shadows; $('#v-refl').checked = VIS.refl; $('#v-ao').checked = VIS.ao; $('#v-edges').checked = VIS.edges;
 }
 function visChanged() { saveVis(); renderVis(); shadowsDirty(); if (state.view === 'xr') drawPalette(); }
 $('#sunmode').addEventListener('click', e => { const b = e.target.closest('[data-val]'); if (!b) return; VIS.sunMode = b.dataset.val; sunState.aim = null; visChanged(); });
-$('#sun-lat').addEventListener('change', e => { const v = parseFloat(e.target.value); if (isFinite(v)) VIS.lat = THREE.MathUtils.clamp(v, -90, 90); visChanged(); });
-$('#sun-lng').addEventListener('change', e => { const v = parseFloat(e.target.value); if (isFinite(v)) VIS.lng = THREE.MathUtils.clamp(v, -180, 180); visChanged(); });
-$('#sun-date').addEventListener('change', e => { VIS.date = e.target.value; visChanged(); });
-$('#sun-time').addEventListener('input', e => { VIS.min = +e.target.value; visChanged(); });
+const handCoords = () => { VIS.city = ''; VIS.tz = `UTC${VIS.lng >= 0 ? '+' : '-'}${Math.abs(Math.round(VIS.lng / 15))}`; };
+$('#sun-lat').addEventListener('change', e => { const v = parseFloat(e.target.value); if (isFinite(v)) { VIS.lat = THREE.MathUtils.clamp(v, -90, 90); handCoords(); } visChanged(); });
+$('#sun-lng').addEventListener('change', e => { const v = parseFloat(e.target.value); if (isFinite(v)) { VIS.lng = THREE.MathUtils.clamp(v, -180, 180); handCoords(); } visChanged(); });
+$('#sun-date').addEventListener('change', e => { VIS.date = e.target.value; VIS.live = false; visChanged(); });
+$('#sun-time').addEventListener('input', e => { VIS.min = +e.target.value; VIS.live = false; visChanged(); });
+$('#sun-days').addEventListener('click', e => {
+  const b = e.target.closest('[data-day]'); if (!b) return; VIS.live = false;
+  VIS.date = b.dataset.day === 'today' ? '' : `${cityNow().date.slice(0, 4)}-${b.dataset.day}`; visChanged();
+});
+/* live sun: where it stands in that city right now, moving with the clock */
+function sunLiveTick() { if (!VIS.live) return; const n = cityNow(); VIS.date = ''; VIS.min = Math.round(n.min / 5) * 5 % 1440; visChanged(); }
+$('#sun-now').addEventListener('click', () => { VIS.live = !VIS.live; if (VIS.live) { VIS.sunMode = 'place'; sunState.aim = null; } sunLiveTick(); visChanged(); });
+setInterval(sunLiveTick, 60000);
+/* city search: a built-in list for the usual places (works offline), then the Open-Meteo geocoder for any town */
+const CITIES = [
+  ['Москва', 55.7558, 37.6173, 'Europe/Moscow'], ['Санкт-Петербург', 59.9343, 30.3351, 'Europe/Moscow'], ['Казань', 55.7963, 49.1088, 'Europe/Moscow'],
+  ['Нижний Новгород', 56.2965, 43.9361, 'Europe/Moscow'], ['Краснодар', 45.0355, 38.9753, 'Europe/Moscow'], ['Сочи', 43.5855, 39.7231, 'Europe/Moscow'],
+  ['Красная Поляна', 43.6797, 40.2044, 'Europe/Moscow'], ['Ростов-на-Дону', 47.2357, 39.7015, 'Europe/Moscow'], ['Воронеж', 51.6608, 39.2003, 'Europe/Moscow'],
+  ['Ярославль', 57.6261, 39.8845, 'Europe/Moscow'], ['Тверь', 56.8587, 35.9176, 'Europe/Moscow'], ['Люберцы', 55.6783, 37.8938, 'Europe/Moscow'],
+  ['Мурманск', 68.9585, 33.0827, 'Europe/Moscow'], ['Архангельск', 64.5399, 40.5152, 'Europe/Moscow'], ['Калининград', 54.7104, 20.4522, 'Europe/Kaliningrad'],
+  ['Самара', 53.1959, 50.1002, 'Europe/Samara'], ['Волгоград', 48.708, 44.5133, 'Europe/Volgograd'], ['Екатеринбург', 56.8389, 60.6057, 'Asia/Yekaterinburg'],
+  ['Пермь', 58.0105, 56.2502, 'Asia/Yekaterinburg'], ['Уфа', 54.7388, 55.9721, 'Asia/Yekaterinburg'], ['Челябинск', 55.1644, 61.4368, 'Asia/Yekaterinburg'],
+  ['Тюмень', 57.1522, 65.5272, 'Asia/Yekaterinburg'], ['Омск', 54.9885, 73.3242, 'Asia/Omsk'], ['Новосибирск', 55.0084, 82.9357, 'Asia/Novosibirsk'],
+  ['Красноярск', 56.0153, 92.8932, 'Asia/Krasnoyarsk'], ['Иркутск', 52.287, 104.305, 'Asia/Irkutsk'], ['Якутск', 62.0355, 129.6755, 'Asia/Yakutsk'],
+  ['Хабаровск', 48.4827, 135.0838, 'Asia/Vladivostok'], ['Владивосток', 43.1155, 131.8855, 'Asia/Vladivostok'], ['Минск', 53.9045, 27.5615, 'Europe/Minsk'],
+  ['Алматы', 43.222, 76.8512, 'Asia/Almaty'], ['Астана', 51.1694, 71.4491, 'Asia/Almaty'], ['Ташкент', 41.2995, 69.2401, 'Asia/Tashkent'],
+  ['Бишкек', 42.8746, 74.5698, 'Asia/Bishkek'], ['Тбилиси', 41.7151, 44.8271, 'Asia/Tbilisi'], ['Ереван', 40.1792, 44.4991, 'Asia/Yerevan'],
+  ['Баку', 40.4093, 49.8671, 'Asia/Baku'], ['Стамбул', 41.0082, 28.9784, 'Europe/Istanbul'], ['Дубай', 25.2048, 55.2708, 'Asia/Dubai'],
+  ['Лондон', 51.5074, -0.1278, 'Europe/London'], ['Париж', 48.8566, 2.3522, 'Europe/Paris'], ['Берлин', 52.52, 13.405, 'Europe/Berlin'],
+  ['Рим', 41.9028, 12.4964, 'Europe/Rome'], ['Барселона', 41.3874, 2.1686, 'Europe/Madrid'], ['Нью-Йорк', 40.7128, -74.006, 'America/New_York'],
+  ['Токио', 35.6762, 139.6503, 'Asia/Tokyo'], ['Пекин', 39.9042, 116.4074, 'Asia/Shanghai'], ['Шанхай', 31.2304, 121.4737, 'Asia/Shanghai'],
+  ['Сингапур', 1.3521, 103.8198, 'Asia/Singapore'],
+];
+$('#sun-cities').append(...CITIES.map(c => Object.assign(document.createElement('option'), { value: c[0] })));
+function setCity(name, lat, lng, tz) {
+  Object.assign(VIS, { city: name, lat: +(+lat).toFixed(4), lng: +(+lng).toFixed(4), tz: tz || `UTC${lng >= 0 ? '+' : '-'}${Math.abs(Math.round(lng / 15))}`, sunMode: 'place' });
+  sunState.aim = null; if (VIS.live) sunLiveTick(); visChanged();
+  const sp = sunPosition(visDate(), VIS.lat, VIS.lng), h = Math.round(sp.altitude * 180 / Math.PI);
+  toast(`${name}: ${VIS.lat}, ${VIS.lng}. ${h < 0 ? 'Сейчас по выбранному времени солнце за горизонтом.' : `Солнце на высоте ${h}°.`}`, 'ok');
+}
+async function findCity() {
+  const q = $('#sun-city').value.trim(); if (!q) return;
+  const low = q.toLowerCase(), own = CITIES.find(c => c[0].toLowerCase() === low);
+  if (own) { setCity(...own); return; }
+  try {
+    busy('Ищу город…');
+    const r = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=5&language=ru&format=json`);
+    if (!r.ok) throw new Error(r.status);
+    const j = await r.json(), c = j.results?.[0];
+    if (!c) { toast(`Город «${q}» не найден. Проверьте название или введите широту и долготу.`, 'warn'); return; }
+    setCity([c.name, c.admin1, c.country].filter((x, i, a) => x && a.indexOf(x) === i).slice(0, 2).join(', '), c.latitude, c.longitude, c.timezone);
+  } catch { toast('Не получилось найти город — нет интернета? Выберите город из списка или введите широту и долготу.', 'warn'); }
+  finally { busy(false); }
+}
+$('#sun-city-go').addEventListener('click', findCity);
+$('#sun-city').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); findCity(); } });
+$('#sun-city').addEventListener('change', e => { const own = CITIES.find(c => c[0] === e.target.value.trim()); if (own) setCity(...own); });
 $('#sun-north').addEventListener('input', e => { VIS.north = +e.target.value; visChanged(); });
 $('#sun-geo').addEventListener('click', () => {
   if (!navigator.geolocation) { toast('Это устройство не сообщает координаты — введите их вручную.', 'warn'); return; }
-  navigator.geolocation.getCurrentPosition(p => { VIS.lat = +p.coords.latitude.toFixed(4); VIS.lng = +p.coords.longitude.toFixed(4); visChanged(); toast('Координаты взяты с устройства.', 'ok'); },
+  navigator.geolocation.getCurrentPosition(p => { setCity('Здесь', p.coords.latitude, p.coords.longitude, Intl.DateTimeFormat().resolvedOptions().timeZone); },
     () => toast('Не удалось получить координаты — разрешите доступ к местоположению или введите их вручную.', 'warn'), { timeout: 10000 });
 });
 $('#v-shadows').addEventListener('change', e => { VIS.shadows = e.target.checked; visChanged(); });
@@ -1854,7 +2109,7 @@ $('#v-edges').addEventListener('change', e => { VIS.edges = e.target.checked; vi
 /* headset: move the sun by an hour, or point the controller at the window / real sun to set where light comes from */
 function sunStep(dm) {
   if (VIS.sunMode !== 'place') { VIS.sunMode = 'place'; }
-  sunState.aim = null; VIS.min = THREE.MathUtils.clamp(VIS.min + dm, 180, 1380); visChanged();
+  sunState.aim = null; VIS.live = false; VIS.min = (VIS.min + dm + 1440) % 1440; visChanged();
   const sp = sunPosition(visDate(), VIS.lat, VIS.lng);
   flash(`Солнце ${hhmm(VIS.min)}${sp.altitude < 0 ? ' — за горизонтом' : ` · высота ${Math.round(sp.altitude * 180 / Math.PI)}°`}`);
 }
@@ -3887,7 +4142,7 @@ function layoutFace(f) {
   } else if (tab === 'view') {
     row3(Y, [state.sessionMode === 'immersive-ar' && ['pt', 'Сквозной'], ['table', '1:1 ↔ макет'], ['start', 'Ко входу']].filter(Boolean));
     row3(Y + 108, [state.mode === 'walk' && ['grav', 'Гравитация'], state.mode === 'walk' && ['coll', 'Стены'], ['place', 'Макет передо мной']].filter(Boolean));
-    [['env:graphite', 'Графит'], ['env:sky', 'Небо'], ['env:studio', 'Студия'], ['env:evening', 'Вечер']].forEach(([id, label], i) => B.push({ id, label, x: 24 + i * 246, y: Y + 216, w: 236, h: 96 }));
+    [['env:graphite', 'Графит'], ['env:sky', 'Реалистично'], ['env:studio', 'Студия'], ['env:evening', 'Вечер']].forEach(([id, label], i) => B.push({ id, label, x: 24 + i * 246, y: Y + 216, w: 236, h: 96 }));
     [['sun:-', 'Солнце −1 ч'], ['sun:+', 'Солнце +1 ч'], ['sun:aim', sunState.aim || state.sunAim ? 'Свет: сбросить' : 'Свет рукой'], ['tilt:-', 'Наклон −'], ['tilt:+', 'Наклон +']].forEach(([id, label], i) => B.push({ id, label, x: 24 + i * 197, y: Y + 324, w: 187, h: 96 }));
     B.push({ id: 'shot', label: 'Снимок', x: 24, y: Y + 432, w: 240, h: 84 });
     B.push({ id: 'align', label: state.alignRel ? 'Снять привязку' : 'Привязка по реперам', x: 280, y: Y + 432, w: 400, h: 84 });
@@ -4894,7 +5149,7 @@ renderer.setAnimationLoop((t, xrFrame) => {
   else { flyUpdate(dt); controls.update(); }
   explodeUpdate(dt);
   if (sky.visible) { sky.position.copy(camera.getWorldPosition(_v)); sky.scale.setScalar(Math.min(1, camera.far * 0.9 / 1000)); }
-  updateSection(); updateSectionCap(); updateBillboards(); updateLabels(); updateCursor(); updateLighting();
+  updateSection(); updateSectionCap(); updateBillboards(); updateLabels(); updateCursor(); updateLighting(); compassUpdate(); skyUpdate(dt); weatherUpdate(dt);
   if (cb.on) cbRender(); else renderFrame();
 });
 
