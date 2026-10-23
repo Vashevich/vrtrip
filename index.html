@@ -822,7 +822,7 @@ const UP = new V3(0, 1, 0), DOWN = new V3(0, -1, 0);
 const UNITS = { mm: 0.001, cm: 0.01, m: 1, in: 0.0254, ft: 0.3048 };
 const TABLE_STEPS = [20, 50, 100, 200, 500, 1000];
 const EYE = 1.65, STEP = 0.45, RADIUS = 0.3, GRAV = 9.8;
-const APP_VERSION = '3.22';
+const APP_VERSION = '3.23';
 const BASE_COLORS = ['#f2efe8', '#d8a33f', '#e0604a', '#3f86c9'];
 const KINDS = { issue: { label: 'Замечание', color: '#e0604a' }, question: { label: 'Вопрос', color: '#d8a33f' }, idea: { label: 'Идея', color: '#4fae7f' } };
 const TOOLS = [['nav', 'Выделение'], ['pin', 'Метка'], ['measure', 'Рулетка'], ['pen', 'Карандаш'], ['erase', 'Ластик'], ['section', 'Сечение'], ['ref', 'Репер'], ['explode', 'Взрыв']];   // «Куб» временно скрыт: код инструмента сохранён
@@ -1075,54 +1075,82 @@ function skyUpdate(dt) {
   if (scene.fog) { fog.color.copy(u.bottom.value); fog.near = prefs.precip === 'none' ? 120 : 40; fog.far = prefs.precip === 'none' ? 1000 : 260; }
 }
 const CLOAD = () => isReal() ? CLOUD_K[prefs.clouds] ?? 0.5 : 0;
-/* people: a little life around the installation, cartoon style (big heads, bright clothes, toon shading), real scale.
-   Each person wanders, meets someone and chats (speech bubbles, gestures), sits down on a bench or a low ledge and gets
-   up again, walks up steps, jumps onto ledges up to ~1.4 m, drops down from them and turns away from walls.
-   Everything is instanced — a crowd is a dozen draw calls; rays use the model's BVH. No shadows (they would redraw the
+/* people: a little life around the installation — low-poly figures with real proportions and flat two-tone shading
+   (faceless, muted clothes, like the people on architectural presentations), real scale.
+   Each person wanders, meets someone and chats (a thought cloud over the one speaking, gestures), sits down on a bench
+   or on the edge of a low ledge (knees bent, feet on the floor below), walks up steps, jumps onto ledges up to ~1.4 m,
+   drops down from them and turns away from walls.
+   Everything is instanced — a crowd is ~15 draw calls; rays use the model's BVH. No shadows (they would redraw the
    shadow map every frame). */
 const PEOPLE_N = { none: 0, few: 8, many: 24 };
-const P_SKIN = ['#f6d3b3', '#eab993', '#cf9a72', '#9c6644', '#f2c7a2', '#7a4b33'];
-const P_SHIRT = ['#e85d75', '#4a9fe8', '#f2b134', '#5fbf77', '#9b6fe0', '#f07f3c', '#3fc1c9', '#ece7dc', '#e3506b', '#2f8f83'];
-const P_PANTS = ['#2f3e57', '#4b4b52', '#6b4f3a', '#1f5f8b', '#3d6b4f', '#7a7f88', '#2a2a30'];
-const P_HAIR = ['#2b1d14', '#5a3a22', '#d9b36c', '#a5452a', '#141414', '#8a8a8a', '#c26a2c'];
+const P_SKIN = ['#f1cfb4', '#e3b48f', '#c99068', '#9b6748', '#704630', '#f4d6c0'];
+const P_TOP = ['#6b7075', '#3e5166', '#8b9a7c', '#c7a86b', '#a65f4f', '#e2ddd3', '#30363a', '#7e90a3', '#d58a44', '#5d7b6c', '#8c6f8f', '#b8bec4'];
+const P_COAT = ['#5a5f63', '#7a6a55', '#3f4a56', '#8c7f6a', '#4a5a4f', '#6e4e46', '#9aa3a8'];
+const P_PANTS = ['#2a2d31', '#3a4552', '#5a5348', '#4f6a8a', '#c7bdab', '#6d737a', '#3d4a3f'];
+const P_SHOE = ['#232327', '#4a3a2e', '#e4e0d8', '#1b1b1e', '#6b5440'];
+const P_HAIR = ['#1e1a17', '#3a2a20', '#6a4a2f', '#a57b4e', '#c4bdb3', '#7e3a28'];
+const P_HAT = ['#e7922f', '#d9d4c8', '#3e5166', '#a33d32'];
+// body of a 1.75 m person (each one is scaled 0.9–1.06 and made a bit slimmer or broader); y up, facing +z
+const PB = { hip: 0.9, hipX: 0.092, th: 0.43, sh: 0.41, ank: 0.06, shY: 1.43, shX: 0.205, ua: 0.29, fa: 0.26, neck: 1.53 };
+const HAIR_STYLES = ['short', 'short', 'short', 'long', 'long', 'hat', null];
 const people = { list: [], group: new THREE.Group(), m: null, ray: new THREE.Raycaster(), key: '', seats: [], benches: [], bubbleMats: null, bubbles: [] };
 people.ray.firstHitOnly = true; people.group.visible = false;
 const UPV = new V3(0, 1, 0), DOWNV = new V3(0, -1, 0), PG = 9.8;
 const _pm = new THREE.Matrix4(), _pb = new THREE.Matrix4(), _pq = new THREE.Quaternion(), _pe = new THREE.Euler(), _ps = new V3(), _po = new V3(), _pd = new V3(), _pc = new THREE.Color(), _pf = new V3(), _pv = new V3();
+const _j1 = new V3(), _j2 = new V3(), _j3 = new V3(), _je = new THREE.Euler(), ZERO_M = new THREE.Matrix4().makeScale(0, 0, 0);
 const pick = a => a[Math.floor(Math.random() * a.length)];
 function toonMat(extra = {}) {
   people.grad ||= (() => { const t = new THREE.DataTexture(new Uint8Array([110, 185, 255]), 3, 1, THREE.RedFormat); t.minFilter = t.magFilter = THREE.NearestFilter; t.needsUpdate = true; return t; })();
   return new THREE.MeshToonMaterial({ gradientMap: people.grad, ...extra });
 }
+/* the low-poly parts: tapered faceted prisms hanging from their joints, a faceted head, three hair styles */
 function peopleMeshes() {
-  const max = PEOPLE_N.many, mat = toonMat();
-  const mk = (geo, count, m = mat) => { const o = new THREE.InstancedMesh(geo, m, count); o.instanceMatrix.setUsage(THREE.DynamicDrawUsage); o.frustumCulled = false; o.count = 0; o.raycast = () => {}; people.group.add(o); return o; };
+  const max = PEOPLE_N.many;
+  const grad = new THREE.DataTexture(new Uint8Array([80, 255]), 2, 1, THREE.RedFormat); grad.minFilter = grad.magFilter = THREE.NearestFilter; grad.needsUpdate = true;
+  const mat = new THREE.MeshToonMaterial({ gradientMap: grad, flatShading: true });          // flat facets, light side / shadow side
+  const mk = (geo, count) => { const o = new THREE.InstancedMesh(geo, mat, count); o.instanceMatrix.setUsage(THREE.DynamicDrawUsage); o.frustumCulled = false; o.count = 0; o.raycast = () => {}; people.group.add(o); return o; };
+  const limb = (len, r0, r1, seg = 6, sx = 1, sz = 1) => new THREE.CylinderGeometry(r0, r1, len, seg, 1).translate(0, -len / 2, 0).scale(sx, 1, sz);
+  const up = (h, r0, r1, seg, sx, sz, start = 0) => new THREE.CylinderGeometry(r1, r0, h, seg, 1, false, start).translate(0, h / 2, 0).scale(sx, 1, sz);
+  const HEAD = 0.1;                                                   // head centre above the neck joint
+  const cap = () => new THREE.SphereGeometry(1, 9, 6, 0, Math.PI * 2, 0, Math.PI * 0.62).rotateX(-0.62).scale(0.097, 0.127, 0.112).translate(0, HEAD + 0.006, 0.004);
+  const shoe = new THREE.BoxGeometry(0.095, 0.07, 0.25, 1, 1, 1);
+  { const p = shoe.attributes.position; for (let i = 0; i < p.count; i++) if (p.getZ(i) > 0 && p.getY(i) > 0) p.setY(i, p.getY(i) - 0.03); }   // a lower toe
+  shoe.translate(0, -0.025, 0.055);
   people.m = {
-    torso: mk(new THREE.CapsuleGeometry(0.2, 0.28, 6, 14), max),
-    head: mk(new THREE.SphereGeometry(0.17, 22, 16), max),
-    hair: mk(new THREE.SphereGeometry(0.182, 22, 12, 0, Math.PI * 2, 0, Math.PI * 0.56), max),
-    eye: mk(new THREE.SphereGeometry(0.024, 8, 6), max * 2, new THREE.MeshBasicMaterial({ color: 0x1b1b1f })),
-    leg: mk(new THREE.CapsuleGeometry(0.082, 0.6, 4, 10).translate(0, -0.38, 0), max * 2),     // pivots at the hip
-    shoe: mk(new THREE.SphereGeometry(0.09, 10, 8).scale(1, 0.6, 1.55), max * 2),
-    arm: mk(new THREE.CapsuleGeometry(0.062, 0.42, 4, 10).translate(0, -0.27, 0), max * 2),    // pivots at the shoulder
-    hand: mk(new THREE.SphereGeometry(0.066, 10, 8), max * 2),
+    pelvis: mk(new THREE.CylinderGeometry(0.16, 0.15, 0.17, 8, 1, false, Math.PI / 8).translate(0, -0.085, 0).scale(1, 1, 0.62), max),
+    torso: mk(up(0.46, 0.15, 0.19, 8, 1, 0.6, Math.PI / 8), max),
+    coat: mk(new THREE.CylinderGeometry(0.153, 0.2, 0.42, 8, 1, false, Math.PI / 8).translate(0, -0.21, 0).scale(1, 1, 0.64), max),     // the skirt of a coat, from the waist
+    neck: mk(limb(0.13, 0.045, 0.05, 6), max),
+    head: mk(new THREE.SphereGeometry(1, 7, 6).scale(0.088, 0.118, 0.103).translate(0, HEAD, 0.008), max),
+    short: mk(cap(), max),
+    long: mk(mergeGeometries([cap(), new THREE.BoxGeometry(0.19, 0.26, 0.06).translate(0, HEAD - 0.11, -0.085)]), max),
+    hat: mk(mergeGeometries([new THREE.SphereGeometry(1, 9, 5, 0, Math.PI * 2, 0, Math.PI / 2).scale(0.1, 0.1, 0.112).translate(0, HEAD + 0.03, 0),
+      new THREE.CylinderGeometry(0.135, 0.135, 0.014, 10, 1).translate(0, HEAD + 0.03, 0.012)]), max),
+    thigh: mk(limb(PB.th, 0.078, 0.056, 6), max * 2),
+    shin: mk(limb(PB.sh, 0.054, 0.04, 6), max * 2),
+    shoe: mk(shoe, max * 2),
+    uarm: mk(limb(PB.ua, 0.052, 0.042, 6), max * 2),
+    farm: mk(limb(PB.fa, 0.04, 0.031, 6), max * 2),
+    hand: mk(limb(0.085, 0.032, 0.024, 5, 0.75, 1), max * 2),
   };
 }
-/* speech bubbles: a few doodles, like on architectural visualisations — no words, just the mood of the talk */
+const PAIRED = ['thigh', 'shin', 'shoe', 'uarm', 'farm', 'hand'];
+/* thought clouds over the one who speaks: a few doodles, like on architectural visualisations — no words, just the mood */
 function bubbleMats() {
   const draw = (k) => {
-    const c = document.createElement('canvas'); c.width = c.height = 128; const x = c.getContext('2d');
-    x.fillStyle = '#fff'; x.strokeStyle = 'rgba(30,34,38,0.55)'; x.lineWidth = 4;
-    x.beginPath(); x.roundRect(10, 8, 108, 86, 30); x.moveTo(46, 92); x.lineTo(40, 118); x.lineTo(70, 93); x.closePath(); x.fill(); x.stroke();
-    x.translate(64, 51); x.lineWidth = 7; x.lineCap = x.lineJoin = 'round';
+    const c = document.createElement('canvas'); c.width = c.height = 256; const x = c.getContext('2d');
+    const blobs = [[128, 96, 60], [78, 112, 42], [178, 112, 42], [100, 66, 40], [158, 64, 42], [128, 132, 44], [92, 190, 15], [70, 226, 9]];
+    x.fillStyle = '#5f666d'; for (const [cx, cy, r] of blobs) { x.beginPath(); x.arc(cx, cy, r + 4, 0, 7); x.fill(); }     // one clean outline around the whole cloud
+    x.fillStyle = '#ffffff'; for (const [cx, cy, r] of blobs) { x.beginPath(); x.arc(cx, cy, r, 0, 7); x.fill(); }
+    x.translate(128, 100); x.scale(1.45, 1.45); x.lineWidth = 7; x.lineCap = x.lineJoin = 'round';
     if (k === 'heart') { x.fillStyle = '#e8506b'; x.beginPath(); x.moveTo(0, 22); x.bezierCurveTo(-34, -2, -18, -30, 0, -12); x.bezierCurveTo(18, -30, 34, -2, 0, 22); x.fill(); }
     if (k === 'sun') { x.fillStyle = x.strokeStyle = '#f2b134'; x.beginPath(); x.arc(0, 0, 12, 0, 7); x.fill(); for (let i = 0; i < 8; i++) { const a = i * Math.PI / 4; x.beginPath(); x.moveTo(Math.cos(a) * 19, Math.sin(a) * 19); x.lineTo(Math.cos(a) * 28, Math.sin(a) * 28); x.stroke(); } }
     if (k === 'idea') { x.fillStyle = '#ffd34d'; x.beginPath(); x.arc(0, -6, 18, 0, 7); x.fill(); x.fillStyle = '#7a7f88'; x.fillRect(-9, 12, 18, 12); }
     if (k === 'house') { x.strokeStyle = '#4a9fe8'; x.beginPath(); x.moveTo(-24, -2); x.lineTo(0, -24); x.lineTo(24, -2); x.moveTo(-17, -6); x.lineTo(-17, 22); x.lineTo(17, 22); x.lineTo(17, -6); x.stroke(); }
-    if (k === 'q' || k === 'ex' || k === 'dots') { x.fillStyle = k === 'q' ? '#9b6fe0' : k === 'ex' ? '#f07f3c' : '#3d4650'; x.font = 'bold 60px system-ui, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(k === 'q' ? '?' : k === 'ex' ? '!' : '…', 0, k === 'dots' ? -8 : 2); }
+    if (k === 'q' || k === 'ex' || k === 'dots') { x.fillStyle = k === 'q' ? '#9b6fe0' : k === 'ex' ? '#f07f3c' : '#3d4650'; x.font = 'bold 56px system-ui, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(k === 'q' ? '?' : k === 'ex' ? '!' : '…', 0, k === 'dots' ? -8 : 2); }
     if (k === 'note') { x.strokeStyle = x.fillStyle = '#5fbf77'; x.beginPath(); x.moveTo(8, 14); x.lineTo(8, -24); x.lineTo(22, -18); x.stroke(); x.beginPath(); x.ellipse(-2, 16, 11, 8, -0.4, 0, 7); x.fill(); }
     const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
-    return new THREE.SpriteMaterial({ map: t, transparent: true, depthWrite: false, depthTest: false });     // drawn on the overlay pass, always readable
+    return new THREE.SpriteMaterial({ map: t, transparent: true, depthWrite: false, depthTest: false, fog: false });     // drawn on the overlay pass, always readable
   };
   return ['heart', 'sun', 'idea', 'house', 'q', 'ex', 'dots', 'note'].map(draw);
 }
@@ -1145,17 +1173,31 @@ function peopleSpot(z, near = null, r = 0) {
     const x = near ? near.x + (Math.random() * 2 - 1) * r : (Math.random() * 2 - 1) * ex, zz = near ? near.z + (Math.random() * 2 - 1) * r : (Math.random() * 2 - 1) * ez;
     if (Math.abs(x) <= ex && Math.abs(zz) <= ez && peopleFree(x, zz)) return new V3(x, 0, zz);
   }
-  return new V3((Math.random() < 0.5 ? -1 : 1) * ex, 0, (Math.random() * 2 - 1) * ez);
+  return new V3((Math.random() * 2 - 1) * ex, 0, (Math.random() < 0.5 ? -1 : 1) * ez);
 }
-/* places to sit: low flat ledges of the model (35–60 cm, free above); if there are too few, a couple of benches of ours */
+/* places to sit: the EDGE of a low ledge (35–60 cm, free above, with a 30–75 cm drop in front for the legs) — never the
+   middle of a floor slab; if there are too few, a couple of benches of ours. Each seat knows the floor under the feet. */
 function findSeats(z) {
   const seats = [], ex = z.x / 2 + Math.max(4, z.x * 0.45), ez = z.z / 2 + Math.max(4, z.z * 0.45);
-  for (let i = 0; i < 260 && seats.length < 8; i++) {
+  for (let i = 0; i < 320 && seats.length < 8; i++) {
     const x = (Math.random() * 2 - 1) * ex, zz = (Math.random() * 2 - 1) * ez, d = peopleRay(new V3(x, 1.0, zz), DOWNV, 1.0);
     if (!(d < 1)) continue; const y = 1.0 - d; if (y < 0.36 || y > 0.62) continue;
-    if (peopleRay(new V3(x, y + 0.05, zz), UPV, 1.3) < 1.3) continue;
-    if (seats.some(s => Math.hypot(s.x - x, s.z - zz) < 0.9)) continue;
-    seats.push({ x, y, z: zz, yaw: Math.atan2(x, zz) + (Math.random() - 0.5), taken: null });
+    let edge = null; const a0 = Math.random() * 6.28;
+    for (let k = 0; k < 8 && !edge; k++) {                     // walk out in 8 directions until the floor drops
+      const a = a0 + k * Math.PI / 4, dx = Math.sin(a), dz = Math.cos(a);
+      for (let e = 0.05; e <= 0.6; e += 0.05) {
+        const dd = peopleRay(_j1.set(x + dx * e, y + 0.3, zz + dz * e), DOWNV, 1.3), f = dd < 1.3 ? y + 0.3 - dd : 0;
+        if (Math.abs(f - y) < 0.04) continue;                   // still on the ledge
+        if (y - f >= 0.3 && y - f <= 0.75) edge = { a, e, f };  // a drop: the legs go here
+        break;                                                  // a wall or a small step: not this way
+      }
+    }
+    if (!edge) continue;
+    const dx = Math.sin(edge.a), dz = Math.cos(edge.a), sx = x + dx * (edge.e - 0.14), sz = zz + dz * (edge.e - 0.14);
+    if (peopleRay(new V3(sx, y + 0.05, sz), UPV, 1.3) < 1.3) continue;                     // room for the body
+    if (peopleRay(new V3(sx, y + 0.12, sz), new V3(dx, 0, dz), 0.8) < 0.8) continue;        // room for the knees
+    if (seats.some(s => Math.hypot(s.x - sx, s.z - sz) < 0.75)) continue;
+    seats.push({ x: sx, y, z: sz, yaw: edge.a, floor: edge.f, taken: null });
   }
   if (seats.length < 3) {
     const wood = toonMat({ color: 0xb9814f }), iron = toonMat({ color: 0x3a3f45 });
@@ -1167,7 +1209,7 @@ function findSeats(z) {
       box(1.5, 0.07, 0.44, 0, 0.45, 0, wood); box(1.5, 0.32, 0.06, 0, 0.72, -0.21, wood);
       for (const sx of [-0.62, 0.62]) { box(0.06, 0.45, 0.4, sx, 0.225, 0, iron); box(0.06, 0.35, 0.06, sx, 0.62, -0.21, iron); }
       g.updateMatrixWorld(true); people.group.add(g); people.benches.push(...g.children);
-      for (const sx of [-0.38, 0.38]) { const p = new V3(sx, 0.485, 0.02).applyAxisAngle(UPV, yaw).add(at); seats.push({ x: p.x, y: 0.485, z: p.z, yaw, taken: null }); }
+      for (const sx of [-0.38, 0.38]) { const p = new V3(sx, 0.485, 0.06).applyAxisAngle(UPV, yaw).add(at); seats.push({ x: p.x, y: 0.485, z: p.z, yaw, floor: at.y, taken: null }); }
     }
   }
   return seats;
@@ -1185,19 +1227,27 @@ function peopleReset() {
   people.bubbleMats ||= bubbleMats();
   holder.updateMatrixWorld();
   people.seats = findSeats(z);
-  const M = people.m;
+  const M = people.m, C = (h) => new THREE.Color(h);
+  for (const k of ['coat', 'short', 'long', 'hat']) for (let i = 0; i < n; i++) M[k].setMatrixAt(i, ZERO_M);
   for (let i = 0; i < n; i++) {
-    const p = peopleSpot(z), s = 0.86 + Math.random() * 0.2;
-    const q = { i, p, t: p.clone(), yaw: Math.random() * 6.28, sp: 1.0 + Math.random() * 0.45, ph: Math.random() * 6.28, s, st: 'idle', timer: Math.random() * 3, swing: 0,
-      vy: 0, air: false, look: 0, partner: null, seat: null, gest: 0, nod: 0, wave: 0, sitK: 0, wait: 0 };
+    const p = peopleSpot(z), s = 0.9 + Math.random() * 0.16;
+    const q = { i, p, t: p.clone(), yaw: Math.random() * 6.28, sp: 1.0 + Math.random() * 0.45, ph: Math.random() * 6.28, s, w: 0.9 + Math.random() * 0.24, st: 'idle', timer: Math.random() * 3,
+      vy: 0, air: false, look: 0, partner: null, seat: null, gest: 0, wave: 0, sitK: 0, wk: 0, ak: 0, wait: 0, knee: 1.5, sitP: new V3(), standP: new V3(),
+      hs: pick(HAIR_STYLES), coat: Math.random() < 0.28 };
     people.list.push(q);
-    const sk = _pc.set(pick(P_SKIN)).clone(), sh = new THREE.Color(pick(P_SHIRT)), pa = new THREE.Color(pick(P_PANTS)), ha = new THREE.Color(pick(P_HAIR));
-    M.torso.setColorAt(i, sh); M.head.setColorAt(i, sk); M.hair.setColorAt(i, ha);
-    for (const j of [i * 2, i * 2 + 1]) { M.leg.setColorAt(j, pa); M.shoe.setColorAt(j, new THREE.Color(0x2b2b30)); M.arm.setColorAt(j, sh); M.hand.setColorAt(j, sk); M.eye.setColorAt(j, new THREE.Color(0x1b1b1f)); }
-    const bub = new THREE.Sprite(people.bubbleMats[0]); bub.scale.setScalar(0.7); bub.visible = false; bub.layers.set(UI_LAYER); bub.raycast = () => {};
+    const sk = C(pick(P_SKIN)), top = C(pick(P_TOP)), coat = C(pick(P_COAT)), pa = C(pick(P_PANTS)), sh = C(pick(P_SHOE));
+    const sleeve = q.coat ? coat : top, fore = q.coat || Math.random() < 0.5 ? sleeve : sk;
+    M.pelvis.setColorAt(i, pa); M.torso.setColorAt(i, q.coat ? coat : top); M.coat.setColorAt(i, coat); M.neck.setColorAt(i, sk); M.head.setColorAt(i, sk);
+    if (q.hs) M[q.hs].setColorAt(i, C(q.hs === 'hat' ? pick(P_HAT) : pick(P_HAIR)));
+    for (const j of [i * 2, i * 2 + 1]) { M.thigh.setColorAt(j, pa); M.shin.setColorAt(j, pa); M.shoe.setColorAt(j, sh); M.uarm.setColorAt(j, sleeve); M.farm.setColorAt(j, fore); M.hand.setColorAt(j, sk); }
+    const bub = new THREE.Sprite(people.bubbleMats[0]); bub.center.set(0.5, 0); bub.scale.setScalar(0.85); bub.visible = false; bub.layers.set(UI_LAYER); bub.raycast = () => {};
     people.group.add(bub); people.bubbles.push(bub);
   }
-  for (const [k, m] of Object.entries(M)) { m.count = ['eye', 'leg', 'shoe', 'arm', 'hand'].includes(k) ? n * 2 : n; if (m.instanceColor) m.instanceColor.needsUpdate = true; }
+  for (const [k, m] of Object.entries(M)) {
+    m.count = PAIRED.includes(k) ? n * 2 : n;
+    if (!m.instanceColor) m.setColorAt(0, _pc.set(0xffffff));                // a style nobody got still needs the colour buffer
+    m.instanceColor.needsUpdate = true;
+  }
   if (people.group.parent !== holder) holder.add(people.group);
 }
 /* ---- behaviour */
@@ -1219,7 +1269,7 @@ function decide(q, z) {
     const free = people.seats.filter(s => !s.taken);
     if (free.length) {
       const s = free.reduce((a, b) => (Math.hypot(a.x - q.p.x, a.z - q.p.z) < Math.hypot(b.x - q.p.x, b.z - q.p.z) ? a : b));
-      s.taken = q; q.seat = s; q.t = new V3(s.x + Math.sin(s.yaw) * 0.45, 0, s.z + Math.cos(s.yaw) * 0.45); q.st = 'goSit'; q.timer = 25; return;
+      s.taken = q; q.seat = s; q.t = new V3(s.x + Math.sin(s.yaw) * 0.5, s.floor, s.z + Math.cos(s.yaw) * 0.5); q.st = 'goSit'; q.timer = 25; return;
     }
   }
   if (r < 0.7) { q.st = 'idle'; q.timer = 1.5 + Math.random() * 4; q.look = Math.random() * 6.28; return; }
@@ -1229,7 +1279,18 @@ function endTalk(q) {
   const o = q.partner; q.partner = null; q.st = 'idle'; q.timer = 0.6 + Math.random();
   if (o && o.partner === q) { o.partner = null; o.st = 'idle'; o.timer = 0.4 + Math.random(); }
 }
-function standUp(q) { if (q.seat) q.seat.taken = null; q.seat = null; q.st = 'idle'; q.timer = 0.5 + Math.random(); q.p.y = floorAt(q.p.x, q.p.y, q.p.z); }
+function leaveSeat(q) { if (q.seat) q.seat.taken = null; q.seat = null; q.st = 'idle'; q.timer = 0.5 + Math.random(); }
+/* sitting down: the hips go onto the seat, thighs forward, shins down to the floor in front (knees bend as needed) */
+function sitDown(q) {
+  const s = q.seat; q.st = 'sit'; q.timer = 8 + Math.random() * 14; q.yaw = s.yaw;
+  q.standP.copy(q.p);
+  const hipW = s.y + 0.075 * q.s;                                  // the seat under the thighs
+  q.sitP.set(s.x, hipW - PB.hip * q.s, s.z);
+  const reach = (hipW - s.floor) / q.s - PB.ank;                   // how far the shins have to go down, in body units
+  const w = reach >= PB.sh ? -0.12 : -Math.acos(Math.max(0.12, reach / PB.sh));     // shin angle: hanging, or forward to the floor
+  q.knee = w + 1.5;
+}
+function standUp(q) { q.st = 'rise'; q.timer = 0.45; }
 /* walking toward q.t: look ahead for walls and ledges a few times a second; jump onto ledges up to ~1.4 m */
 function walkTo(q, dt, z) {
   const dx = q.t.x - q.p.x, dz = q.t.z - q.p.z, dist = Math.hypot(dx, dz);
@@ -1245,7 +1306,7 @@ function walkTo(q, dt, z) {
       if (top > 0.33 && top < 1.45) { q.air = true; q.vy = Math.sqrt(2 * PG * (top + 0.35)); }       // hop up
       else if (top >= 1.45 || high < 0.9) {                // a wall: give up this goal
         if (q.st === 'walk') q.t = peopleSpot(z, q.p, 8);
-        else { if (q.st === 'goTalk') endTalk(q); else if (q.st === 'goSit') standUp(q); return false; }
+        else { if (q.st === 'goTalk') endTalk(q); else if (q.st === 'goSit') leaveSeat(q); return false; }
       }
     }
   }
@@ -1261,6 +1322,7 @@ function physics(q, dt) {
   } else if (fy < q.p.y - 0.4) { q.air = true; q.vy = 0; }                       // walked off a ledge
   else q.p.y += (fy - q.p.y) * Math.min(1, dt * 12);                            // steps and ramps
 }
+const lerp = (a, b, k) => a + (b - a) * k;
 function peopleUpdate(dt) {
   const z = sceneSize(), want = z && PEOPLE_N[prefs.people] ? prefs.people + '|' + z.toArray().map(v => v.toFixed(2)).join() : (prefs.people + '|');
   if (want !== people.key) peopleReset();
@@ -1280,10 +1342,14 @@ function peopleUpdate(dt) {
       case 'walk': moving = true; if (walkTo(q, dt, z)) { q.st = 'idle'; q.timer = Math.random() < 0.5 ? 0.3 : 1 + Math.random() * 3; } break;
       case 'goSit':
         moving = true;
-        if (walkTo(q, dt, z) && !q.air) { const s = q.seat; q.st = 'sit'; q.timer = 8 + Math.random() * 14; q.p.set(s.x, s.y - 0.8 * q.s + 0.02, s.z); q.yaw = s.yaw; }
-        else if ((q.timer -= dt) <= 0) standUp(q);
+        if (walkTo(q, dt, z) && !q.air) sitDown(q);
+        else if (q.st === 'goSit' && (q.timer -= dt) <= 0) leaveSeat(q);
         break;
-      case 'sit': if ((q.timer -= dt) <= 0) standUp(q); break;
+      case 'sit': q.p.lerp(q.sitP, Math.min(1, dt * 6)); if ((q.timer -= dt) <= 0) standUp(q); break;
+      case 'rise':
+        q.p.lerp(q.standP, Math.min(1, dt * 7));
+        if ((q.timer -= dt) <= 0) { q.p.copy(q.standP); leaveSeat(q); }
+        break;
       case 'goTalk': {
         const o = q.partner;
         if (!o || o.partner !== q) { endTalk(q); break; }
@@ -1310,43 +1376,55 @@ function peopleUpdate(dt) {
         break;
       }
     }
-    if (q.st !== 'sit') physics(q, dt);
+    const seated = q.st === 'sit' || q.st === 'rise';
+    if (!seated) physics(q, dt);
     if (q.air) moving = true;
     // keep a little distance from others (not from the one you are talking to)
-    for (const o of L) if (o !== q && o !== q.partner && q.st !== 'sit' && o.st !== 'sit') { const dx = q.p.x - o.p.x, dz = q.p.z - o.p.z, d2 = dx * dx + dz * dz; if (d2 < 0.3 && d2 > 1e-6) { const k = (0.55 - Math.sqrt(d2)) * dt * 2; q.p.x += dx * k; q.p.z += dz * k; } }
-    // ---- pose
-    q.sitK += ((q.st === 'sit' ? 1 : 0) - q.sitK) * Math.min(1, dt * 6);
-    const sw = moving && !q.air ? Math.sin(q.ph += q.sp * dt * 3.6) * 0.55 : 0; q.swing += (sw - q.swing) * Math.min(1, dt * (moving ? 30 : 6));
+    if (!seated) for (const o of L) if (o !== q && o !== q.partner && o.st !== 'sit' && o.st !== 'rise') { const dx = q.p.x - o.p.x, dz = q.p.z - o.p.z, d2 = dx * dx + dz * dz; if (d2 < 0.3 && d2 > 1e-6) { const k = (0.55 - Math.sqrt(d2)) * dt * 2; q.p.x += dx * k; q.p.z += dz * k; } }
+    // ---- pose, in the body units of a 1.75 m person; the root carries the position, heading and size
+    const fr = (k) => Math.min(1, dt * k);
+    q.sitK += ((q.st === 'sit' ? 1 : 0) - q.sitK) * fr(6);
+    q.wk += ((moving && !q.air ? 1 : 0) - q.wk) * fr(8);
+    q.ak += ((q.air ? 1 : 0) - q.ak) * fr(10);
+    if (moving && !q.air) q.ph += q.sp * dt * 4.4;
     q.wave = Math.max(0, q.wave - dt);
-    const t = performance.now() / 1000 + q.i;
-    _pb.compose(q.p, _pq.setFromAxisAngle(UPV, q.yaw), _ps.setScalar(q.s));
-    const put = (mesh, idx, x, y, zz, rx, rz = 0) => { _pm.compose(_po.set(x, y, zz), _pq.setFromEuler(_pe.set(rx, 0, rz)), _ps.setScalar(1)); mesh.setMatrixAt(idx, _pm.premultiply(_pb)); };
-    const bob = moving && !q.air ? Math.abs(Math.sin(q.ph)) * 0.035 : Math.sin(t * 1.3) * 0.006;
-    const nod = q.st === 'talk' && !q.gest ? Math.sin(t * 5) * 0.08 : 0;
-    put(M.torso, q.i, 0, 1.08 + bob, 0, 0);
-    _pm.compose(_po.set(0, 1.6 + bob, 0), _pq.setFromEuler(_pe.set(nod, 0, 0)), _ps.setScalar(1)); M.head.setMatrixAt(q.i, _pm.clone().premultiply(_pb));
-    _pm.compose(_po.set(0, 1.62 + bob, -0.012), _pq.setFromEuler(_pe.set(nod - 0.12, 0, 0)), _ps.setScalar(1)); M.hair.setMatrixAt(q.i, _pm.clone().premultiply(_pb));
-    put(M.eye, q.i * 2, -0.066, 1.625 + bob, 0.15, 0); put(M.eye, q.i * 2 + 1, 0.066, 1.625 + bob, 0.15, 0);
-    // legs: walking swing, tucked in a jump, forward when sitting
-    const tuck = q.air ? 0.7 : 0, legA = -q.sitK * 1.35;
-    const legs = [[-0.1, q.swing - tuck + legA], [0.1, -q.swing - tuck * 0.6 + legA]];
-    legs.forEach(([x, rx], k) => {
-      put(M.leg, q.i * 2 + k, x, 0.8, 0, rx);
-      _pv.set(0, -0.78, 0.05).applyEuler(_pe.set(rx, 0, 0)); put(M.shoe, q.i * 2 + k, x + _pv.x, 0.8 + _pv.y, _pv.z, rx);
-    });
-    // arms: swing when walking, up in a jump, gesturing in a talk, a wave when the talk starts
-    const g = q.gest ? Math.sin(t * 6.5 + q.i) * 0.45 - 0.55 : 0;
-    const arms = [[-0.255, -q.swing * 0.9 + g - (q.air ? 2.4 : 0) - q.sitK * 0.5, 0.12], [0.255, q.swing * 0.9 - (q.wave > 0 ? 2.7 + Math.sin(t * 14) * 0.25 : 0) - (q.air ? 2.4 : 0) - q.sitK * 0.5 + (q.gest ? Math.sin(t * 5.3) * 0.3 - 0.3 : 0), -0.12]];
-    arms.forEach(([x, rx, rz], k) => {
-      put(M.arm, q.i * 2 + k, x, 1.33 + bob, 0, rx, rz);
-      _pv.set(0, -0.56, 0).applyEuler(_pe.set(rx, 0, rz)); put(M.hand, q.i * 2 + k, x + _pv.x, 1.33 + bob + _pv.y, _pv.z, 0);
-    });
-    // speech bubble over the one who speaks
+    const t = performance.now() / 1000 + q.i, K = q.sitK, AK = q.ak, A = 0.42 * q.wk, sp = Math.sin(q.ph);
+    const bend = (ph) => 0.05 + 0.85 * q.wk * Math.max(0, Math.cos(ph - 0.5)) ** 2;      // the knee folds while the leg swings forward
+    const leg = [[-A * sp, bend(q.ph)], [A * sp, bend(q.ph + Math.PI)]];
+    const arm = [[A * sp * 0.8, 0], [-A * sp * 0.8, 0]].map(([u]) => [u, -0.16 - 0.3 * Math.max(0, -u), 0]);
+    if (q.st === 'talk' && q.gest) { arm[1] = [-0.55 + Math.sin(t * 5.3) * 0.25, -1.0 + Math.sin(t * 6.5) * 0.35, 0]; arm[0] = [-0.2 + Math.sin(t * 4.1) * 0.15, -0.7, 0]; }
+    if (q.wave > 0) arm[1] = [-2.75 + Math.sin(t * 14) * 0.18, -0.35, 0.3];
+    for (const l of leg) { l[0] = lerp(lerp(l[0], -0.85, AK), -1.5, K); l[1] = lerp(lerp(l[1], 1.4, AK), q.knee, K); }
+    for (const a of arm) { a[0] = lerp(lerp(a[0], -2.3, AK), -0.38, K); a[1] = lerp(lerp(a[1], -0.3, AK), -0.85, K); }
+    // feet on the ground: the body sinks by what the longer leg is missing (that is the walking bob too)
+    const reach = Math.max(...leg.map(([a, b]) => PB.th * Math.cos(a) + PB.sh * Math.cos(a + b)));
+    const yo = -(PB.th + PB.sh - reach) * (1 - K) * (1 - AK) + Math.sin(t * 1.3) * 0.004 * (1 - q.wk);
+    const nod = (q.st === 'talk' && !q.gest ? Math.sin(t * 5) * 0.08 : 0) + 0.12 * K;
+    _pb.compose(q.p, _pq.setFromAxisAngle(UPV, q.yaw), _ps.set(q.s * q.w, q.s, q.s * q.w));
+    const put = (mesh, idx, at, rx = 0, rz = 0, sy = 1) => { _pm.compose(at, _pq.setFromEuler(_pe.set(rx, 0, rz)), _ps.set(1, sy, 1)); mesh.setMatrixAt(idx, _pm.premultiply(_pb)); };
+    const joint = (out, from, rx, rz, len) => out.set(0, -len, 0).applyEuler(_je.set(rx, 0, rz)).add(from);
+    put(M.pelvis, q.i, _j1.set(0, 1.02 + yo, 0));
+    put(M.torso, q.i, _j1.set(0, 1.0 + yo, 0), 0.03 * q.wk);
+    if (q.coat) put(M.coat, q.i, _j1.set(0, 1.0 + yo, 0), 0.03 * q.wk, 0, 1 - 0.62 * K);           // the hem gathers up when sitting
+    put(M.neck, q.i, _j1.set(0, 1.57 + yo, 0.005));
+    put(M.head, q.i, _j1.set(0, PB.neck + yo, 0.01), nod);
+    if (q.hs) put(M[q.hs], q.i, _j1, nod);
+    for (let k = 0; k < 2; k++) {
+      const side = k ? 1 : -1, j = q.i * 2 + k, [a, b] = leg[k];
+      put(M.thigh, j, _j1.set(side * PB.hipX, PB.hip + yo, 0), a);
+      joint(_j2, _j1, a, 0, PB.th); put(M.shin, j, _j2, a + b);
+      joint(_j3, _j2, a + b, 0, PB.sh); put(M.shoe, j, _j3, AK * 0.4);
+      const [u, e, rz] = arm[k], rr = side * (0.09 + rz);
+      put(M.uarm, j, _j1.set(side * PB.shX, PB.shY + yo, 0), u, rr);
+      joint(_j2, _j1, u, rr, PB.ua); put(M.farm, j, _j2, u + e, rr);
+      joint(_j3, _j2, u + e, rr, PB.fa); put(M.hand, j, _j3, u + e, rr);
+    }
+    // thought cloud over the one who speaks
     const bub = people.bubbles[q.i];
     if (bub) {
       const on = q.st === 'talk' && q.gest;
       if (on && !bub.visible) bub.material = pick(people.bubbleMats);
-      bub.visible = on; if (on) bub.position.set(q.p.x, q.p.y + (2.2 + Math.sin(t * 3) * 0.03) * q.s, q.p.z);
+      bub.visible = on; if (on) bub.position.set(q.p.x, q.p.y + (1.86 + Math.sin(t * 3) * 0.02) * q.s, q.p.z);
     }
   }
   for (const m of Object.values(M)) m.instanceMatrix.needsUpdate = true;
