@@ -357,7 +357,7 @@ body.cardboard .topbar,body.cardboard .walkui,body.cardboard .chip,body.cardboar
 .cb-range b{color:var(--fg);font-weight:500;font-variant-numeric:tabular-nums;margin-left:4px}
 .sunplace{display:flex;flex-direction:column;gap:8px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--bg)}
 .nature{gap:10px}
-#envseg{display:grid;grid-template-columns:1fr 1fr}
+#envseg,#lookseg{display:grid;grid-template-columns:1fr 1fr}
 .nature .nrow{display:flex;flex-direction:column;gap:5px;font-size:12.5px;color:var(--muted)}
 .nature .seg{display:flex;flex-wrap:nowrap}.nature .seg button{flex:1 1 0;min-width:0;padding:7px 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13px}
 .sunplace .city{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:end}
@@ -502,12 +502,17 @@ body.cardboard .topbar,body.cardboard .walkui,body.cardboard .chip,body.cardboar
     <summary><h2><span class="step">05</span>Окружение</h2></summary>
     <div class="sec-body">
     <div class="field">
-      <span class="lbl" id="l-env">Фон — во всех режимах</span>
+      <span class="lbl" id="l-look">Отображение — во всех режимах</span>
+      <div class="seg" id="lookseg" role="group" aria-labelledby="l-look">
+        <button type="button" data-val="plain">Условно</button>
+        <button type="button" data-val="real">Реалистично</button>
+      </div>
+    </div>
+    <div class="field" id="plainfield">
+      <span class="lbl" id="l-env">Фон</span>
       <div class="seg" id="envseg" role="group" aria-labelledby="l-env">
         <button type="button" data-val="graphite">Графит</button>
-        <button type="button" data-val="sky">Реалистично</button>
         <button type="button" data-val="studio">Студия</button>
-        <button type="button" data-val="evening">Вечер</button>
       </div>
     </div>
     <div class="sunplace nature" id="nature">
@@ -816,7 +821,7 @@ const UP = new V3(0, 1, 0), DOWN = new V3(0, -1, 0);
 const UNITS = { mm: 0.001, cm: 0.01, m: 1, in: 0.0254, ft: 0.3048 };
 const TABLE_STEPS = [20, 50, 100, 200, 500, 1000];
 const EYE = 1.65, STEP = 0.45, RADIUS = 0.3, GRAV = 9.8;
-const APP_VERSION = '3.20';
+const APP_VERSION = '3.21';
 const BASE_COLORS = ['#f2efe8', '#d8a33f', '#e0604a', '#3f86c9'];
 const KINDS = { issue: { label: 'Замечание', color: '#e0604a' }, question: { label: 'Вопрос', color: '#d8a33f' }, idea: { label: 'Идея', color: '#4fae7f' } };
 const TOOLS = [['nav', 'Выделение'], ['pin', 'Метка'], ['measure', 'Рулетка'], ['pen', 'Карандаш'], ['erase', 'Ластик'], ['section', 'Сечение'], ['ref', 'Репер'], ['explode', 'Взрыв']];   // «Куб» временно скрыт: код инструмента сохранён
@@ -875,7 +880,8 @@ const lsGet = k => { try { return localStorage.getItem(k); } catch { return null
 const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch {} };
 
 const SEASON_BY_MONTH = ['winter', 'winter', 'spring', 'spring', 'spring', 'summer', 'summer', 'summer', 'autumn', 'autumn', 'autumn', 'winter'];
-const prefs = { gravity: lsGet('vrtrip-gravity') !== '0', collide: lsGet('vrtrip-collide') !== '0', env: lsGet('vrtrip-env') || 'graphite',
+const prefs = { gravity: lsGet('vrtrip-gravity') !== '0', collide: lsGet('vrtrip-collide') !== '0', env: ({ graphite: 1, studio: 1, sky: 1 })[lsGet('vrtrip-env')] ? lsGet('vrtrip-env') : 'graphite',
+  plainEnv: lsGet('vrtrip-plainenv') === 'studio' ? 'studio' : 'graphite',
   season: lsGet('vrtrip-season') || SEASON_BY_MONTH[new Date().getMonth()], clouds: lsGet('vrtrip-clouds') || 'cloudy', precip: lsGet('vrtrip-precip') || 'none', people: lsGet('vrtrip-people') || 'none' };
 let customColors = (() => { try { const a = JSON.parse(lsGet('vrtrip-colors') || '[]'); return Array.isArray(a) ? a.filter(c => /^#[0-9a-f]{6}$/i.test(c)).slice(-8) : []; } catch { return []; } })();
 const allColors = () => [...BASE_COLORS, ...customColors];
@@ -886,7 +892,7 @@ const VIS = (() => {
 })();
 VIS.envI = 0.55;
 function saveVis() { const { envI, ...v } = VIS; lsSet('vrtrip-vis', JSON.stringify(v)); }
-function savePrefs() { lsSet('vrtrip-gravity', prefs.gravity ? '1' : '0'); lsSet('vrtrip-collide', prefs.collide ? '1' : '0'); lsSet('vrtrip-env', prefs.env); lsSet('vrtrip-season', prefs.season); lsSet('vrtrip-clouds', prefs.clouds); lsSet('vrtrip-precip', prefs.precip); lsSet('vrtrip-people', prefs.people); }
+function savePrefs() { lsSet('vrtrip-gravity', prefs.gravity ? '1' : '0'); lsSet('vrtrip-collide', prefs.collide ? '1' : '0'); lsSet('vrtrip-env', prefs.env); lsSet('vrtrip-plainenv', prefs.plainEnv); lsSet('vrtrip-season', prefs.season); lsSet('vrtrip-clouds', prefs.clouds); lsSet('vrtrip-precip', prefs.precip); lsSet('vrtrip-people', prefs.people); }
 
 /* ================= renderer & scene ================= */
 const canvas = $('#c');
@@ -918,7 +924,6 @@ const ENV = {
   graphite: { top: '#1b2024', bottom: '#1b2024', ground: '#20262b', grid: 0.22, hemiSky: '#ffffff', hemiGround: '#7f8589', hemi: 2.1, sun: '#fff6ea', sunI: 2.2, sunPos: [40, 70, 25], fog: null, flat: true },
   sky: { top: '#5f93cc', bottom: '#dfe7ea', ground: '#9ea38f', grid: 0.18, hemiSky: '#ffffff', hemiGround: '#7f8589', hemi: 2.0, sun: '#fff4e6', sunI: 2.4, sunPos: [40, 70, 25], fog: [120, 1000] },
   studio: { top: '#eceded', bottom: '#d6d8d9', ground: '#cdd0d1', grid: 0.35, hemiSky: '#ffffff', hemiGround: '#9aa0a4', hemi: 2.5, sun: '#ffffff', sunI: 1.5, sunPos: [30, 60, 40], fog: [150, 900] },
-  evening: { top: '#1c2638', bottom: '#d29b70', ground: '#55534d', grid: 0.12, hemiSky: '#ffd9b8', hemiGround: '#3a3c44', hemi: 1.0, sun: '#ffb27a', sunI: 2.2, sunPos: [-60, 16, -40], fog: [90, 800] },
 };
 const skyMat = new THREE.ShaderMaterial({
   side: THREE.BackSide, depthWrite: false, fog: false,
@@ -1069,56 +1074,191 @@ function skyUpdate(dt) {
   if (scene.fog) { fog.color.copy(u.bottom.value); fog.near = prefs.precip === 'none' ? 120 : 40; fog.far = prefs.precip === 'none' ? 1000 : 260; }
 }
 const CLOAD = () => isReal() ? CLOUD_K[prefs.clouds] ?? 0.5 : 0;
-/* people walking around (and through) the installation: architectural clay figures at real scale, instanced so a
-   crowd is a handful of draw calls. They pick random spots around the model, avoid walls with a ray at waist height,
-   step up onto low slabs and stairs, pause now and then. No shadows (that would redraw the shadow map every frame). */
-const PEOPLE_N = { none: 0, few: 8, many: 26 };
-const PEOPLE_COLORS = ['#ece8df', '#d9d4ca', '#bfc8ce', '#cdbca6', '#9aa5ad', '#adb99f', '#dcc9b3', '#868f97', '#c3a99a', '#e4dccb'];
-const people = { list: [], group: new THREE.Group(), m: null, ray: new THREE.Raycaster(), key: '' };
+/* people: a little life around the installation, cartoon style (big heads, bright clothes, toon shading), real scale.
+   Each person wanders, meets someone and chats (speech bubbles, gestures), sits down on a bench or a low ledge and gets
+   up again, walks up steps, jumps onto ledges up to ~1.4 m, drops down from them and turns away from walls.
+   Everything is instanced — a crowd is a dozen draw calls; rays use the model's BVH. No shadows (they would redraw the
+   shadow map every frame). */
+const PEOPLE_N = { none: 0, few: 8, many: 24 };
+const P_SKIN = ['#f6d3b3', '#eab993', '#cf9a72', '#9c6644', '#f2c7a2', '#7a4b33'];
+const P_SHIRT = ['#e85d75', '#4a9fe8', '#f2b134', '#5fbf77', '#9b6fe0', '#f07f3c', '#3fc1c9', '#ece7dc', '#e3506b', '#2f8f83'];
+const P_PANTS = ['#2f3e57', '#4b4b52', '#6b4f3a', '#1f5f8b', '#3d6b4f', '#7a7f88', '#2a2a30'];
+const P_HAIR = ['#2b1d14', '#5a3a22', '#d9b36c', '#a5452a', '#141414', '#8a8a8a', '#c26a2c'];
+const people = { list: [], group: new THREE.Group(), m: null, ray: new THREE.Raycaster(), key: '', seats: [], benches: [], bubbleMats: null, bubbles: [] };
 people.ray.firstHitOnly = true; people.group.visible = false;
-const _pm = new THREE.Matrix4(), _pb = new THREE.Matrix4(), _pq = new THREE.Quaternion(), _pe = new THREE.Euler(), _ps = new V3(), _po = new V3(), _pd = new V3(), _pc = new THREE.Color();
+const UPV = new V3(0, 1, 0), DOWNV = new V3(0, -1, 0), PG = 9.8;
+const _pm = new THREE.Matrix4(), _pb = new THREE.Matrix4(), _pq = new THREE.Quaternion(), _pe = new THREE.Euler(), _ps = new V3(), _po = new V3(), _pd = new V3(), _pc = new THREE.Color(), _pf = new V3(), _pv = new V3();
+const pick = a => a[Math.floor(Math.random() * a.length)];
+function toonMat(extra = {}) {
+  people.grad ||= (() => { const t = new THREE.DataTexture(new Uint8Array([110, 185, 255]), 3, 1, THREE.RedFormat); t.minFilter = t.magFilter = THREE.NearestFilter; t.needsUpdate = true; return t; })();
+  return new THREE.MeshToonMaterial({ gradientMap: people.grad, ...extra });
+}
 function peopleMeshes() {
-  const max = PEOPLE_N.many, mat = new THREE.MeshStandardMaterial({ roughness: 0.85, metalness: 0 });
-  const mk = (geo, count) => { const m = new THREE.InstancedMesh(geo, mat, count); m.instanceMatrix.setUsage(THREE.DynamicDrawUsage); m.frustumCulled = false; m.count = 0; m.raycast = () => {}; people.group.add(m); return m; };
+  const max = PEOPLE_N.many, mat = toonMat();
+  const mk = (geo, count, m = mat) => { const o = new THREE.InstancedMesh(geo, m, count); o.instanceMatrix.setUsage(THREE.DynamicDrawUsage); o.frustumCulled = false; o.count = 0; o.raycast = () => {}; people.group.add(o); return o; };
   people.m = {
-    body: mk(new THREE.CapsuleGeometry(0.16, 0.42, 4, 12), max),
-    head: mk(new THREE.SphereGeometry(0.105, 16, 12), max),
-    leg: mk(new THREE.CapsuleGeometry(0.068, 0.73, 4, 8).translate(0, -0.435, 0), max * 2),     // pivots at the hip
-    arm: mk(new THREE.CapsuleGeometry(0.048, 0.52, 4, 8).translate(0, -0.31, 0), max * 2),     // pivots at the shoulder
+    torso: mk(new THREE.CapsuleGeometry(0.2, 0.28, 6, 14), max),
+    head: mk(new THREE.SphereGeometry(0.17, 22, 16), max),
+    hair: mk(new THREE.SphereGeometry(0.182, 22, 12, 0, Math.PI * 2, 0, Math.PI * 0.56), max),
+    eye: mk(new THREE.SphereGeometry(0.024, 8, 6), max * 2, new THREE.MeshBasicMaterial({ color: 0x1b1b1f })),
+    leg: mk(new THREE.CapsuleGeometry(0.082, 0.6, 4, 10).translate(0, -0.38, 0), max * 2),     // pivots at the hip
+    shoe: mk(new THREE.SphereGeometry(0.09, 10, 8).scale(1, 0.6, 1.55), max * 2),
+    arm: mk(new THREE.CapsuleGeometry(0.062, 0.42, 4, 10).translate(0, -0.27, 0), max * 2),    // pivots at the shoulder
+    hand: mk(new THREE.SphereGeometry(0.066, 10, 8), max * 2),
   };
 }
-/* rays in model (holder) space against the shown models; returns the distance in model units or Infinity */
+/* speech bubbles: a few doodles, like on architectural visualisations — no words, just the mood of the talk */
+function bubbleMats() {
+  const draw = (k) => {
+    const c = document.createElement('canvas'); c.width = c.height = 128; const x = c.getContext('2d');
+    x.fillStyle = '#fff'; x.strokeStyle = 'rgba(30,34,38,0.55)'; x.lineWidth = 4;
+    x.beginPath(); x.roundRect(10, 8, 108, 86, 30); x.moveTo(46, 92); x.lineTo(40, 118); x.lineTo(70, 93); x.closePath(); x.fill(); x.stroke();
+    x.translate(64, 51); x.lineWidth = 7; x.lineCap = x.lineJoin = 'round';
+    if (k === 'heart') { x.fillStyle = '#e8506b'; x.beginPath(); x.moveTo(0, 22); x.bezierCurveTo(-34, -2, -18, -30, 0, -12); x.bezierCurveTo(18, -30, 34, -2, 0, 22); x.fill(); }
+    if (k === 'sun') { x.fillStyle = x.strokeStyle = '#f2b134'; x.beginPath(); x.arc(0, 0, 12, 0, 7); x.fill(); for (let i = 0; i < 8; i++) { const a = i * Math.PI / 4; x.beginPath(); x.moveTo(Math.cos(a) * 19, Math.sin(a) * 19); x.lineTo(Math.cos(a) * 28, Math.sin(a) * 28); x.stroke(); } }
+    if (k === 'idea') { x.fillStyle = '#ffd34d'; x.beginPath(); x.arc(0, -6, 18, 0, 7); x.fill(); x.fillStyle = '#7a7f88'; x.fillRect(-9, 12, 18, 12); }
+    if (k === 'house') { x.strokeStyle = '#4a9fe8'; x.beginPath(); x.moveTo(-24, -2); x.lineTo(0, -24); x.lineTo(24, -2); x.moveTo(-17, -6); x.lineTo(-17, 22); x.lineTo(17, 22); x.lineTo(17, -6); x.stroke(); }
+    if (k === 'q' || k === 'ex' || k === 'dots') { x.fillStyle = k === 'q' ? '#9b6fe0' : k === 'ex' ? '#f07f3c' : '#3d4650'; x.font = 'bold 60px system-ui, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(k === 'q' ? '?' : k === 'ex' ? '!' : '…', 0, k === 'dots' ? -8 : 2); }
+    if (k === 'note') { x.strokeStyle = x.fillStyle = '#5fbf77'; x.beginPath(); x.moveTo(8, 14); x.lineTo(8, -24); x.lineTo(22, -18); x.stroke(); x.beginPath(); x.ellipse(-2, 16, 11, 8, -0.4, 0, 7); x.fill(); }
+    const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
+    return new THREE.SpriteMaterial({ map: t, transparent: true, depthWrite: false, depthTest: false });     // drawn on the overlay pass, always readable
+  };
+  return ['heart', 'sun', 'idea', 'house', 'q', 'ex', 'dots', 'note'].map(draw);
+}
+/* rays in model (holder) space against the shown models and our benches; distance in model units or Infinity */
 function peopleRay(o, d, far) {
   const k = holder.scale.x || 1;
   people.ray.set(_po.copy(o).applyMatrix4(holder.matrixWorld), _pd.copy(d).transformDirection(holder.matrixWorld));
-  people.ray.far = far * k; const h = people.ray.intersectObjects(allMeshes(), false)[0];
+  people.ray.far = far * k;
+  const h = people.ray.intersectObjects(people.benches.length ? [...allMeshes(), ...people.benches] : allMeshes(), false)[0];
   return h ? h.distance / k : Infinity;
 }
-const UPV = new V3(0, 1, 0), DOWNV = new V3(0, -1, 0);
-function peopleFree(x, z) {                            // standing room: nothing low overhead, not on top of a wall or a table
+function floorAt(x, y, z) { const d = peopleRay(_pv.set(x, y + 0.45, z), DOWNV, 6); return d < 6 ? y + 0.45 - d : 0; }
+function peopleFree(x, z) {                            // standing room on the ground: nothing low overhead, not on a wall or a table
   if (peopleRay(new V3(x, 0.05, z), UPV, 2.05) < 2.05) return false;
-  const d = peopleRay(new V3(x, 2.1, z), DOWNV, 2.1); return !(d < 2.1 - 0.45);
+  const d = peopleRay(new V3(x, 2.1, z), DOWNV, 2.1); return !(d < 2.1 - 0.4);
 }
-function peopleSpot(z) {
+function peopleSpot(z, near = null, r = 0) {
   const ex = z.x / 2 + Math.max(4, z.x * 0.45), ez = z.z / 2 + Math.max(4, z.z * 0.45);
-  for (let i = 0; i < 30; i++) { const x = (Math.random() * 2 - 1) * ex, zz = (Math.random() * 2 - 1) * ez; if (peopleFree(x, zz)) return new V3(x, 0, zz); }
+  for (let i = 0; i < 30; i++) {
+    const x = near ? near.x + (Math.random() * 2 - 1) * r : (Math.random() * 2 - 1) * ex, zz = near ? near.z + (Math.random() * 2 - 1) * r : (Math.random() * 2 - 1) * ez;
+    if (Math.abs(x) <= ex && Math.abs(zz) <= ez && peopleFree(x, zz)) return new V3(x, 0, zz);
+  }
   return new V3((Math.random() < 0.5 ? -1 : 1) * ex, 0, (Math.random() * 2 - 1) * ez);
+}
+/* places to sit: low flat ledges of the model (35–60 cm, free above); if there are too few, a couple of benches of ours */
+function findSeats(z) {
+  const seats = [], ex = z.x / 2 + Math.max(4, z.x * 0.45), ez = z.z / 2 + Math.max(4, z.z * 0.45);
+  for (let i = 0; i < 260 && seats.length < 8; i++) {
+    const x = (Math.random() * 2 - 1) * ex, zz = (Math.random() * 2 - 1) * ez, d = peopleRay(new V3(x, 1.0, zz), DOWNV, 1.0);
+    if (!(d < 1)) continue; const y = 1.0 - d; if (y < 0.36 || y > 0.62) continue;
+    if (peopleRay(new V3(x, y + 0.05, zz), UPV, 1.3) < 1.3) continue;
+    if (seats.some(s => Math.hypot(s.x - x, s.z - zz) < 0.9)) continue;
+    seats.push({ x, y, z: zz, yaw: Math.atan2(x, zz) + (Math.random() - 0.5), taken: null });
+  }
+  if (seats.length < 3) {
+    const wood = toonMat({ color: 0xb9814f }), iron = toonMat({ color: 0x3a3f45 });
+    const n = 3 - Math.min(seats.length, 2);
+    for (let b = 0; b < n; b++) {
+      const at = peopleSpot(z), yaw = Math.atan2(-at.x, -at.z);          // facing the model
+      const g = new THREE.Group(); g.position.copy(at); g.rotation.y = yaw;
+      const box = (w, h, d, x, y, zz, m) => { const o = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); o.position.set(x, y, zz); g.add(o); return o; };
+      box(1.5, 0.07, 0.44, 0, 0.45, 0, wood); box(1.5, 0.32, 0.06, 0, 0.72, -0.21, wood);
+      for (const sx of [-0.62, 0.62]) { box(0.06, 0.45, 0.4, sx, 0.225, 0, iron); box(0.06, 0.35, 0.06, sx, 0.62, -0.21, iron); }
+      g.updateMatrixWorld(true); people.group.add(g); people.benches.push(...g.children);
+      for (const sx of [-0.38, 0.38]) { const p = new V3(sx, 0.485, 0.02).applyAxisAngle(UPV, yaw).add(at); seats.push({ x: p.x, y: 0.485, z: p.z, yaw, taken: null }); }
+    }
+  }
+  return seats;
+}
+function peopleClear() {
+  for (const b of people.benches) b.parent?.removeFromParent();
+  people.benches = []; people.seats = []; people.list.length = 0;
+  for (const s of people.bubbles) s.removeFromParent(); people.bubbles = [];
 }
 function peopleReset() {
   const z = sceneSize(), n = z ? PEOPLE_N[prefs.people] || 0 : 0;
   people.key = prefs.people + '|' + (z ? z.toArray().map(v => v.toFixed(2)).join() : '');
-  people.list.length = 0; people.group.visible = n > 0; if (!n) return;
+  peopleClear(); people.group.visible = n > 0; if (!n) return;
   if (!people.m) peopleMeshes();
+  people.bubbleMats ||= bubbleMats();
   holder.updateMatrixWorld();
+  people.seats = findSeats(z);
+  const M = people.m;
   for (let i = 0; i < n; i++) {
-    const p = peopleSpot(z), s = 0.9 + Math.random() * 0.17;
-    people.list.push({ p, t: peopleSpot(z), yaw: Math.random() * 6.28, sp: 1.0 + Math.random() * 0.5, ph: Math.random() * 6.28, s, wait: Math.random() * 2, swing: 0, look: 0 });
-    _pc.set(PEOPLE_COLORS[i % PEOPLE_COLORS.length]);
-    people.m.body.setColorAt(i, _pc); people.m.head.setColorAt(i, _pc);
-    for (const j of [i * 2, i * 2 + 1]) { people.m.leg.setColorAt(j, _pc.clone().multiplyScalar(0.82)); people.m.arm.setColorAt(j, _pc); }
+    const p = peopleSpot(z), s = 0.86 + Math.random() * 0.2;
+    const q = { i, p, t: p.clone(), yaw: Math.random() * 6.28, sp: 1.0 + Math.random() * 0.45, ph: Math.random() * 6.28, s, st: 'idle', timer: Math.random() * 3, swing: 0,
+      vy: 0, air: false, look: 0, partner: null, seat: null, gest: 0, nod: 0, wave: 0, sitK: 0, wait: 0 };
+    people.list.push(q);
+    const sk = _pc.set(pick(P_SKIN)).clone(), sh = new THREE.Color(pick(P_SHIRT)), pa = new THREE.Color(pick(P_PANTS)), ha = new THREE.Color(pick(P_HAIR));
+    M.torso.setColorAt(i, sh); M.head.setColorAt(i, sk); M.hair.setColorAt(i, ha);
+    for (const j of [i * 2, i * 2 + 1]) { M.leg.setColorAt(j, pa); M.shoe.setColorAt(j, new THREE.Color(0x2b2b30)); M.arm.setColorAt(j, sh); M.hand.setColorAt(j, sk); M.eye.setColorAt(j, new THREE.Color(0x1b1b1f)); }
+    const bub = new THREE.Sprite(people.bubbleMats[0]); bub.scale.setScalar(0.7); bub.visible = false; bub.layers.set(UI_LAYER); bub.raycast = () => {};
+    people.group.add(bub); people.bubbles.push(bub);
   }
-  for (const m of Object.values(people.m)) { m.count = m === people.m.leg || m === people.m.arm ? n * 2 : n; if (m.instanceColor) m.instanceColor.needsUpdate = true; }
+  for (const [k, m] of Object.entries(M)) { m.count = ['eye', 'leg', 'shoe', 'arm', 'hand'].includes(k) ? n * 2 : n; if (m.instanceColor) m.instanceColor.needsUpdate = true; }
   if (people.group.parent !== holder) holder.add(people.group);
+}
+/* ---- behaviour */
+function decide(q, z) {
+  q.partner = null; q.seat = null;
+  const r = Math.random();
+  if (r < 0.32) {                                       // find someone to talk to
+    let best = null, bd = 14;
+    for (const o of people.list) if (o !== q && !o.partner && !o.seat && !o.air && (o.st === 'walk' || o.st === 'idle')) { const d = o.p.distanceTo(q.p); if (d < bd) { bd = d; best = o; } }
+    if (best) {
+      const mid = q.p.clone().add(best.p).multiplyScalar(0.5), dir = best.p.clone().sub(q.p).setY(0).normalize();
+      if (!peopleFree(mid.x, mid.z)) mid.copy(peopleSpot(z, q.p, 3));
+      q.partner = best; best.partner = q; best.seat = null;
+      q.t = mid.clone().addScaledVector(dir, -0.5); best.t = mid.clone().addScaledVector(dir, 0.5);
+      q.st = best.st = 'goTalk'; q.timer = best.timer = 15; return;
+    }
+  }
+  if (r < 0.55) {                                       // sit down somewhere free
+    const free = people.seats.filter(s => !s.taken);
+    if (free.length) {
+      const s = free.reduce((a, b) => (Math.hypot(a.x - q.p.x, a.z - q.p.z) < Math.hypot(b.x - q.p.x, b.z - q.p.z) ? a : b));
+      s.taken = q; q.seat = s; q.t = new V3(s.x + Math.sin(s.yaw) * 0.45, 0, s.z + Math.cos(s.yaw) * 0.45); q.st = 'goSit'; q.timer = 25; return;
+    }
+  }
+  if (r < 0.7) { q.st = 'idle'; q.timer = 1.5 + Math.random() * 4; q.look = Math.random() * 6.28; return; }
+  q.t = Math.random() < 0.6 ? peopleSpot(z, q.p, 9) : peopleSpot(z); q.st = 'walk';
+}
+function endTalk(q) {
+  const o = q.partner; q.partner = null; q.st = 'idle'; q.timer = 0.6 + Math.random();
+  if (o && o.partner === q) { o.partner = null; o.st = 'idle'; o.timer = 0.4 + Math.random(); }
+}
+function standUp(q) { if (q.seat) q.seat.taken = null; q.seat = null; q.st = 'idle'; q.timer = 0.5 + Math.random(); q.p.y = floorAt(q.p.x, q.p.y, q.p.z); }
+/* walking toward q.t: look ahead for walls and ledges a few times a second; jump onto ledges up to ~1.4 m */
+function walkTo(q, dt, z) {
+  const dx = q.t.x - q.p.x, dz = q.t.z - q.p.z, dist = Math.hypot(dx, dz);
+  if (dist < 0.25) return true;
+  const want = Math.atan2(dx, dz); let dy = want - q.yaw; dy = Math.atan2(Math.sin(dy), Math.cos(dy)); q.yaw += dy * Math.min(1, dt * 5);
+  _pf.set(Math.sin(q.yaw), 0, Math.cos(q.yaw));
+  if (!q.air && (q.wait -= dt) <= 0) {
+    q.wait = 0.15;
+    const low = peopleRay(_pv.set(q.p.x, q.p.y + 0.3, q.p.z), _pf, 0.55);
+    if (low < 0.55) {
+      const high = peopleRay(_pv.set(q.p.x, q.p.y + 1.6, q.p.z), _pf, 0.9);
+      const top = high < 0.9 ? Infinity : floorAt(q.p.x + _pf.x * 0.75, q.p.y + 1.6, q.p.z + _pf.z * 0.75) - q.p.y;
+      if (top > 0.33 && top < 1.45) { q.air = true; q.vy = Math.sqrt(2 * PG * (top + 0.35)); }       // hop up
+      else if (top >= 1.45 || high < 0.9) {                // a wall: give up this goal
+        if (q.st === 'walk') q.t = peopleSpot(z, q.p, 8);
+        else { if (q.st === 'goTalk') endTalk(q); else if (q.st === 'goSit') standUp(q); return false; }
+      }
+    }
+  }
+  const step = Math.min(dist, q.sp * dt * (q.air ? 1.15 : 1));
+  q.p.x += _pf.x * step; q.p.z += _pf.z * step;
+  return false;
+}
+function physics(q, dt) {
+  const fy = floorAt(q.p.x, q.p.y, q.p.z);
+  if (q.air) {
+    q.vy -= PG * dt; q.p.y += q.vy * dt;
+    if (q.vy < 0 && q.p.y <= fy) { q.p.y = fy; q.air = false; q.vy = 0; }
+  } else if (fy < q.p.y - 0.4) { q.air = true; q.vy = 0; }                       // walked off a ledge
+  else q.p.y += (fy - q.p.y) * Math.min(1, dt * 12);                            // steps and ramps
 }
 function peopleUpdate(dt) {
   const z = sceneSize(), want = z && PEOPLE_N[prefs.people] ? prefs.people + '|' + z.toArray().map(v => v.toFixed(2)).join() : (prefs.people + '|');
@@ -1126,34 +1266,88 @@ function peopleUpdate(dt) {
   if (!people.list.length || !people.group.visible) return;
   if (people.group.parent !== holder) holder.add(people.group);
   holder.updateMatrixWorld();
-  const M = people.m;
-  people.list.forEach((q, i) => {
+  dt = Math.min(dt, 0.05);
+  const M = people.m, L = people.list;
+  for (const q of L) {
     let moving = false;
-    if (q.wait > 0) q.wait -= dt;
-    else {
-      const dx = q.t.x - q.p.x, dz = q.t.z - q.p.z, dist = Math.hypot(dx, dz);
-      if (dist < 0.4) { q.wait = Math.random() < 0.4 ? 1 + Math.random() * 3 : 0; q.t = peopleSpot(z); }
-      else {
-        const want = Math.atan2(dx, dz); let dy = want - q.yaw; dy = Math.atan2(Math.sin(dy), Math.cos(dy)); q.yaw += dy * Math.min(1, dt * 4);
-        const fx = Math.sin(q.yaw), fz = Math.cos(q.yaw);
-        if ((q.look -= dt) <= 0) {                     // look ahead a few times a second: a wall in front → choose another goal
-          q.look = 0.2;
-          if (peopleRay(_ps.set(q.p.x, q.p.y + 1.0, q.p.z), new V3(fx, 0, fz), 0.7) < 0.7) { q.t = peopleSpot(z); q.wait = 0.3; }
-        }
-        if (q.wait <= 0) {
-          q.p.x += fx * q.sp * dt; q.p.z += fz * q.sp * dt; moving = true;
-          const d = peopleRay(_ps.set(q.p.x, q.p.y + 0.55, q.p.z), DOWNV, 1.4);      // step up / down: stairs, low slabs
-          const fy = d < 1.4 ? q.p.y + 0.55 - d : 0; q.p.y += (fy - q.p.y) * Math.min(1, dt * 10);
-        }
+    q.gest = 0;
+    switch (q.st) {
+      case 'idle':
+        if ((q.timer -= dt) <= 0) decide(q, z);
+        else q.yaw += Math.sin(performance.now() / 900 + q.i) * dt * 0.4;          // looking around
+        break;
+      case 'walk': moving = true; if (walkTo(q, dt, z)) { q.st = 'idle'; q.timer = Math.random() < 0.5 ? 0.3 : 1 + Math.random() * 3; } break;
+      case 'goSit':
+        moving = true;
+        if (walkTo(q, dt, z) && !q.air) { const s = q.seat; q.st = 'sit'; q.timer = 8 + Math.random() * 14; q.p.set(s.x, s.y - 0.8 * q.s + 0.02, s.z); q.yaw = s.yaw; }
+        else if ((q.timer -= dt) <= 0) standUp(q);
+        break;
+      case 'sit': if ((q.timer -= dt) <= 0) standUp(q); break;
+      case 'goTalk': {
+        const o = q.partner;
+        if (!o || o.partner !== q) { endTalk(q); break; }
+        const arrived = walkTo(q, dt, z); moving = !arrived;
+        if (arrived && q.p.distanceTo(o.p) < 1.6 && (o.st === 'goTalk' || o.st === 'waitTalk') && o.p.distanceTo(o.t) < 0.5) {
+          q.st = o.st = 'talk'; q.timer = o.timer = 6 + Math.random() * 10; q.wave = o.wave = 1.2; q.speak = 0; o.speak = 1.6;
+        } else if (arrived) q.st = 'waitTalk';
+        if ((q.timer -= dt) <= 0) endTalk(q);
+        break;
+      }
+      case 'waitTalk': {
+        const o = q.partner; if (!o || o.partner !== q) { endTalk(q); break; }
+        q.yaw += Math.atan2(Math.sin(Math.atan2(o.p.x - q.p.x, o.p.z - q.p.z) - q.yaw), Math.cos(Math.atan2(o.p.x - q.p.x, o.p.z - q.p.z) - q.yaw)) * Math.min(1, dt * 4);
+        if (o.st === 'talk') q.st = 'talk';
+        if ((q.timer -= dt) <= 0) endTalk(q);
+        break;
+      }
+      case 'talk': {
+        const o = q.partner; if (!o || o.partner !== q) { endTalk(q); break; }
+        const a = Math.atan2(o.p.x - q.p.x, o.p.z - q.p.z); let d = a - q.yaw; d = Math.atan2(Math.sin(d), Math.cos(d)); q.yaw += d * Math.min(1, dt * 4);
+        q.speak -= dt; if (q.speak < -1.6) q.speak = 1.6 + Math.random();                // take turns: talk ~2 s, listen ~2 s
+        q.gest = q.speak > 0 ? 1 : 0;
+        if ((q.timer -= dt) <= 0) endTalk(q);
+        break;
       }
     }
-    q.swing += ((moving ? Math.sin(q.ph += q.sp * dt * 3.4) * 0.5 : 0) - q.swing) * Math.min(1, dt * (moving ? 30 : 6));
+    if (q.st !== 'sit') physics(q, dt);
+    if (q.air) moving = true;
+    // keep a little distance from others (not from the one you are talking to)
+    for (const o of L) if (o !== q && o !== q.partner && q.st !== 'sit' && o.st !== 'sit') { const dx = q.p.x - o.p.x, dz = q.p.z - o.p.z, d2 = dx * dx + dz * dz; if (d2 < 0.3 && d2 > 1e-6) { const k = (0.55 - Math.sqrt(d2)) * dt * 2; q.p.x += dx * k; q.p.z += dz * k; } }
+    // ---- pose
+    q.sitK += ((q.st === 'sit' ? 1 : 0) - q.sitK) * Math.min(1, dt * 6);
+    const sw = moving && !q.air ? Math.sin(q.ph += q.sp * dt * 3.6) * 0.55 : 0; q.swing += (sw - q.swing) * Math.min(1, dt * (moving ? 30 : 6));
+    q.wave = Math.max(0, q.wave - dt);
+    const t = performance.now() / 1000 + q.i;
     _pb.compose(q.p, _pq.setFromAxisAngle(UPV, q.yaw), _ps.setScalar(q.s));
-    const put = (mesh, idx, x, y, rx) => { _pm.compose(_po.set(x, y, 0), _pq.setFromEuler(_pe.set(rx, 0, 0)), _ps.setScalar(1)); mesh.setMatrixAt(idx, _pm.premultiply(_pb)); };
-    put(M.body, i, 0, 1.17, 0); put(M.head, i, 0, 1.66, 0);
-    put(M.leg, i * 2, -0.09, 0.88, q.swing); put(M.leg, i * 2 + 1, 0.09, 0.88, -q.swing);
-    put(M.arm, i * 2, -0.215, 1.43, -q.swing * 0.8); put(M.arm, i * 2 + 1, 0.215, 1.43, q.swing * 0.8);
-  });
+    const put = (mesh, idx, x, y, zz, rx, rz = 0) => { _pm.compose(_po.set(x, y, zz), _pq.setFromEuler(_pe.set(rx, 0, rz)), _ps.setScalar(1)); mesh.setMatrixAt(idx, _pm.premultiply(_pb)); };
+    const bob = moving && !q.air ? Math.abs(Math.sin(q.ph)) * 0.035 : Math.sin(t * 1.3) * 0.006;
+    const nod = q.st === 'talk' && !q.gest ? Math.sin(t * 5) * 0.08 : 0;
+    put(M.torso, q.i, 0, 1.08 + bob, 0, 0);
+    _pm.compose(_po.set(0, 1.6 + bob, 0), _pq.setFromEuler(_pe.set(nod, 0, 0)), _ps.setScalar(1)); M.head.setMatrixAt(q.i, _pm.clone().premultiply(_pb));
+    _pm.compose(_po.set(0, 1.62 + bob, -0.012), _pq.setFromEuler(_pe.set(nod - 0.12, 0, 0)), _ps.setScalar(1)); M.hair.setMatrixAt(q.i, _pm.clone().premultiply(_pb));
+    put(M.eye, q.i * 2, -0.066, 1.625 + bob, 0.15, 0); put(M.eye, q.i * 2 + 1, 0.066, 1.625 + bob, 0.15, 0);
+    // legs: walking swing, tucked in a jump, forward when sitting
+    const tuck = q.air ? 0.7 : 0, legA = -q.sitK * 1.35;
+    const legs = [[-0.1, q.swing - tuck + legA], [0.1, -q.swing - tuck * 0.6 + legA]];
+    legs.forEach(([x, rx], k) => {
+      put(M.leg, q.i * 2 + k, x, 0.8, 0, rx);
+      _pv.set(0, -0.78, 0.05).applyEuler(_pe.set(rx, 0, 0)); put(M.shoe, q.i * 2 + k, x + _pv.x, 0.8 + _pv.y, _pv.z, rx);
+    });
+    // arms: swing when walking, up in a jump, gesturing in a talk, a wave when the talk starts
+    const g = q.gest ? Math.sin(t * 6.5 + q.i) * 0.45 - 0.55 : 0;
+    const arms = [[-0.255, -q.swing * 0.9 + g - (q.air ? 2.4 : 0) - q.sitK * 0.5, 0.12], [0.255, q.swing * 0.9 - (q.wave > 0 ? 2.7 + Math.sin(t * 14) * 0.25 : 0) - (q.air ? 2.4 : 0) - q.sitK * 0.5 + (q.gest ? Math.sin(t * 5.3) * 0.3 - 0.3 : 0), -0.12]];
+    arms.forEach(([x, rx, rz], k) => {
+      put(M.arm, q.i * 2 + k, x, 1.33 + bob, 0, rx, rz);
+      _pv.set(0, -0.56, 0).applyEuler(_pe.set(rx, 0, rz)); put(M.hand, q.i * 2 + k, x + _pv.x, 1.33 + bob + _pv.y, _pv.z, 0);
+    });
+    // speech bubble over the one who speaks
+    const bub = people.bubbles[q.i];
+    if (bub) {
+      const on = q.st === 'talk' && q.gest;
+      if (on && !bub.visible) bub.material = pick(people.bubbleMats);
+      bub.visible = on; if (on) bub.position.set(q.p.x, q.p.y + (2.2 + Math.sin(t * 3) * 0.03) * q.s, q.p.z);
+    }
+  }
   for (const m of Object.values(M)) m.instanceMatrix.needsUpdate = true;
 }
 /* compass rose on the floor next to the model — shows where north is when the sun is set by place */
@@ -1755,6 +1949,8 @@ $('#tablescale').addEventListener('click', e => {
 function renderPrefs() {
   $('#p-gravity').checked = prefs.gravity; $('#p-collide').checked = prefs.collide;
   $('#envseg').querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.val === prefs.env)));
+  $('#lookseg').querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String((b.dataset.val === 'real') === (prefs.env === 'sky'))));
+  $('#plainfield').hidden = prefs.env === 'sky';
   $('#nature').hidden = prefs.env !== 'sky';
   for (const [id, k] of [['#seasonseg', 'season'], ['#cloudseg', 'clouds'], ['#precipseg', 'precip'], ['#peopleseg', 'people']]) $(id).querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.val === prefs[k])));
 }
@@ -1762,7 +1958,8 @@ for (const [id, k] of [['#seasonseg', 'season'], ['#cloudseg', 'clouds'], ['#pre
   $(id).addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; prefs[k] = b.dataset.val; savePrefs(); renderPrefs(); applyEnv(); shadowsDirty(); });
 $('#p-gravity').addEventListener('change', e => { prefs.gravity = e.target.checked; savePrefs(); player.vy = 0; drawPalette(); });
 $('#p-collide').addEventListener('change', e => { prefs.collide = e.target.checked; savePrefs(); });
-$('#envseg').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; prefs.env = b.dataset.val; savePrefs(); renderPrefs(); applyEnv(); });
+$('#envseg').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; prefs.env = prefs.plainEnv = b.dataset.val; savePrefs(); renderPrefs(); applyEnv(); });
+$('#lookseg').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; prefs.env = b.dataset.val === 'real' ? 'sky' : prefs.plainEnv; savePrefs(); renderPrefs(); applyEnv(); shadowsDirty(); });
 
 /* ================= loading inputs ================= */
 $('#file').addEventListener('change', e => { const f = [...e.target.files]; e.target.value = ''; addFromFiles(f); });
@@ -3763,7 +3960,7 @@ window.addEventListener('keydown', e => {
   if ((e.ctrlKey || e.metaKey) && e.code === 'KeyZ') { e.preventDefault(); undo(); return; }
   if (e.code === 'Escape' && !$('#dlg').hidden) { closeDialog(null); return; }
   if (e.code === 'Escape' && freeLook) { stopAim(); return; }
-  if (e.code === 'Escape') { if (sel) clearSelection(); else if (tool.phase !== 'idle' || tool.pen) cancelTool(); else if (state.tool !== 'nav') setTool('nav'); else if (state.view === 'walk') exitWalk(); return; }
+  if (e.code === 'Escape') { if (sel) clearSelection(); else if (tool.phase !== 'idle' || tool.pen) cancelTool(); else if (state.tool !== 'nav') setTool('nav'); return; }        // Esc never leaves the walk: switch modes with the mode buttons
   if (/^Digit[1-9]$/.test(e.code) && isReady() && TOOLS[+e.code.slice(5) - 1]) { setTool(TOOLS[+e.code.slice(5) - 1][0]); return; }
   if ((e.code === 'Delete' || e.code === 'Backspace') && sel) { e.preventDefault(); deleteSelection(); return; }
   if (state.view === 'orbit') { if (!e.ctrlKey && !e.metaKey && /^(Key[WASDQE]|Arrow\w+|Shift\w+)$/.test(e.code)) { keys.add(e.code); if (/^Arrow/.test(e.code)) e.preventDefault(); } return; }
@@ -4241,7 +4438,7 @@ function layoutFace(f) {
   } else if (tab === 'view') {
     row3(Y, [state.sessionMode === 'immersive-ar' && ['pt', 'Сквозной'], ['table', '1:1 ↔ макет'], ['start', 'Ко входу']].filter(Boolean));
     row3(Y + 108, [state.mode === 'walk' && ['grav', 'Гравитация'], state.mode === 'walk' && ['coll', 'Стены'], ['place', 'Макет передо мной']].filter(Boolean));
-    [['env:graphite', 'Графит'], ['env:sky', 'Реалистично'], ['env:studio', 'Студия'], ['env:evening', 'Вечер']].forEach(([id, label], i) => B.push({ id, label, x: 24 + i * 246, y: Y + 216, w: 236, h: 96 }));
+    [['env:graphite', 'Графит'], ['env:studio', 'Студия'], ['env:sky', 'Реалистично']].forEach(([id, label], i) => B.push({ id, label, x: 24 + i * 330, y: Y + 216, w: 320, h: 96 }));
     [['sun:-', 'Солнце −1 ч'], ['sun:+', 'Солнце +1 ч'], ['sun:aim', sunState.aim || state.sunAim ? 'Свет: сбросить' : 'Свет рукой'], ['tilt:-', 'Наклон −'], ['tilt:+', 'Наклон +']].forEach(([id, label], i) => B.push({ id, label, x: 24 + i * 197, y: Y + 324, w: 187, h: 96 }));
     B.push({ id: 'shot', label: 'Снимок', x: 24, y: Y + 432, w: 240, h: 84 });
     B.push({ id: 'align', label: state.alignRel ? 'Снять привязку' : 'Привязка по реперам', x: 280, y: Y + 432, w: 400, h: 84 });
@@ -4384,7 +4581,7 @@ function palClick(id) {
   else if (id === 'table') setMode(state.mode === 'walk' ? 'table' : 'walk');
   else if (id === 'grav') { prefs.gravity = !prefs.gravity; savePrefs(); renderPrefs(); state.vy = 0; }
   else if (id === 'coll') { prefs.collide = !prefs.collide; savePrefs(); renderPrefs(); }
-  else if (id.startsWith('env:')) { prefs.env = id.slice(4); savePrefs(); renderPrefs(); applyEnv(); }
+  else if (id.startsWith('env:')) { prefs.env = id.slice(4); if (prefs.env !== 'sky') prefs.plainEnv = prefs.env; savePrefs(); renderPrefs(); applyEnv(); }
   else if (id === 'start') { if (state.mode === 'table') setMode('walk'); toStart(); }
   else if (id === 'place') { if (state.mode === 'walk') setMode('table'); placeTable(); state.tableRel = null; }
   else if (id === 'next') { if (state.models.length > 1) activate((state.active + 1) % state.models.length); }
