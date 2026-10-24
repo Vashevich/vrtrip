@@ -235,6 +235,8 @@ h2{display:flex;align-items:center;gap:10px;margin:0;font:600 16px/1.2 var(--f-b
 .knob{position:absolute;left:50%;top:50%;width:52px;height:52px;margin:-26px 0 0 -26px;border-radius:50%;background:var(--raise);border:2px solid var(--accent);pointer-events:none}
 .floors{position:absolute;right:18px;bottom:18px;display:flex;flex-direction:column;gap:6px}
 .joyr,#w-jump{display:none}
+.wi{width:16px;height:16px;flex:none;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.floors .btn{gap:8px}
 .floors .btn{min-width:108px;background:var(--glass)}
 .floors .btn[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
 .dialog{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(420px,calc(100% - 32px));display:flex;flex-direction:column;gap:12px;padding:18px;background:var(--panel);border:1px solid var(--line-strong);border-radius:12px;box-shadow:0 20px 50px rgba(0,0,0,.5);z-index:20}
@@ -347,16 +349,23 @@ body.panel-off .view{grid-column:2}
   .joy{width:112px;height:112px;left:max(16px,env(safe-area-inset-left));bottom:14px}
   .joyr{display:block;left:auto;right:max(16px,env(safe-area-inset-right))}
   .floors{display:contents}
-  .floors .btn{position:absolute;min-height:36px;height:36px;min-width:0;width:112px;padding:0 6px;font-size:12.5px;justify-content:center}
+  .floors .btn{position:absolute;width:48px;height:48px;min-height:0;min-width:0;padding:0;justify-content:center}
+  .floors .wt{display:none}.floors .wi{width:24px;height:24px}            /* icons only: the hint and the titles name them */
   #w-jump{display:inline-flex}
-  .floors .btn{white-space:nowrap}.wfl{display:none}               /* «▲ выше» — fits the narrow column */
-  #w-exit,#w-up,#w-down{left:max(16px,env(safe-area-inset-left))}
-  #w-toy,#w-hook,#w-jump{right:max(16px,env(safe-area-inset-right))}
-  #w-down,#w-jump{bottom:140px}
-  #w-up,#w-hook{bottom:182px}
-  #w-exit,#w-toy{bottom:224px}
+  #w-exit,#w-up,#w-down{left:calc(max(16px,env(safe-area-inset-left)) + 32px)}
+  #w-toy,#w-hook,#w-jump{right:calc(max(16px,env(safe-area-inset-right)) + 32px)}
+  #w-down,#w-jump{bottom:138px}
+  #w-up,#w-hook{bottom:194px}
+  #w-exit,#w-toy{bottom:250px}
   .toast{left:50%;transform:translateX(-50%);top:60px;bottom:auto}
   body.walking .tip{top:60px;bottom:auto;max-width:calc(100% - 320px)}
+  /* walking: the tools go down to the bottom edge between the sticks, like a game hotbar; the view modes hide (✕ Выйти is above the left stick); only small corners stay on top */
+  body.walking .topbar{bottom:max(10px,env(safe-area-inset-bottom))}
+  body.walking .topbar>.toolbar{position:absolute;bottom:0;left:0;right:0;margin-inline:auto;width:fit-content;max-width:calc(100% - 264px)}
+  body.walking .dock>.modebar{display:none}
+  body.walking .topbar>.lbtns{flex-direction:row}
+  body.walking .clearpop{top:auto;bottom:62px;max-height:calc(100% - 76px);overflow:auto}
+  body.walking .tip{max-width:calc(100% - 260px)}
 }
 
 /* phone-in-headset VR (Homido, Cardboard): the view fills the screen, all other UI is hidden */
@@ -873,12 +882,12 @@ input[type=range]{accent-color:var(--accent)}
   <div class="walkui" id="walkui" hidden>
     <div class="joy" id="joy" aria-label="Джойстик движения"><div class="knob" id="knob"></div></div>
     <div class="floors">
-      <button type="button" class="btn small" id="w-exit">✕ Выйти</button>
-      <button type="button" class="btn small" id="w-up">▲ <span class="wfl">Этаж </span>выше</button>
-      <button type="button" class="btn small" id="w-down">▼ <span class="wfl">Этаж </span>ниже</button>
-      <button type="button" class="btn small" id="w-toy" aria-pressed="false" title="Пинбольная пушка с краской (B)">● Шарики</button>
-      <button type="button" class="btn small" id="w-hook" aria-pressed="false" title="Крюк-кошка: стрелять и подтягиваться (G)">⚓ Крюк</button>
-      <button type="button" class="btn small" id="w-jump" title="Прыжок (пробел)">⤒ Прыжок</button>
+      <button type="button" class="btn small" id="w-exit" aria-label="Выйти из прогулки" title="Выйти из прогулки"><svg class="wi" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg><span class="wt">Выйти</span></button>
+      <button type="button" class="btn small" id="w-up" aria-label="Этаж выше" title="Этаж выше"><svg class="wi" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V6M6.5 11.5L12 6l5.5 5.5M5 3h14"/></svg><span class="wt">Этаж выше</span></button>
+      <button type="button" class="btn small" id="w-down" aria-label="Этаж ниже" title="Этаж ниже"><svg class="wi" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v13M6.5 12.5L12 18l5.5-5.5M5 21h14"/></svg><span class="wt">Этаж ниже</span></button>
+      <button type="button" class="btn small" id="w-toy" aria-pressed="false" aria-label="Шарики с краской" title="Пинбольная пушка с краской (B)"><svg class="wi" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="13" r="6"/><path d="M18 5.5l2-2M16.5 3v2M21 7.5h-2"/></svg><span class="wt">Шарики</span></button>
+      <button type="button" class="btn small" id="w-hook" aria-pressed="false" aria-label="Крюк" title="Крюк-кошка: стрелять и подтягиваться (G)"><svg class="wi" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5" r="2.3"/><path d="M12 7.3V21M7.5 11h9M4.5 14a7.5 7.5 0 0 0 15 0"/></svg><span class="wt">Крюк</span></button>
+      <button type="button" class="btn small" id="w-jump" aria-label="Прыжок" title="Прыжок (пробел)"><svg class="wi" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V4M7 9l5-5 5 5M6 20h12"/></svg><span class="wt">Прыжок</span></button>
     </div>
     <div class="joy joyr" id="joyr" aria-label="Джойстик обзора"><div class="knob"></div></div>
   </div>
@@ -999,7 +1008,7 @@ const UP = new V3(0, 1, 0), DOWN = new V3(0, -1, 0);
 const UNITS = { mm: 0.001, cm: 0.01, m: 1, in: 0.0254, ft: 0.3048 };
 const TABLE_STEPS = [20, 50, 100, 200, 500, 1000];
 const EYE = 1.65, STEP = 0.45, RADIUS = 0.3, GRAV = 9.8;
-const APP_VERSION = '3.31';
+const APP_VERSION = '3.32';
 const BASE_COLORS = ['#f2efe8', '#d8a33f', '#e0604a', '#3f86c9'];
 const KINDS = { issue: { label: 'Замечание', color: '#e0604a' }, question: { label: 'Вопрос', color: '#d8a33f' }, idea: { label: 'Идея', color: '#4fae7f' } };
 const TOOLS = [['nav', 'Выделение'], ['pin', 'Метка'], ['measure', 'Рулетка'], ['pen', 'Карандаш'], ['erase', 'Ластик'], ['section', 'Сечение'], ['ref', 'Репер'], ['explode', 'Взрыв']];   // «Куб» временно скрыт: код инструмента сохранён
