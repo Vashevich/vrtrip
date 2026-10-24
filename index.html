@@ -186,7 +186,9 @@ h2{display:flex;align-items:center;gap:10px;margin:0;font:600 16px/1.2 var(--f-b
 .view{container-type:inline-size}
 .topbar{position:absolute;top:12px;left:12px;right:12px;display:grid;grid-template-columns:minmax(46px,1fr) auto minmax(max-content,1fr);align-items:start;gap:10px;pointer-events:none;z-index:5}
 .topbar>*{pointer-events:auto}
-.modebar{grid-column:3;justify-self:end;display:flex;gap:2px;padding:5px;background:var(--glass);border:1px solid var(--line);border-radius:12px;backdrop-filter:blur(6px)}
+.dock{grid-column:3;grid-row:1;justify-self:end;display:flex;flex-direction:column;align-items:flex-end;gap:10px}     /* view modes, and the photo / video pair under them */
+.mediabar{display:flex;gap:2px;padding:5px;background:var(--glass);border:1px solid var(--line);border-radius:12px;backdrop-filter:blur(6px)}
+.modebar{display:flex;gap:2px;padding:5px;background:var(--glass);border:1px solid var(--line);border-radius:12px;backdrop-filter:blur(6px)}
 .modebar .mode{min-height:0;height:52px;min-width:58px;padding:0 6px;gap:3px;border:0;border-radius:8px;background:transparent}
 .modebar .mode svg{width:22px;height:22px;stroke-width:1.8}
 .modebar .mode-t{font-size:11px;font-weight:500;line-height:1;white-space:nowrap}
@@ -217,7 +219,7 @@ h2{display:flex;align-items:center;gap:10px;margin:0;font:600 16px/1.2 var(--f-b
 .sw{width:26px;height:26px;border-radius:50%;border:2px solid var(--line-strong);background:var(--sw);cursor:pointer;margin:0 2px;padding:0}
 .sw[aria-pressed="true"]{border-color:var(--fg);box-shadow:0 0 0 2px var(--accent)}
 .secui{position:absolute;top:84px;left:0;right:0;margin-inline:auto;width:fit-content;max-width:calc(100% - 24px);display:flex;flex-wrap:wrap;gap:6px;justify-content:center;align-items:center;padding:6px;background:var(--glass);border:1px solid var(--line);border-radius:12px;z-index:5}
-@container (max-width:1200px){.topbar{grid-template-columns:auto minmax(0,1fr)}.topbar>.toolbar{grid-column:2;justify-self:center}.view .topbar>.modebar{grid-column:2;grid-row:2;justify-self:end}.secui{top:146px}}
+@container (max-width:1200px){.topbar{grid-template-columns:auto minmax(0,1fr)}.topbar>.toolbar{grid-column:2;justify-self:center}.view .topbar>.dock{grid-column:2;grid-row:2;justify-self:end;flex-direction:row;align-items:flex-start}.secui{top:146px}}
 .explui .seg button{min-height:34px;font-size:13px}
 .expl-range{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted)}.expl-range input{width:150px;accent-color:var(--accent)}.expl-range b{min-width:42px;color:var(--fg);font:500 12.5px var(--f-mono)}
 .sec-info{font:12.5px/1.2 var(--f-mono);color:var(--muted);padding:0 6px;font-variant-numeric:tabular-nums}
@@ -268,7 +270,7 @@ h2{display:flex;align-items:center;gap:10px;margin:0;font:600 16px/1.2 var(--f-b
 .panelbtn{width:46px;height:46px;display:grid;place-items:center;border:1px solid var(--line);border-radius:12px;background:var(--glass);color:var(--fg);cursor:pointer;backdrop-filter:blur(6px)}
 .panelbtn svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round}
 .panelbtn:hover{border-color:var(--line-strong)}
-.topbar>.toolbar,.topbar>.modebar{grid-row:1}
+.topbar>.toolbar,.topbar>.dock{grid-row:1}
 body.panel-off{grid-template-columns:0 minmax(0,1fr)}
 body.panel-off .panel{display:none}
 body.panel-off .view{grid-column:2}
@@ -278,7 +280,7 @@ body.panel-off .view{grid-column:2}
 @container (max-width:900px){.toolbar{gap:1px;padding:4px}.tb{min-width:40px;height:44px;padding:0 3px}.sw{width:24px;height:24px;margin:0 1px}}       /* keep the tools on one row instead of a lone button wrapping below */
 @media (max-width:1180px) and (min-width:821px){body{grid-template-columns:330px minmax(0,1fr)}.panel{padding-inline:16px}}
 /* phones and small tablets in portrait: view on top, panel below */
-@media (max-width:820px), (orientation:portrait) and (max-width:1000px){
+@media (max-width:820px) and (min-height:601px), (orientation:portrait) and (max-width:1000px){
   body,body.panel-off{grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto;overflow:auto;height:auto;min-height:100%}
   body.panel-off .panel{display:flex}
   body.panel-off .view{grid-column:1}
@@ -294,7 +296,8 @@ body.panel-off .view{grid-column:2}
   .toolbar::-webkit-scrollbar{display:none}
   .topbar>.toolbar{-webkit-mask-image:linear-gradient(to right,#000 88%,transparent);mask-image:linear-gradient(to right,#000 88%,transparent)}
   .topbar>.toolbar.end{-webkit-mask-image:none;mask-image:none}
-  .topbar>.modebar,.view .topbar>.modebar{order:2;align-self:center;padding:3px;gap:1px}
+  .topbar>.dock,.view .topbar>.dock{order:2;align-self:center;flex-direction:row;flex-wrap:wrap;justify-content:center;align-items:flex-start;gap:6px}
+  .modebar,.mediabar{padding:3px;gap:1px}
   .swatches{flex-wrap:nowrap}
   .sw{width:24px;height:24px}
   .tb{min-width:40px;height:40px;font-size:10px;padding:0 4px;flex:none}
@@ -306,13 +309,13 @@ body.panel-off .view{grid-column:2}
   .modebar .mode-t{display:none}
   .secui,.view .secui{top:8px;left:104px;right:8px;margin:0;width:auto;max-width:none;justify-content:flex-start;padding:4px;gap:4px}
   .secui .btn{min-height:32px;padding:0 9px;font-size:12.5px}
-  .tip{top:auto;bottom:108px;max-width:calc(100% - 24px);font-size:12.5px;padding:6px 10px}
+  .tip{top:auto;bottom:126px;max-width:calc(100% - 24px);font-size:12.5px;padding:6px 10px}
   .chip{display:none}
-  .joy{width:96px;height:96px;bottom:108px}
-  .floors{bottom:108px}
+  .joy{width:96px;height:96px;bottom:126px}
+  .floors{bottom:126px}
   .floors .btn{min-height:34px;min-width:92px;font-size:12.5px}
   .toast{bottom:auto;top:56px;left:50%;transform:translateX(-50%)}
-  body.walking .tip{top:56px;bottom:auto}                          /* walking: the hint goes up, the stick and floor buttons keep the bottom */
+  body.walking .tip{top:56px;bottom:auto;max-width:calc(100% - 24px)}                          /* walking: the hint goes up, the stick and floor buttons keep the bottom */
 }
 /* phones in landscape (low height): the 3D view takes the whole screen, the panel slides in as a drawer */
 @media (orientation:landscape) and (max-height:600px){
@@ -324,9 +327,9 @@ body.panel-off .view{grid-column:2}
   .topbar>.lbtns{grid-column:1}
   .topbar>.toolbar{grid-column:2!important;justify-self:center;flex-wrap:nowrap;justify-content:flex-start;overflow-x:auto;max-width:100%;scrollbar-width:none;-webkit-mask-image:linear-gradient(to right,#000 90%,transparent);mask-image:linear-gradient(to right,#000 90%,transparent)}
   .topbar>.toolbar.end{-webkit-mask-image:none;mask-image:none}
-  .view .topbar>.modebar{grid-column:3!important;grid-row:1!important;justify-self:end}
+  .view .topbar>.dock{grid-column:3!important;grid-row:1!important;justify-self:end;flex-direction:row;gap:6px}
   .panelbtn{width:42px;height:42px}
-  .toolbar,.modebar{padding:3px;gap:1px}
+  .toolbar,.modebar,.mediabar{padding:3px;gap:1px}
   .tb{min-width:38px;height:40px;padding:0 4px}
   .tb span{display:none}
   .tb svg{width:20px;height:20px}
@@ -453,8 +456,8 @@ input[type=range]{accent-color:var(--accent)}
 .mode[aria-pressed="true"] svg{stroke:var(--on-fg)}
 .mode-t{font-family:var(--f-display);letter-spacing:.08em;text-transform:uppercase}
 /* the viewport furniture: an inked strip of tools, the mode strip, sheet captions */
-.toolbar,.modebar,.secui{background:var(--glass);border:3px solid var(--line);border-radius:0;backdrop-filter:none;box-shadow:5px 5px 0 var(--shadow)}
-.toolbar{gap:0;padding:0}
+.toolbar,.modebar,.mediabar,.secui{background:var(--glass);border:3px solid var(--line);border-radius:0;backdrop-filter:none;box-shadow:5px 5px 0 var(--shadow)}
+.toolbar,.mediabar{gap:0;padding:0}
 .tb{border-radius:0;color:var(--fg);font:600 11px/1 var(--f-display);letter-spacing:.12em;text-transform:uppercase}
 .tb+.tb{border-left:2px solid var(--line)}
 .tb:hover:not([aria-pressed="true"]):not(:disabled){background:var(--hover)}
@@ -495,6 +498,7 @@ input[type=range]{accent-color:var(--accent)}
 .cb-stick i{background:rgba(166,30,30,.8)}
 .scrim{background:rgba(0,0,0,.45)}
 #envseg{grid-template-columns:repeat(3,1fr)}
+@media (min-width:821px) and (min-height:601px){body.walking .tip{max-width:max(200px,calc(100% - 400px))}}   /* between the stick and the floor buttons */
 @container (max-width:900px){.swatches{padding:0 2px}.sw{margin:0 1px}.toolbar .tb{min-width:38px}}
 @media (max-width:820px), (orientation:portrait) and (max-width:1000px){.panel{border-top:3px solid var(--line)}}
 /* a pressed control keeps its look under the pointer (the base hover rules are stronger than the pressed ones) */
@@ -517,11 +521,12 @@ input[type=range]{accent-color:var(--accent)}
 :root[data-theme="dark"] .pick[aria-pressed="true"] .box::after{border-color:var(--on-fg)}
 :root[data-theme="dark"] .tb[aria-pressed="true"],:root[data-theme="dark"] .btn.primary{box-shadow:0 0 16px rgba(200,16,46,.55)}
 :root[data-theme="dark"] .sec{background:var(--raise)}
-.brand{position:relative}
-.themebtn{position:absolute;right:0;top:4px;display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 10px;border:2px solid var(--line);border-radius:0;background:var(--raise);color:var(--fg);font:600 12px/1 var(--f-display);letter-spacing:.12em;text-transform:uppercase;cursor:pointer}
+.brand{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:10px;row-gap:10px;align-items:center}
+.brand > :not(.mark):not(.themebtn){grid-column:1 / -1}
+.themebtn{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 10px;border:2px solid var(--line);border-radius:0;background:var(--raise);color:var(--fg);font:600 12px/1 var(--f-display);letter-spacing:.12em;text-transform:uppercase;cursor:pointer}
 .themebtn:hover{background:var(--hover)}
 .themebtn svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.brand .mark{padding-right:96px}
+@media (max-width:1180px) and (min-width:821px){.mark{font-size:28px;letter-spacing:.15em}.mark::before{width:38px;height:38px;margin-right:10px}.themebtn span{display:none}.themebtn{padding:0 12px}}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script type="importmap">
@@ -800,15 +805,15 @@ input[type=range]{accent-color:var(--accent)}
     <button type="button" class="tb" data-tool="section" title="Сечение (6)"><svg viewBox="0 0 24 24"><path d="M4 8l8-4 8 4v8l-8 4-8-4z"/><path d="M2.5 14.5L21.5 9.5" stroke-dasharray="2.2 1.6"/><path d="M12 12v8"/></svg><span>Сечение</span></button>
     <button type="button" class="tb" data-tool="explode" title="Взрыв-схема: части модели разлетаются, колесо мыши — сильнее / слабее (8)"><svg viewBox="0 0 24 24"><rect x="9.5" y="9.5" width="5" height="5" rx="1"/><path d="M3 3l4 4M21 3l-4 4M3 21l4-4M21 21l-4-4"/><path d="M3 6.5V3h3.5M21 6.5V3h-3.5M3 17.5V21h3.5M21 17.5V21h-3.5"/></svg><span>Взрыв</span></button>
     <span class="tb-sep"></span>
+    <button type="button" class="tb" id="tb-undo" title="Отменить (Ctrl+Z)"><svg viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg><span>Отменить</span></button>
+    <span class="tb-sep"></span>
     <span class="swatches" id="swatches"></span>
     <button type="button" class="sw add" id="sw-add" title="Добавить свой цвет" aria-label="Добавить свой цвет">+</button>
     <input type="color" id="sw-input" class="sr" value="#7a5cff" aria-label="Выбор цвета">
     <span class="tb-sep"></span>
     <button type="button" class="tb" id="tb-clear" title="Очистить разметку: метки, размеры, карандаш — по отдельности или всё"><svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V4.5h6V7M6.5 7l1 13h9l1-13M10 11v6M14 11v6"/></svg><span>Очистить</span></button>
-    <button type="button" class="tb" id="tb-undo" title="Отменить (Ctrl+Z)"><svg viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg><span>Отменить</span></button>
-    <button type="button" class="tb" id="tb-shot" title="Сохранить снимок экрана"><svg viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.2"/></svg><span>Снимок</span></button>
-    <button type="button" class="tb" id="tb-rec" aria-pressed="false" title="Записать видео того, что происходит в окне модели"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10.5l5-3v9l-5-3z"/></svg><span id="tb-rec-t">Видео</span></button>
   </div>
+  <div class="dock">
   <div class="modebar" id="modebar" role="toolbar" aria-label="Режим просмотра">
     <button class="mode" id="m-orbit" type="button" aria-pressed="true" title="Обзор модели мышью: вращать, двигать, приближать, летать на WASD">
       <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 5l10 5.5v11L16 27 6 21.5v-11z"/><path d="M6 10.5l10 5.5 10-5.5M16 16v11"/></svg>
@@ -834,6 +839,11 @@ input[type=range]{accent-color:var(--accent)}
       <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M3 10.5c0-1.4 1.1-2.5 2.5-2.5h21c1.4 0 2.5 1.1 2.5 2.5v11c0 1.4-1.1 2.5-2.5 2.5h-6.2l-2.6-4h-3.4l-2.6 4H5.5C4.1 24 3 22.9 3 21.5z"/><circle cx="10.5" cy="15.5" r="3"/><circle cx="21.5" cy="15.5" r="3"/></svg>
       <span class="mode-t">VR очки</span>
     </button>
+  </div>
+  <div class="mediabar" id="mediabar" role="toolbar" aria-label="Снимок и видео">
+    <button type="button" class="tb" id="tb-shot" title="Сохранить снимок экрана"><svg viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.2"/></svg><span>Снимок</span></button>
+    <button type="button" class="tb" id="tb-rec" aria-pressed="false" title="Записать видео того, что происходит в окне модели"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10.5l5-3v9l-5-3z"/></svg><span id="tb-rec-t">Видео</span></button>
+  </div>
   </div>
   </div>
   <div class="clearpop" id="clearpop" hidden role="menu" aria-label="Очистить">
@@ -976,7 +986,7 @@ const UP = new V3(0, 1, 0), DOWN = new V3(0, -1, 0);
 const UNITS = { mm: 0.001, cm: 0.01, m: 1, in: 0.0254, ft: 0.3048 };
 const TABLE_STEPS = [20, 50, 100, 200, 500, 1000];
 const EYE = 1.65, STEP = 0.45, RADIUS = 0.3, GRAV = 9.8;
-const APP_VERSION = '3.29';
+const APP_VERSION = '3.30';
 const BASE_COLORS = ['#f2efe8', '#d8a33f', '#e0604a', '#3f86c9'];
 const KINDS = { issue: { label: 'Замечание', color: '#e0604a' }, question: { label: 'Вопрос', color: '#d8a33f' }, idea: { label: 'Идея', color: '#4fae7f' } };
 const TOOLS = [['nav', 'Выделение'], ['pin', 'Метка'], ['measure', 'Рулетка'], ['pen', 'Карандаш'], ['erase', 'Ластик'], ['section', 'Сечение'], ['ref', 'Репер'], ['explode', 'Взрыв']];   // «Куб» временно скрыт: код инструмента сохранён
@@ -2489,7 +2499,7 @@ $('#p-collide').addEventListener('change', e => { prefs.collide = e.target.check
 /* interface theme: the light paper sheet or the night one; remembered, else follows the system */
 function renderTheme() {
   const dark = document.documentElement.dataset.theme === 'dark', b = $('#themebtn');
-  b.setAttribute('aria-pressed', String(dark)); b.title = dark ? 'Светлая тема' : 'Тёмная тема';
+  b.setAttribute('aria-pressed', String(dark)); b.title = dark ? 'Светлая тема' : 'Тёмная тема'; b.setAttribute('aria-label', b.title);
   b.querySelector('span').textContent = dark ? 'День' : 'Ночь';
   b.querySelector('path').setAttribute('d', dark ? 'M12 4V2M12 22v-2M4 12H2M22 12h-2M5.6 5.6 4.2 4.2M19.8 19.8l-1.4-1.4M5.6 18.4l-1.4 1.4M19.8 4.2l-1.4 1.4M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z' : 'M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z');
 }
@@ -2586,7 +2596,7 @@ function sunDirLocal() {
 scene.add(sun.target);
 sun.shadow.mapSize.set(2048, 2048); sun.shadow.bias = -0.0004; sun.shadow.radius = 3;   // softer shadow edges
 /* shadow catcher: an invisible floor that only shows shadows — on the real floor in passthrough and AR, on the backdrop elsewhere */
-const catcher = new THREE.Mesh(new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2), new THREE.ShadowMaterial({ opacity: 0.34, depthWrite: false }));
+const catcher = new THREE.Mesh(new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2), new THREE.ShadowMaterial({ opacity: 0.34, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -16 }));
 catcher.receiveShadow = true; catcher.matrixAutoUpdate = false; catcher.renderOrder = 1; scene.add(catcher);
 let envTex = null;
 function ensureEnv() { if (!envTex) { const pm = new THREE.PMREMGenerator(renderer); envTex = pm.fromScene(new RoomEnvironment(), 0.04).texture; pm.dispose(); } return envTex; }
