@@ -10,7 +10,7 @@
 <meta name="description" content="VRtrip — просмотр архитектурных OBJ-моделей в Meta Quest 3 и в браузере. Автор: Сергей Дмитриев, Rock Parametric.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Unbounded:wght@600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=PT+Mono&family=PT+Sans:wght@400;700&family=PT+Serif:ital,wght@0,400;1,400&display=swap">
 <style>
 /* Layout: fixed instrument panel on the left, live 3D viewport on the right; on narrow screens the viewport sits on top */
 :root{
@@ -374,6 +374,124 @@ body.cardboard .topbar,body.cardboard .walkui,body.cardboard .chip,body.cardboar
 .cb-rot b{font-size:18px}
 .cb-rot span{color:var(--muted);max-width:30ch}
 @media (orientation:portrait){body.cardboard .cb-rot{display:flex}}
+/* ================= «Чернихов»: the look of an architectural-fantasy sheet (v3.28) =================
+   Ochre paper, black ink, constructivist red and ochre; plates with a double frame, uppercase condensed
+   lettering, italic serif captions. Only the look changes here — layout and behaviour stay as above. */
+:root{
+  --bg:#E8DABB;--panel:#EBDFC3;--raise:#F3EAD4;--line:#1b1a18;--line-strong:#1b1a18;
+  --fg:#1b1a18;--muted:#5a5147;--accent:#A61E1E;--accent-ink:#F6EEDB;--accent-wash:rgba(166,30,30,.10);
+  --ochre:#C9963B;--glass:rgba(240,230,206,.95);--ok:#2f6b45;--bad:#8f1414;
+  --f-display:"Oswald","PT Sans Narrow",system-ui,sans-serif;
+  --f-body:"PT Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --f-serif:"PT Serif",Georgia,serif;
+  --f-mono:"PT Mono",ui-monospace,Menlo,Consolas,monospace;
+  color-scheme:light;
+}
+body{background:var(--bg)}
+.panel{background-color:var(--panel);background-image:radial-gradient(rgba(90,60,20,.07) 1px,transparent 1.4px),radial-gradient(rgba(255,255,255,.22) 1px,transparent 1.4px);background-size:5px 5px,9px 9px;background-position:0 0,2px 4px;border-right:3px solid var(--line);scrollbar-color:#1b1a18 transparent;gap:22px}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+/* the brand: an emblem and capitals with wide spacing */
+.mark{font:700 36px/1 var(--f-display);letter-spacing:.2em;text-transform:uppercase;align-items:center;gap:0}
+.mark span{color:inherit}
+.mark::before{content:"";flex:none;width:48px;height:48px;margin-right:14px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 58 58'%3E%3Ccircle cx='29' cy='29' r='26' fill='none' stroke='%231b1a18' stroke-width='3'/%3E%3Cpath d='M6 46L52 14' stroke='%23A61E1E' stroke-width='9'/%3E%3Crect x='22' y='8' width='9' height='42' fill='%231b1a18'/%3E%3C/svg%3E") center/contain no-repeat}
+.lede{font:italic 14px/1.45 var(--f-serif);color:var(--fg)}
+.credit,.foot{font-family:var(--f-serif);font-style:italic}
+.credit a,.link,.toast-act{color:var(--accent)}
+/* sections are album sheets: a heavy frame, a thin second frame, «Лист NN» on the right */
+.sec{border:3px solid var(--line);outline:1px solid var(--line);outline-offset:4px;background:var(--raise);padding:14px 14px 16px;margin:5px}
+.sec > summary h2{font:700 19px/1.15 var(--f-display);letter-spacing:.14em;text-transform:uppercase}
+.sec > summary:hover h2{color:var(--accent)}
+.sec > summary::after{border-color:var(--fg)}
+h2{font-family:var(--f-display);letter-spacing:.08em}
+.step{order:2;margin-left:auto;border:0;padding:0;color:var(--fg);font:italic 13px/1 var(--f-serif);letter-spacing:0;text-transform:none;white-space:nowrap}
+.step::before{content:"Лист "}
+.sec > summary h2{flex:1;display:flex}
+.sub,.help h3{font-family:var(--f-display);letter-spacing:.16em;color:var(--fg)}
+.lbl,.nature .nrow{font:600 12.5px/1.2 var(--f-display);letter-spacing:.12em;text-transform:uppercase;color:var(--fg)}
+.note,.empty,.drop-sub,.check small,.mode-d{font-family:var(--f-serif);font-style:italic;color:var(--muted)}
+/* buttons, toggles, inputs: square, inked */
+.btn{border-radius:0;border:2px solid var(--line);background:var(--raise);color:var(--fg);font:600 14px/1 var(--f-display);letter-spacing:.1em;text-transform:uppercase}
+.btn:hover:not(:disabled){background:#fff8e6;border-color:var(--line)}
+.btn.primary{background:var(--accent);border-color:var(--line);color:var(--accent-ink);box-shadow:4px 4px 0 var(--line)}
+.btn.primary:hover:not(:disabled){filter:none;background:#8f1414}
+.btn.armed,.del.armed{border-color:var(--bad);color:var(--bad)}
+.seg{border:2px solid var(--line);border-radius:0;background:var(--raise);padding:0;gap:0}
+.seg button{border-radius:0;font:500 14px/1.1 var(--f-display);letter-spacing:.06em;color:var(--fg)}
+.seg button+button{border-left:2px solid var(--line)}
+.seg button:hover:not(:disabled){background:#fff8e6}
+.seg button[aria-pressed="true"]{background:var(--fg);color:var(--accent-ink);box-shadow:none;font-weight:600}
+#seasonseg button[aria-pressed="true"],#cloudseg button[aria-pressed="true"]{background:var(--ochre);color:var(--fg)}
+#peopleseg button[aria-pressed="true"],#landseg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+.seg button.mixed{background:repeating-linear-gradient(135deg,rgba(27,26,24,.15) 0 4px,transparent 4px 9px);box-shadow:none}
+.chips button{border-radius:0;border:2px solid var(--line);color:var(--fg);font-family:var(--f-display);letter-spacing:.04em}
+.chips button[aria-pressed="true"]{background:var(--fg);border-color:var(--fg);color:var(--accent-ink)}
+.url input,.sunplace .city input,.sunplace input[type=number],.sunplace input[type=date],.dialog textarea{border-radius:0;border:2px solid var(--line);background:#fbf5e6;color:var(--fg)}
+input[type=range]{accent-color:var(--accent)}
+.check input{accent-color:var(--accent);width:20px;height:20px}
+.check{font-family:var(--f-display);letter-spacing:.06em;font-size:15px}
+.drop{border:2px solid var(--line);border-radius:0;background:repeating-linear-gradient(-30deg,transparent 0 10px,rgba(27,26,24,.08) 10px 11px),var(--raise);align-items:center;text-align:center}
+.drop:hover,.drop.over{border-color:var(--accent);background:repeating-linear-gradient(-30deg,transparent 0 10px,rgba(166,30,30,.12) 10px 11px),#fff8e6}
+.drop-title{font:600 18px/1.2 var(--f-display);letter-spacing:.14em;text-transform:uppercase}
+.pick,.minfo li,.notes li,.dims,.del,.sunplace{border-radius:0;border:2px solid var(--line);background:var(--raise)}
+.pick[aria-pressed="true"]{border-color:var(--line);background:rgba(201,150,59,.28)}
+.pick .box{border-radius:0;border:2px solid var(--line)}
+.pick[aria-pressed="true"] .box{background:var(--fg);border-color:var(--fg)}
+.pick .name{font-family:var(--f-display);letter-spacing:.04em}
+.update{border:2px solid var(--accent);border-radius:0;background:var(--accent-wash)}
+.suggest{border:2px solid var(--line);border-radius:0;background:var(--raise)}
+.suggest span{font-family:var(--f-display);letter-spacing:.08em;text-transform:uppercase}
+.suggest small{font-family:var(--f-serif);font-style:italic}
+.help dt{color:var(--accent)}
+.mode{border-radius:0;border:2px solid var(--line);background:var(--raise)}
+.mode svg{stroke:var(--fg)}
+.mode[aria-pressed="true"]{background:var(--fg);color:var(--accent-ink);border-color:var(--fg)}
+.mode[aria-pressed="true"] svg{stroke:var(--accent-ink)}
+.mode-t{font-family:var(--f-display);letter-spacing:.08em;text-transform:uppercase}
+/* the viewport furniture: an inked strip of tools, the mode strip, sheet captions */
+.toolbar,.modebar,.secui{background:var(--glass);border:3px solid var(--line);border-radius:0;backdrop-filter:none;box-shadow:5px 5px 0 rgba(27,26,24,.85)}
+.toolbar{gap:0;padding:0}
+.tb{border-radius:0;color:var(--fg);font:600 11px/1 var(--f-display);letter-spacing:.12em;text-transform:uppercase}
+.tb+.tb{border-left:2px solid var(--line)}
+.tb:hover:not(:disabled){background:#fff8e6}
+.tb[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+.tb-sep{background:var(--line);width:2px;margin:0}
+.swatches{padding:0 6px}
+.sw{border:2px solid var(--line)}
+.sw[aria-pressed="true"]{border-color:var(--line);box-shadow:0 0 0 3px var(--accent)}
+.modebar{gap:0;padding:0}
+.modebar .mode{border:0;border-radius:0;background:transparent;color:var(--fg)}
+.modebar .mode+.mode{border-left:2px solid var(--line)}
+.modebar .mode svg{stroke:var(--fg)}
+.modebar .mode:hover:not(:disabled){background:#fff8e6}
+.modebar .mode[aria-pressed="true"]{background:var(--fg);color:var(--accent-ink)}
+.modebar .mode[aria-pressed="true"] svg{stroke:var(--accent-ink)}
+.modebar .mode-t{font:600 11px/1 var(--f-display);letter-spacing:.14em}
+.panelbtn{border-radius:0;border:3px solid var(--line);background:var(--glass);color:var(--fg);backdrop-filter:none}
+.panelbtn:hover{background:#fff8e6;border-color:var(--line)}
+.tip,.chip,.gridnote{background:var(--glass);border:2px solid var(--line);border-radius:0;color:var(--fg)}
+.tip{font:italic 14px/1.4 var(--f-serif)}
+.tip.tool{border-color:var(--accent)}
+.chip,.gridnote{font-family:var(--f-mono)}
+.toast{border-radius:0;border:3px solid var(--line);background:var(--raise);color:var(--fg);box-shadow:6px 6px 0 var(--line)}
+.toast.bad{border-color:var(--bad)}.toast.warn{border-color:var(--ochre)}.toast.ok{border-color:var(--ok)}
+.dialog,.clearpop,.cb-set{border-radius:0;border:3px solid var(--line);outline:1px solid var(--line);outline-offset:4px;background:var(--raise);box-shadow:10px 10px 0 rgba(27,26,24,.85)}
+.dialog h3{font:700 18px/1.2 var(--f-display);letter-spacing:.12em;text-transform:uppercase}
+.clearpop button{border-radius:0}.clearpop button:hover:not(:disabled){background:#fff8e6}
+.clearpop button.all{border-top:2px solid var(--line);color:var(--bad)}
+.busy{background:rgba(232,218,187,.72);font-family:var(--f-display);letter-spacing:.12em;text-transform:uppercase}
+.spin{border-color:rgba(27,26,24,.25);border-top-color:var(--accent)}
+.joy{background:var(--glass);border:3px solid var(--line)}
+.knob{background:var(--accent);border:3px solid var(--line)}
+.floors .btn{background:var(--glass)}
+.floors .btn[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--line)}
+.ar-top span,.ar-ask{border-radius:0;border:2px solid var(--line);background:var(--glass);color:var(--fg)}
+.ar-bottom .btn{background:var(--glass)}
+.ar-bottom .btn.primary,.ar-ask .btn.primary{background:var(--accent);color:var(--accent-ink)}
+.cb-stick i{background:rgba(166,30,30,.8)}
+.scrim{background:rgba(27,26,24,.4)}
+#envseg{grid-template-columns:repeat(3,1fr)}
+@container (max-width:900px){.swatches{padding:0 2px}.sw{margin:0 1px}.toolbar .tb{min-width:38px}}
+@media (max-width:820px), (orientation:portrait) and (max-width:1000px){.panel{border-top:3px solid var(--line)}}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script type="importmap">
@@ -513,6 +631,7 @@ body.cardboard .topbar,body.cardboard .walkui,body.cardboard .chip,body.cardboar
       <div class="seg" id="envseg" role="group" aria-labelledby="l-env">
         <button type="button" data-val="graphite">Графит</button>
         <button type="button" data-val="studio">Студия</button>
+        <button type="button" data-val="paper">Бумага</button>
       </div>
     </div>
     <div class="sunplace nature" id="nature">
@@ -826,7 +945,7 @@ const UP = new V3(0, 1, 0), DOWN = new V3(0, -1, 0);
 const UNITS = { mm: 0.001, cm: 0.01, m: 1, in: 0.0254, ft: 0.3048 };
 const TABLE_STEPS = [20, 50, 100, 200, 500, 1000];
 const EYE = 1.65, STEP = 0.45, RADIUS = 0.3, GRAV = 9.8;
-const APP_VERSION = '3.27';
+const APP_VERSION = '3.28';
 const BASE_COLORS = ['#f2efe8', '#d8a33f', '#e0604a', '#3f86c9'];
 const KINDS = { issue: { label: 'Замечание', color: '#e0604a' }, question: { label: 'Вопрос', color: '#d8a33f' }, idea: { label: 'Идея', color: '#4fae7f' } };
 const TOOLS = [['nav', 'Выделение'], ['pin', 'Метка'], ['measure', 'Рулетка'], ['pen', 'Карандаш'], ['erase', 'Ластик'], ['section', 'Сечение'], ['ref', 'Репер'], ['explode', 'Взрыв']];   // «Куб» временно скрыт: код инструмента сохранён
@@ -885,8 +1004,8 @@ const lsGet = k => { try { return localStorage.getItem(k); } catch { return null
 const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch {} };
 
 const SEASON_BY_MONTH = ['winter', 'winter', 'spring', 'spring', 'spring', 'summer', 'summer', 'summer', 'autumn', 'autumn', 'autumn', 'winter'];
-const prefs = { gravity: lsGet('vrtrip-gravity') !== '0', collide: lsGet('vrtrip-collide') !== '0', env: ({ graphite: 1, studio: 1, sky: 1 })[lsGet('vrtrip-env')] ? lsGet('vrtrip-env') : 'graphite',
-  plainEnv: lsGet('vrtrip-plainenv') === 'studio' ? 'studio' : 'graphite',
+const prefs = { gravity: lsGet('vrtrip-gravity') !== '0', collide: lsGet('vrtrip-collide') !== '0', env: ({ graphite: 1, studio: 1, paper: 1, sky: 1 })[lsGet('vrtrip-env')] ? lsGet('vrtrip-env') : 'paper',   // the paper sheet matches the interface
+  plainEnv: ({ graphite: 1, studio: 1, paper: 1 })[lsGet('vrtrip-plainenv')] ? lsGet('vrtrip-plainenv') : 'paper',
   season: lsGet('vrtrip-season') || SEASON_BY_MONTH[new Date().getMonth()], clouds: lsGet('vrtrip-clouds') || 'cloudy', precip: lsGet('vrtrip-precip') || 'none', people: lsGet('vrtrip-people') || 'none', land: lsGet('vrtrip-land') || 'on' };
 let customColors = (() => { try { const a = JSON.parse(lsGet('vrtrip-colors') || '[]'); return Array.isArray(a) ? a.filter(c => /^#[0-9a-f]{6}$/i.test(c)).slice(-8) : []; } catch { return []; } })();
 const allColors = () => [...BASE_COLORS, ...customColors];
@@ -928,6 +1047,7 @@ const sun = new THREE.DirectionalLight(0xfff6ea, 2.2); sun.position.set(40, 70, 
 const ENV = {
   graphite: { top: '#1b2024', bottom: '#1b2024', ground: '#20262b', grid: 0.22, hemiSky: '#ffffff', hemiGround: '#7f8589', hemi: 2.1, sun: '#fff6ea', sunI: 2.2, sunPos: [40, 70, 25], fog: null, flat: true },
   sky: { top: '#5f93cc', bottom: '#dfe7ea', ground: '#9ea38f', grid: 0.18, hemiSky: '#ffffff', hemiGround: '#7f8589', hemi: 2.0, sun: '#fff4e6', sunI: 2.4, sunPos: [40, 70, 25], fog: [120, 1000] },
+  paper: { top: '#efe3c6', bottom: '#dcc293', ground: '#2c2723', gridCol: '#e8dabb', grid: 0.16, hemiSky: '#fff8ea', hemiGround: '#8a7a63', hemi: 2.3, sun: '#fff1da', sunI: 2.0, sunPos: [40, 70, 25], fog: [150, 900] },   // ochre sky over dark ground, as on an architectural-fantasy sheet
   studio: { top: '#eceded', bottom: '#d6d8d9', ground: '#d6d8d9', grid: 0.35, hemiSky: '#ffffff', hemiGround: '#9aa0a4', hemi: 2.5, sun: '#ffffff', sunI: 1.5, sunPos: [30, 60, 40], fog: [150, 900] },
 };
 const skyMat = new THREE.ShaderMaterial({
@@ -1180,7 +1300,7 @@ function bodyGeo(look) {
   // torso: hips — waist — chest — shoulders
   chain([R(0.83, 0.12, 0.085, { w: w1('hips') }), R(0.9, 0.155, 0.1, { w: w1('hips') }), R(1.02, 0.157, 0.102, { w: w2('hips', 'spine', 0.3) }),
     R(1.14, 0.148, 0.098, { w: w1('spine') }), R(1.25, 0.165, 0.108, { w: w2('spine', 'chest', 0.6) }), R(1.36, 0.178, 0.112, { w: w1('chest') }),
-    R(1.43, 0.165, 0.098, { w: w1('chest') }), R(1.475, 0.08, 0.062, { w: w2('chest', 'neck', 0.4) })], [low, low, top, top, top, top, top]);
+    R(1.41, 0.172, 0.106, { w: w1('chest') }), R(1.45, 0.135, 0.088, { w: w1('chest') }), R(1.48, 0.075, 0.06, { w: w2('chest', 'neck', 0.4) })], [low, low, top, top, top, top, top, top]);   // rounded shoulders
   chain([R(1.44, 0.052, 0.055, { n: 6, w: w2('chest', 'neck', 0.5) }), R(1.565, 0.047, 0.05, { n: 6, cz: 0.005, w: w2('neck', 'head', 0.5) })], S, [false, false]);
   // head: jaw, cheeks, crown; a nose and ears for the silhouette
   const h = w1('head');
@@ -1197,20 +1317,20 @@ function bodyGeo(look) {
   }
   for (const [X, s] of [[-1, 'L'], [1, 'R']]) {
     const ua = 'uarm' + s, fa = 'farm' + s, hd = 'hand' + s, cx = X * 0.2;
-    chain([R(1.47, 0.05, 0.055, { n: 6, cx, w: w1(ua) }), R(1.4, 0.052, 0.056, { n: 6, cx, w: w1(ua) }), R(1.285, 0.047, 0.049, { n: 6, cx, w: w1(ua) }),
+    chain([R(1.458, 0.022, 0.026, { n: 6, cx, w: w1(ua) }), R(1.442, 0.043, 0.047, { n: 6, cx, w: w1(ua) }), R(1.41, 0.053, 0.057, { n: 6, cx, w: w1(ua) }), R(1.285, 0.047, 0.049, { n: 6, cx, w: w1(ua) }),   // a domed shoulder
       R(1.275, 0.041, 0.044, { n: 6, cx, w: w1(ua) }), R(1.13, 0.038, 0.04, { n: 6, cx, w: w2(ua, fa, 0.5) }), R(1.0, 0.035, 0.036, { n: 6, cx, w: w1(fa) }),
       R(0.885, 0.028, 0.027, { n: 6, cx, w: w2(fa, hd, 0.3) }), R(0.86, 0.023, 0.042, { n: 6, cx, w: w1(hd) }), R(0.8, 0.022, 0.04, { n: 6, cx, w: w1(hd) }),
-      R(0.765, 0.012, 0.024, { n: 6, cx, w: w1(hd) })], [top, top, top, sleeve, sleeve, sleeve, S, S, S]);
+      R(0.765, 0.012, 0.024, { n: 6, cx, w: w1(hd) })], [top, top, top, top, sleeve, sleeve, sleeve, S, S, S]);
     const th = 'thigh' + s, sh = 'shin' + s, ft = 'foot' + s;
-    chain([R(1.0, 0.085, 0.09, { n: 6, cx: X * 0.095, w: w1(th) }), R(0.88, 0.082, 0.088, { n: 6, cx: X * 0.093, w: w1(th) }), R(0.7, 0.066, 0.072, { n: 6, cx: X * 0.09, w: w1(th) }),
+    chain([R(0.97, 0.076, 0.084, { n: 6, cx: X * 0.088, w: w1(th) }), R(0.88, 0.08, 0.086, { n: 6, cx: X * 0.09, w: w1(th) }),   // tucked inside the hips and any coat R(0.7, 0.066, 0.072, { n: 6, cx: X * 0.09, w: w1(th) }),
       R(0.48, 0.05, 0.055, { n: 6, cx: X * 0.088, w: w2(th, sh, 0.5) }), R(0.4, 0.048, 0.053, { n: 6, cx: X * 0.087, cz: -0.006, w: w1(sh) }),
       R(0.28, 0.046, 0.05, { n: 6, cx: X * 0.086, cz: -0.01, w: w1(sh) }), R(0.13, 0.036, 0.038, { n: 6, cx: X * 0.085, w: w1(sh) }),
       R(0.07, 0.033, 0.035, { n: 6, cx: X * 0.085, w: w2(sh, ft, 0.5) })], legP);
     const f = { n: 6, cx: X * 0.085, w: w1(ft) };
     chain([RZ(-0.07, 0.042, 0.045, f), RZ(-0.02, 0.047, 0.05, f), RZ(0.06, 0.048, 0.042, f), RZ(0.14, 0.045, 0.03, f), RZ(0.19, 0.032, 0.022, f)], PART.shoe);
   }
-  if (coat) chain([R(1.03, 0.16, 0.106, { w: w1('coat') }), R(0.85, 0.178, 0.122, { w: w1('coat') }), R(0.6, 0.2, 0.14, { w: w1('coat') })], PART.coat, [false, false]);
-  if (dress) chain([R(1.02, 0.16, 0.106, { w: w1('coat') }), R(0.8, 0.19, 0.13, { w: w1('coat') }), R(0.6, 0.215, 0.15, { w: w1('coat') })], PART.top, [false, false]);
+  if (coat) chain([R(1.03, 0.166, 0.11, { w: w1('coat') }), R(0.85, 0.19, 0.13, { w: w1('coat') }), R(0.6, 0.212, 0.148, { w: w1('coat') })], PART.coat, [false, false]);
+  if (dress) chain([R(1.02, 0.166, 0.11, { w: w1('coat') }), R(0.8, 0.198, 0.135, { w: w1('coat') }), R(0.6, 0.222, 0.155, { w: w1('coat') })], PART.top, [false, false]);
   if (look.pack) { const p = { n: 4, ph: Math.PI / 4, w: w1('chest') };
     chain([R(1.42, 0.12, 0.055, { ...p, cz: -0.165 }), R(1.4, 0.13, 0.062, { ...p, cz: -0.17 }), R(1.13, 0.13, 0.062, { ...p, cz: -0.17 }), R(1.11, 0.12, 0.055, { ...p, cz: -0.165 })], PART.pack); }
   return L.build();
@@ -2336,6 +2456,7 @@ function applyEnv() {
   sun.color.set(L.sun); sun.intensity = L.sunI; sun.position.set(...L.sunPos);
   if (!world) { sky.visible = ground.visible = previewGrid.visible = false; scene.background = null; scene.fog = null; return; }
   skyMat.uniforms.cloud.value = 0;
+  vrGrid.material.uniforms.col.value.set(p.gridCol || '#2a2f2d');      // light lines on a dark floor (paper), dark lines elsewhere
   if (p.flat) {                                     // graphite: plain dark backdrop, the fitted grid in the overview
     sky.visible = false; scene.background = PREVIEW_BG; scene.fog = null; vrGrid.visible = true;
     if (groundMesh.material.map) { groundMesh.material.map = null; groundMesh.material.needsUpdate = true; }
@@ -4984,7 +5105,7 @@ function layoutFace(f) {
   } else if (tab === 'view') {
     row3(Y, [state.sessionMode === 'immersive-ar' && ['pt', 'Сквозной'], ['table', '1:1 ↔ макет'], ['start', 'Ко входу']].filter(Boolean));
     row3(Y + 108, [state.mode === 'walk' && ['grav', 'Гравитация'], state.mode === 'walk' && ['coll', 'Стены'], ['place', 'Макет передо мной']].filter(Boolean));
-    [['env:graphite', 'Графит'], ['env:studio', 'Студия'], ['env:sky', 'Реалистично']].forEach(([id, label], i) => B.push({ id, label, x: 24 + i * 330, y: Y + 216, w: 320, h: 96 }));
+    [['env:graphite', 'Графит'], ['env:studio', 'Студия'], ['env:paper', 'Бумага'], ['env:sky', 'Реалистично']].forEach(([id, label], i) => B.push({ id, label, x: 24 + i * 246, y: Y + 216, w: 236, h: 96 }));
     [['sun:-', 'Солнце −1 ч'], ['sun:+', 'Солнце +1 ч'], ['sun:aim', sunState.aim || state.sunAim ? 'Свет: сбросить' : 'Свет рукой'], ['tilt:-', 'Наклон −'], ['tilt:+', 'Наклон +']].forEach(([id, label], i) => B.push({ id, label, x: 24 + i * 197, y: Y + 324, w: 187, h: 96 }));
     B.push({ id: 'shot', label: 'Снимок', x: 24, y: Y + 432, w: 240, h: 84 });
     B.push({ id: 'align', label: state.alignRel ? 'Снять привязку' : 'Привязка по реперам', x: 280, y: Y + 432, w: 400, h: 84 });
