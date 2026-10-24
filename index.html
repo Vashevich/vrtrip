@@ -528,6 +528,10 @@ body.cardboard .topbar,body.cardboard .walkui,body.cardboard .chip,body.cardboar
         <div class="seg" id="precipseg" role="group" aria-labelledby="l-precip">
           <button type="button" data-val="none">Нет</button><button type="button" data-val="rain">Дождь</button><button type="button" data-val="snow">Снег</button>
         </div></div>
+      <div class="nrow"><span id="l-land">Вокруг</span>
+        <div class="seg" id="landseg" role="group" aria-labelledby="l-land" title="Холмы, деревья, камни и горы вокруг; участок под моделью и 20 м вокруг остаются ровными">
+          <button type="button" data-val="on">Ландшафт</button><button type="button" data-val="off">Ровное поле</button>
+        </div></div>
     </div>
     <div class="field">
       <span class="lbl" id="l-people">Люди — ходят вокруг и внутри</span>
@@ -617,7 +621,7 @@ body.cardboard .topbar,body.cardboard .walkui,body.cardboard .chip,body.cardboar
       <dt>Мышь</dt><dd>В обзоре: левая кнопка — вращать, правая — двигать (лапка), колесо — ближе / дальше к курсору. С инструментом вращать — средней кнопкой.</dd>
       <dt>W A S D</dt><dd>В обзоре — плавный полёт по сцене, Shift — быстрее, Q / E — вниз / вверх. В прогулке — идти. На телефоне и в Quest — джойстик в углу.</dd>
       <dt>Выделение</dt><dd>Клик по части модели или по разметке — выделить, стрелки гизмо — передвинуть (вверх-вниз — зелёная). Delete — удалить разметку, Esc — снять выделение.</dd>
-      <dt>Прогулка</dt><dd>Как в игре: щёлкните по сцене — мышь станет обзором. WASD — идти, Shift — бег, Пробел — прыжок (без гравитации — вверх), C — присесть (без гравитации — вниз), клик по полу — перейти туда, R / F — этаж, Esc — вернуть курсор. Инструменты работают по прицелу в центре. B — пинбольная пушка с краской: шарики сбивают мелкие части и всё заляпывают. G — крюк-кошка: левый щелчок — выстрел, ещё раз — подтянуться и повиснуть, правый — отцепиться и лететь по инерции, на тросе WASD раскачивает, пробел на крюке — запрыгнуть наверх. Esc убирает кляксы и возвращает части на место. B — игрушечный шарикомёт: шарики отскакивают и сбивают части модели, Esc возвращает всё на место.</dd>
+      <dt>Прогулка</dt><dd>Как в игре: щёлкните по сцене — мышь станет обзором. WASD — идти, Shift — бег, Пробел — прыжок (без гравитации — вверх), C — присесть (без гравитации — вниз), клик по полу — перейти туда, R / F — этаж, Esc — вернуть курсор. Инструменты работают по прицелу в центре. B — пинбольная пушка с краской: шарики сбивают мелкие части и всё заляпывают. G — крюк-кошка: левый щелчок — выстрел, крюк цепляется и сразу резко тянет к себе, ещё щелчок — новый выстрел на лету, правый — отцепиться и лететь по инерции, пробел на крюке — запрыгнуть наверх. Esc убирает кляксы и возвращает части на место. B — игрушечный шарикомёт: шарики отскакивают и сбивают части модели, Esc возвращает всё на место.</dd>
       <dt>VR очки</dt><dd>Телефон в очках Homido, Cardboard и похожих: смотрите головой. Взгляд на пол 1,5 с — переход туда. Касание экрана (кнопка очков) — перейти, удержание — идти вперёд. Bluetooth-джойстик: стик — идти, A — перейти. «Линзы» — пресет очков и подстройка, «По центру» — выровнять направление.</dd>
       <dt>R / F</dt><dd>Этаж выше / ниже. Q / E — вниз / вверх без гравитации.</dd>
       <dt>1–5</dt><dd>Инструменты. Ctrl+Z — отменить, Esc — прервать или выйти.</dd>
@@ -702,7 +706,7 @@ body.cardboard .topbar,body.cardboard .walkui,body.cardboard .chip,body.cardboar
       <button type="button" class="btn small" id="w-up">▲ Этаж выше</button>
       <button type="button" class="btn small" id="w-down">▼ Этаж ниже</button>
       <button type="button" class="btn small" id="w-toy" aria-pressed="false" title="Пинбольная пушка с краской (B)">● Шарики</button>
-      <button type="button" class="btn small" id="w-hook" aria-pressed="false" title="Крюк-кошка: стрелять, раскачиваться, подтягиваться (G)">⚓ Крюк</button>
+      <button type="button" class="btn small" id="w-hook" aria-pressed="false" title="Крюк-кошка: стрелять и подтягиваться (G)">⚓ Крюк</button>
     </div>
   </div>
   <div class="secui" id="secui" hidden>
@@ -822,7 +826,7 @@ const UP = new V3(0, 1, 0), DOWN = new V3(0, -1, 0);
 const UNITS = { mm: 0.001, cm: 0.01, m: 1, in: 0.0254, ft: 0.3048 };
 const TABLE_STEPS = [20, 50, 100, 200, 500, 1000];
 const EYE = 1.65, STEP = 0.45, RADIUS = 0.3, GRAV = 9.8;
-const APP_VERSION = '3.24';
+const APP_VERSION = '3.25';
 const BASE_COLORS = ['#f2efe8', '#d8a33f', '#e0604a', '#3f86c9'];
 const KINDS = { issue: { label: 'Замечание', color: '#e0604a' }, question: { label: 'Вопрос', color: '#d8a33f' }, idea: { label: 'Идея', color: '#4fae7f' } };
 const TOOLS = [['nav', 'Выделение'], ['pin', 'Метка'], ['measure', 'Рулетка'], ['pen', 'Карандаш'], ['erase', 'Ластик'], ['section', 'Сечение'], ['ref', 'Репер'], ['explode', 'Взрыв']];   // «Куб» временно скрыт: код инструмента сохранён
@@ -883,7 +887,7 @@ const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch {} };
 const SEASON_BY_MONTH = ['winter', 'winter', 'spring', 'spring', 'spring', 'summer', 'summer', 'summer', 'autumn', 'autumn', 'autumn', 'winter'];
 const prefs = { gravity: lsGet('vrtrip-gravity') !== '0', collide: lsGet('vrtrip-collide') !== '0', env: ({ graphite: 1, studio: 1, sky: 1 })[lsGet('vrtrip-env')] ? lsGet('vrtrip-env') : 'graphite',
   plainEnv: lsGet('vrtrip-plainenv') === 'studio' ? 'studio' : 'graphite',
-  season: lsGet('vrtrip-season') || SEASON_BY_MONTH[new Date().getMonth()], clouds: lsGet('vrtrip-clouds') || 'cloudy', precip: lsGet('vrtrip-precip') || 'none', people: lsGet('vrtrip-people') || 'none' };
+  season: lsGet('vrtrip-season') || SEASON_BY_MONTH[new Date().getMonth()], clouds: lsGet('vrtrip-clouds') || 'cloudy', precip: lsGet('vrtrip-precip') || 'none', people: lsGet('vrtrip-people') || 'none', land: lsGet('vrtrip-land') || 'on' };
 let customColors = (() => { try { const a = JSON.parse(lsGet('vrtrip-colors') || '[]'); return Array.isArray(a) ? a.filter(c => /^#[0-9a-f]{6}$/i.test(c)).slice(-8) : []; } catch { return []; } })();
 const allColors = () => [...BASE_COLORS, ...customColors];
 /* visual settings: sun by place and time, shadows, reflections, ambient occlusion (screen), edge lines */
@@ -893,7 +897,7 @@ const VIS = (() => {
 })();
 VIS.envI = 0.55;
 function saveVis() { const { envI, ...v } = VIS; lsSet('vrtrip-vis', JSON.stringify(v)); }
-function savePrefs() { lsSet('vrtrip-gravity', prefs.gravity ? '1' : '0'); lsSet('vrtrip-collide', prefs.collide ? '1' : '0'); lsSet('vrtrip-env', prefs.env); lsSet('vrtrip-plainenv', prefs.plainEnv); lsSet('vrtrip-season', prefs.season); lsSet('vrtrip-clouds', prefs.clouds); lsSet('vrtrip-precip', prefs.precip); lsSet('vrtrip-people', prefs.people); }
+function savePrefs() { lsSet('vrtrip-gravity', prefs.gravity ? '1' : '0'); lsSet('vrtrip-collide', prefs.collide ? '1' : '0'); lsSet('vrtrip-env', prefs.env); lsSet('vrtrip-plainenv', prefs.plainEnv); lsSet('vrtrip-season', prefs.season); lsSet('vrtrip-clouds', prefs.clouds); lsSet('vrtrip-precip', prefs.precip); lsSet('vrtrip-people', prefs.people); lsSet('vrtrip-land', prefs.land); }
 
 /* ================= renderer & scene ================= */
 const canvas = $('#c');
@@ -1072,7 +1076,11 @@ function skyUpdate(dt) {
   u.cloud.value = cl; u.t.value += dt;
   u.sunDir.value.copy(sun.position).sub(sun.target.position).normalize();
   u.sunCol.value.copy(sun.color).multiplyScalar(Math.min(1, sun.intensity / 2));
-  if (scene.fog) { fog.color.copy(u.bottom.value); fog.near = prefs.precip === 'none' ? 120 : 40; fog.far = prefs.precip === 'none' ? 1000 : 260; }
+  if (scene.fog) {                                       // haze grows with the site and with how far the camera is: no hard horizon line
+    fog.color.copy(u.bottom.value); camera.getWorldPosition(_sw);
+    const base = Math.max(land.group.visible ? land.R0 * 1.5 : 0, _sw.distanceTo(holder.position) * 1.1), dry = prefs.precip === 'none';
+    fog.near = Math.max(dry ? 120 : 40, base * (dry ? 1 : 0.5)); fog.far = fog.near + (dry ? 650 + land.R0 : 300);
+  }
 }
 const CLOAD = () => isReal() ? CLOUD_K[prefs.clouds] ?? 0.5 : 0;
 /* people: a little life around the installation — low-poly people made the way game characters are (~700 triangles,
@@ -1256,7 +1264,7 @@ function peopleFree(x, z) {                            // standing room on the g
   const d = peopleRay(new V3(x, 2.1, z), DOWNV, 2.1); return !(d < 2.1 - 0.4);
 }
 function peopleSpot(z, near = null, r = 0) {
-  const ex = z.x / 2 + Math.max(4, z.x * 0.45), ez = z.z / 2 + Math.max(4, z.z * 0.45);
+  const ex = z.x / 2 + Math.min(LAND_MARGIN - 2, Math.max(4, z.x * 0.45)), ez = z.z / 2 + Math.min(LAND_MARGIN - 2, Math.max(4, z.z * 0.45));   // people stay on the flat site
   for (let i = 0; i < 30; i++) {
     const x = near ? near.x + (Math.random() * 2 - 1) * r : (Math.random() * 2 - 1) * ex, zz = near ? near.z + (Math.random() * 2 - 1) * r : (Math.random() * 2 - 1) * ez;
     if (Math.abs(x) <= ex && Math.abs(zz) <= ez && peopleFree(x, zz)) return new V3(x, 0, zz);
@@ -1266,7 +1274,7 @@ function peopleSpot(z, near = null, r = 0) {
 /* places to sit: the EDGE of a low ledge (35–60 cm, free above, with a 30–75 cm drop in front for the legs) — never the
    middle of a floor slab; if there are too few, a couple of benches of ours. Each seat knows the floor under the feet. */
 function findSeats(z) {
-  const seats = [], ex = z.x / 2 + Math.max(4, z.x * 0.45), ez = z.z / 2 + Math.max(4, z.z * 0.45);
+  const seats = [], ex = z.x / 2 + Math.min(LAND_MARGIN - 2, Math.max(4, z.x * 0.45)), ez = z.z / 2 + Math.min(LAND_MARGIN - 2, Math.max(4, z.z * 0.45));   // people stay on the flat site
   for (let i = 0; i < 320 && seats.length < 8; i++) {
     const x = (Math.random() * 2 - 1) * ex, zz = (Math.random() * 2 - 1) * ez, d = peopleRay(new V3(x, 1.0, zz), DOWNV, 1.0);
     if (!(d < 1)) continue; const y = 1.0 - d; if (y < 0.36 || y > 0.62) continue;
@@ -1493,21 +1501,35 @@ function peopleUpdate(dt) {
     q.wk += ((moving && !q.air ? 1 : 0) - q.wk) * fr(8);
     q.ak += ((q.air ? 1 : 0) - q.ak) * fr(10);
     q.uk += ((rain ? 1 : 0) - q.uk) * fr(2.5);                                      // the umbrella opens in the rain
-    if (moving && !q.air) q.ph += q.sp * dt * 4.4;
+    // gait with planted feet: in body units the walker moves at vl; a stride of SL takes SL / vl seconds and the planted
+    // foot slides back under the hip exactly as fast as the body goes forward — no skating; legs are solved by 2-bone IK
+    const vl = q.sp / (q.s * q.w), SL = Math.min(1.5, Math.max(0.6, 0.62 + 0.45 * vl)), STANCE = 0.6, LEGL = PB.th + PB.sh;
+    if (moving && !q.air) q.ph += vl / SL * dt;                                      // gait cycles
     q.wave = Math.max(0, q.wave - dt);
-    const t = performance.now() / 1000 + q.i, K = q.sitK, AK = q.ak, A = 0.42 * q.wk, sp = Math.sin(q.ph), free = q.uk > 0.5 ? 0 : 1;   // free: which hand is not holding an umbrella
-    const bend = (ph) => 0.05 + 0.85 * q.wk * Math.max(0, Math.cos(ph - 0.5)) ** 2;      // the knee folds while the leg swings forward
-    const leg = [[-A * sp, bend(q.ph)], [A * sp, bend(q.ph + Math.PI)]];
-    const arm = [[A * sp * 0.8, 0], [-A * sp * 0.8, 0]].map(([u]) => [u, -0.16 - 0.3 * Math.max(0, -u), 0]);
+    const t = performance.now() / 1000 + q.i, K = q.sitK, AK = q.ak, free = q.uk > 0.5 ? 0 : 1;   // free: which hand is not holding an umbrella
+    const S = 0.5 * STANCE * SL * q.wk;                                              // half the foot's sweep while planted
+    const feet = [0, 0.5].map(o => {
+      const u = ((q.ph + o) % 1 + 1) % 1;
+      if (u < STANCE) return [S - 2 * S * u / STANCE, 0, true];                      // planted: straight back at the body's speed
+      const w = (u - STANCE) / (1 - STANCE), e = w * w * (3 - 2 * w);                 // swinging forward, lifted
+      return [-S + 2 * S * e, Math.sin(Math.PI * w) * 0.12 * q.wk, false];
+    });
+    let hipY = PB.hip;                                                               // the hips ride as high as the planted legs allow (the bob)
+    for (const [z, , st] of feet) if (st) hipY = Math.min(hipY, PB.ank + Math.sqrt(Math.max(0, (LEGL * 0.995) ** 2 - z * z)));
+    const ik = ([z, lift]) => {
+      const dy = PB.ank + lift - hipY, D = Math.min(Math.hypot(z, dy), LEGL * 0.9999), cl = (x) => Math.min(1, Math.max(-1, x));
+      const b = Math.PI - Math.acos(cl((PB.th ** 2 + PB.sh ** 2 - D * D) / (2 * PB.th * PB.sh)));
+      return [-(Math.atan2(z, -dy) + Math.acos(cl((PB.th ** 2 + D * D - PB.sh ** 2) / (2 * PB.th * D)))), b];
+    };
+    const leg = feet.map(ik);
+    const arm = feet.map(([z]) => { const u = z * 1.1; return [u, -0.16 - 0.3 * Math.max(0, -u), 0]; });   // arms swing against the legs
     if (q.st === 'talk' && q.gest) { arm[free] = [-0.55 + Math.sin(t * 5.3) * 0.25, -1.0 + Math.sin(t * 6.5) * 0.35, 0]; if (free) arm[0] = [-0.2 + Math.sin(t * 4.1) * 0.15, -0.7, 0]; }
     if (q.wave > 0) arm[free] = [-2.75 + Math.sin(t * 14) * 0.18, -0.35, 0.3];
     for (const l of leg) { l[0] = lerp(lerp(l[0], -0.85, AK), -1.5, K); l[1] = lerp(lerp(l[1], 1.4, AK), q.knee, K); }
     for (const a of arm) { a[0] = lerp(lerp(a[0], -2.3, AK), -0.38, K); a[1] = lerp(lerp(a[1], -0.3, AK), -0.85, K); }
     const uh = q.uk * (1 - AK), ar = arm[1];                                          // right hand holds the umbrella up
     if (uh > 0) { ar[0] = lerp(ar[0], -0.3, uh); ar[1] = lerp(ar[1], -1.4, uh); ar[2] = lerp(ar[2], -0.3, uh); }
-    // feet on the ground: the body sinks by what the longer leg is missing (that is the walking bob too)
-    const reach = Math.max(...leg.map(([a, b]) => PB.th * Math.cos(a) + PB.sh * Math.cos(a + b)));
-    const yo = -(PB.th + PB.sh - reach) * (1 - K) * (1 - AK) + Math.sin(t * 1.3) * 0.004 * (1 - q.wk);
+    const yo = (hipY - PB.hip) * (1 - K) * (1 - AK) + Math.sin(t * 1.3) * 0.004 * (1 - q.wk);
     const nod = (q.st === 'talk' && !q.gest ? Math.sin(t * 5) * 0.08 : 0) + 0.12 * K;
     const B = q.B, mesh = q.mesh;
     mesh.position.copy(q.p); mesh.rotation.y = q.yaw; mesh.scale.set(q.s * q.w, q.s, q.s * q.w);
@@ -1533,6 +1555,144 @@ function peopleUpdate(dt) {
       bub.visible = on; if (on) bub.position.set(q.p.x, q.p.y + ((q.uk > 0.3 ? 2.12 : 1.86) + Math.sin(t * 3) * 0.02) * q.s, q.p.z);
     }
   }
+}
+/* landscape around the site («Реалистично»): the site stays flat at ground level — the models' footprint plus 20 m all
+   round, whatever was there — and past it the land rises into low-poly hills, with mountains on the horizon that melt
+   into the haze. Abstract trees (round crowns and cones, as on an architectural model), bushes, rocks and clumps of
+   grass. Faceted shading, a handful of instanced draw calls, a fixed seed (the same place every time); rebuilt when the
+   footprint or the season changes. Lives in the holder, shown only at real scale. */
+const LAND_MARGIN = 20;
+const land = { group: new THREE.Group(), key: '', cx: 0, cz: 0, hx: LAND_MARGIN, hz: LAND_MARGIN, R0: 30, t: 0, built: [] };
+land.group.visible = false;
+const smooth01 = (t) => (t = Math.min(1, Math.max(0, t)), t * t * (3 - 2 * t));
+function lhash(x, z) { const s = Math.sin(x * 127.1 + z * 311.7) * 43758.5453; return s - Math.floor(s); }
+function lnoise(x, z) {
+  const ix = Math.floor(x), iz = Math.floor(z), fx = x - ix, fz = z - iz, u = fx * fx * (3 - 2 * fx), v = fz * fz * (3 - 2 * fz);
+  const a = lhash(ix, iz), b = lhash(ix + 1, iz), c = lhash(ix, iz + 1), d = lhash(ix + 1, iz + 1);
+  return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v;
+}
+function lfbm(x, z) { let s = 0, a = 0.5, n = 0; for (let i = 0; i < 4; i++) { s += a * lnoise(x, z); n += a; x = x * 2.03 + 17.1; z = z * 2.03 + 9.3; a *= 0.5; } return s / n; }
+/* distance from the flat site (0 on it) and the height of the land, in holder units */
+function landD(x, z) { return Math.hypot(Math.max(Math.abs(x - land.cx) - land.hx, 0), Math.max(Math.abs(z - land.cz) - land.hz, 0)); }
+function landH(x, z) {
+  const d = landD(x, z); if (d <= 0) return 0;
+  const hills = (lfbm(x / 120, z / 120) * 22 + lfbm(x / 32 + 7, z / 32) * 3.5 - 4) * smooth01(d / 50);
+  const ridge = 1 - Math.abs(lfbm(x / 280 + 3, z / 280 - 5) * 2 - 1);
+  return Math.max(0, hills) + smooth01((d - 380) / 450) * (20 + ridge * ridge * 120);
+}
+function landRng(seed) { return () => (seed = (seed * 16807) % 2147483647) / 2147483647; }
+/* the site: footprint of every shown model in holder space */
+const _lb = new THREE.Box3(), _lb2 = new THREE.Box3(), _lm = new THREE.Matrix4();
+function landSite() {
+  _lb.makeEmpty(); holder.updateMatrixWorld(); _lm.copy(holder.matrixWorld).invert();
+  for (const r of shownRecs()) for (const m of r.meshes || []) { if (!m.geometry.boundingBox) m.geometry.computeBoundingBox(); _lb.union(_lb2.copy(m.geometry.boundingBox).applyMatrix4(m.matrixWorld).applyMatrix4(_lm)); }
+  return _lb.isEmpty() ? null : _lb;
+}
+function landColors() {
+  const s = prefs.season, base = new THREE.Color(SEASON[s] || SEASON.summer).multiplyScalar(s === 'winter' ? 0.93 : 0.6);   // like the textured lawn
+  const C = (h) => new THREE.Color(h);
+  return {
+    winter: s === 'winter', grass: base,
+    rock: [C('#8f8b84'), C('#a29d94'), C('#7d7a75')], snow: C('#f2f4f6'),
+    crown: (s === 'autumn' ? ['#c9822f', '#b9582b', '#d6a843', '#9a7a38', '#7f8f43'] : s === 'winter' ? ['#cfd5da', '#c3c9ce', '#d9dee2'] : s === 'spring' ? ['#86b552', '#9cc464', '#74a14a', '#e3c3cf'] : ['#5f8f3e', '#6e9c47', '#4f7d36', '#7aa24f']).map(C),
+    conifer: (s === 'winter' ? ['#3e5a46', '#4a6650'] : ['#3f6440', '#4a7046', '#365a3a']).map(C),
+    bush: (s === 'autumn' ? ['#9a7a38', '#b0652f', '#7f8f43'] : s === 'winter' ? ['#c3c9ce', '#aeb5ba'] : ['#4f7d36', '#5d8a3f', '#456f31']).map(C),
+    trunk: C('#5b4a3c'),
+  };
+}
+function landClear() { for (const o of land.built) { o.removeFromParent(); o.geometry?.dispose(); if (o.material?.map) o.material.map.dispose(); o.material?.dispose(); } land.built = []; }
+function landBuild(site) {
+  landClear();
+  land.cx = (site.min.x + site.max.x) / 2; land.cz = (site.min.z + site.max.z) / 2;
+  land.hx = (site.max.x - site.min.x) / 2 + LAND_MARGIN; land.hz = (site.max.z - site.min.z) / 2 + LAND_MARGIN;
+  land.R0 = Math.hypot(land.hx, land.hz);
+  const col = landColors(), rnd = landRng(9137), add = (o) => { o.raycast = () => {}; land.group.add(o); land.built.push(o); return o; };
+  // ---- terrain: a jittered polar grid around the site, flat triangles coloured by height and slope
+  const SEG = 128, rings = [0]; for (let r = 0; r < land.R0 + 1150;) { r += Math.max(2.5, r * 0.065); rings.push(r); }
+  const V = rings.map((r, i) => { const row = []; for (let j = 0; j < SEG; j++) {
+    const a = (j + (i ? (lhash(i, j) - 0.5) * 0.7 : 0)) / SEG * Math.PI * 2, rr = r + (i ? (lhash(j, i + 0.5) - 0.5) * 0.5 * (r - rings[i - 1]) : 0);
+    const x = land.cx + Math.cos(a) * rr, z = land.cz + Math.sin(a) * rr; row.push([x, landH(x, z), z]); } return row; });
+  const P = [], CC = [], c = new THREE.Color(), A = new V3(), B = new V3(), Cv = new V3(), N = new V3();
+  const face = (p, q, r) => {
+    if (p[1] < 0.02 && q[1] < 0.02 && r[1] < 0.02) return;                       // the flat site is the lawn disc
+    A.fromArray(p); B.fromArray(q); Cv.fromArray(r); N.copy(B).sub(A).cross(_pv.copy(Cv).sub(A)).normalize(); if (N.y < 0) { [q, r] = [r, q]; N.negate(); }
+    const h = (p[1] + q[1] + r[1]) / 3, cx = (p[0] + q[0] + r[0]) / 3, cz = (p[2] + q[2] + r[2]) / 3, n = lnoise(cx / 9, cz / 9);
+    const rockK = smooth01((0.86 - N.y) / 0.14) * 0.85 + smooth01((h - 70) / 50) * 0.7;
+    c.copy(col.grass).multiplyScalar(0.92 + n * 0.18).lerp(col.rock[(lhash(cx, cz) * 3) | 0], Math.min(1, rockK));
+    if (col.winter ? h > 4 && N.y > 0.55 : h > 105 + n * 25 && N.y > 0.5) c.lerp(col.snow, col.winter ? 0.85 : 0.9);
+    for (const v of [p, q, r]) { P.push(v[0], v[1], v[2]); CC.push(c.r, c.g, c.b); }
+  };
+  for (let i = 0; i < rings.length - 1; i++) for (let j = 0; j < SEG; j++) {
+    const k = (j + 1) % SEG, a = V[i][j], b = V[i][k], d = V[i + 1][j], e = V[i + 1][k];
+    face(a, b, e); face(a, e, d);
+  }
+  const tg = new THREE.BufferGeometry(); tg.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); tg.setAttribute('color', new THREE.Float32BufferAttribute(CC, 3)); tg.computeVertexNormals();
+  add(new THREE.Mesh(tg, new THREE.MeshLambertMaterial({ vertexColors: true })));
+  // ---- things on the land: scatter by distance from the site, groves where the noise says so
+  const place = (n, dMin, dMax, ok) => {
+    const out = [], Rt = land.R0 + dMax;
+    for (let tries = 0; out.length < n && tries < n * 40; tries++) {
+      const a = rnd() * Math.PI * 2, r = Math.sqrt(rnd()) * Rt, x = land.cx + Math.cos(a) * r, z = land.cz + Math.sin(a) * r, d = landD(x, z);
+      if (d < dMin || d > dMax) continue; const h = landH(x, z); if (!ok(x, z, d, h)) continue;
+      out.push([x, h, z]);
+    }
+    return out;
+  };
+  const inst = (geo, mat, list, put) => {
+    if (!list.length) return null;
+    const m = add(new THREE.InstancedMesh(geo, mat, list.length)); m.frustumCulled = false;
+    list.forEach((p, i) => put(m, i, p)); m.instanceMatrix.needsUpdate = true; if (m.instanceColor) m.instanceColor.needsUpdate = true; return m;
+  };
+  const M4 = new THREE.Matrix4(), Q = new THREE.Quaternion(), S = new V3(), E = new THREE.Euler(), set = (m, i, x, y, z, sx, sy, sz, yaw = 0, rx = 0) => {
+    m.setMatrixAt(i, M4.compose(_po.set(x, y, z), Q.setFromEuler(E.set(rx, yaw, 0)), S.set(sx, sy, sz)));
+  };
+  const lam = (o = {}) => new THREE.MeshLambertMaterial({ flatShading: true, ...o });
+  const grove = (x, z) => lfbm(x / 70 + 11, z / 70 - 4);
+  const treeSpots = place(900, 7, 520, (x, z, d, h) => h < 75 && (grove(x, z) > 0.55 || rnd() < Math.exp(-d / 90) * 0.35) && rnd() < Math.exp(-d / 260) + 0.15);
+  const round = [], cones = [];
+  for (const p of treeSpots) (grove(p[0] + 40, p[2]) > 0.5 || p[1] > 25 ? cones : round).push(p);
+  const trunkGeo = new THREE.CylinderGeometry(0.09, 0.14, 1, 5).translate(0, 0.5, 0), trunkMat = lam({ color: col.trunk });
+  const all = [...round.map(p => ({ p, h: 3 + rnd() * 3, r: 2 + rnd() * 1.6, cone: false })), ...cones.map(p => ({ p, h: 1.6 + rnd(), r: 1.6 + rnd() * 1.2, cone: true, H: 7 + rnd() * 8 }))];
+  inst(trunkGeo, trunkMat, all, (m, i, t) => set(m, i, t.p[0], t.p[1] - 0.2, t.p[2], t.r * 0.9, t.h + (t.cone ? 0.5 : t.r * 0.6), t.r * 0.9));
+  inst(new THREE.IcosahedronGeometry(1, 0).scale(1, 1.12, 1), lam(), round.map((p, i) => all[i]), (m, i, t) => {
+    set(m, i, t.p[0], t.p[1] + t.h + t.r * 0.95, t.p[2], t.r, t.r, t.r, lhash(i, 3) * 6.28); m.setColorAt(i, col.crown[(lhash(i, 7) * col.crown.length) | 0]); });
+  inst(new THREE.ConeGeometry(1, 1, 7).translate(0, 0.5, 0), lam(), all.slice(round.length), (m, i, t) => {
+    set(m, i, t.p[0], t.p[1] + t.h, t.p[2], t.r, t.H, t.r, lhash(i, 5) * 6.28); m.setColorAt(i, col.conifer[(lhash(i, 9) * col.conifer.length) | 0]); });
+  const bushes = place(420, 2, 160, (x, z, d) => grove(x, z) > 0.45 || rnd() < 0.25);
+  inst(new THREE.IcosahedronGeometry(1, 0).scale(1, 0.7, 1), lam(), bushes, (m, i, p) => {
+    const s = 0.5 + rnd() * 0.8; set(m, i, p[0], p[1] + s * 0.35, p[2], s * (1 + rnd() * 0.4), s, s, rnd() * 6.28); m.setColorAt(i, col.bush[(rnd() * col.bush.length) | 0]); });
+  const rocks = [...place(140, 1, 90, () => rnd() < 0.5), ...place(220, 60, 700, (x, z, d, h) => h > 8 || rnd() < 0.3)];
+  inst(new THREE.DodecahedronGeometry(1, 0), lam(), rocks, (m, i, p) => {
+    const d = landD(p[0], p[2]), s = (d < 90 ? 0.25 + rnd() * 0.9 : 1.5 + rnd() * 5) ;
+    set(m, i, p[0], p[1] + s * 0.15, p[2], s * (0.8 + rnd() * 0.6), s * (0.45 + rnd() * 0.4), s * (0.8 + rnd() * 0.6), rnd() * 6.28, (rnd() - 0.5) * 0.5);
+    m.setColorAt(i, col.winter && rnd() < 0.5 ? col.snow : col.rock[(rnd() * 3) | 0]); });
+  if (!col.winter) {                                        // clumps of grass: two crossed blade sprites
+    const cv = document.createElement('canvas'); cv.width = 64; cv.height = 64; const x = cv.getContext('2d');
+    for (let i = 0; i < 26; i++) { const bx = 6 + Math.random() * 52, lean = (Math.random() - 0.5) * 22, h = 30 + Math.random() * 32, g = 150 + Math.random() * 105 | 0;
+      x.fillStyle = `rgb(${g},${g},${g})`; x.beginPath(); x.moveTo(bx - 2.5, 64); x.quadraticCurveTo(bx + lean * 0.3, 64 - h * 0.6, bx + lean, 64 - h); x.quadraticCurveTo(bx + lean * 0.3 + 1, 64 - h * 0.6, bx + 2.5, 64); x.fill(); }
+    const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace;
+    const q1 = new THREE.PlaneGeometry(1, 1).translate(0, 0.5, 0), q2 = q1.clone().rotateY(Math.PI / 2), gq = mergeGeometries([q1, q2]);
+    const clumps = place(2600, 0.5, 140, (x, z, d) => rnd() < 0.35 + 0.65 * Math.exp(-d / 35));
+    inst(gq, new THREE.MeshLambertMaterial({ map: tex, alphaTest: 0.5, side: THREE.DoubleSide, color: col.grass.clone().multiplyScalar(1.15) }), clumps, (m, i, p) => {
+      const s = 0.35 + rnd() * 0.45; set(m, i, p[0], p[1] - 0.03, p[2], s * 1.4, s, s * 1.4, rnd() * 6.28); });
+  }
+}
+/* the land under the walker (world x, z): 0 when the land is hidden */
+function landY(x, z) {
+  if (!land.group.visible) return 0;
+  _po.set(x, 0, z); holder.worldToLocal(_po); return landH(_po.x, _po.z) * holder.scale.y + holder.position.y;
+}
+function landUpdate(dt) {
+  const worldView = state.view === 'orbit' || state.view === 'walk' || (state.view === 'xr' && !state.passthrough);
+  const on = isReal() && prefs.land !== 'off' && worldView && holder.scale.x > 0.9 && shownRecs().length > 0;
+  if (!on) { land.group.visible = false; return; }
+  if ((land.t -= dt) <= 0 || !land.key) {                      // the footprint, checked twice a second
+    land.t = 0.5; const s = landSite();
+    const key = s ? [s.min.x, s.min.z, s.max.x, s.max.z].map(v => Math.round(v * 2) / 2).join() + '|' + prefs.season : '';
+    if (s && key !== land.key) { land.key = key; landBuild(s); }
+  }
+  if (land.group.parent !== holder) holder.add(land.group);
+  land.group.visible = !!land.key;
 }
 /* compass rose on the floor next to the model — shows where north is when the sun is set by place */
 const compass = (() => {
@@ -2136,9 +2296,9 @@ function renderPrefs() {
   $('#lookseg').querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String((b.dataset.val === 'real') === (prefs.env === 'sky'))));
   $('#plainfield').hidden = prefs.env === 'sky';
   $('#nature').hidden = prefs.env !== 'sky';
-  for (const [id, k] of [['#seasonseg', 'season'], ['#cloudseg', 'clouds'], ['#precipseg', 'precip'], ['#peopleseg', 'people']]) $(id).querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.val === prefs[k])));
+  for (const [id, k] of [['#seasonseg', 'season'], ['#cloudseg', 'clouds'], ['#precipseg', 'precip'], ['#peopleseg', 'people'], ['#landseg', 'land']]) $(id).querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.val === prefs[k])));
 }
-for (const [id, k] of [['#seasonseg', 'season'], ['#cloudseg', 'clouds'], ['#precipseg', 'precip'], ['#peopleseg', 'people']])
+for (const [id, k] of [['#seasonseg', 'season'], ['#cloudseg', 'clouds'], ['#precipseg', 'precip'], ['#peopleseg', 'people'], ['#landseg', 'land']])
   $(id).addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; prefs[k] = b.dataset.val; savePrefs(); renderPrefs(); applyEnv(); shadowsDirty(); });
 $('#p-gravity').addEventListener('change', e => { prefs.gravity = e.target.checked; savePrefs(); player.vy = 0; drawPalette(); });
 $('#p-collide').addEventListener('change', e => { prefs.collide = e.target.checked; savePrefs(); });
@@ -2185,7 +2345,7 @@ function applyEnv() {
     groundMesh.material.map = GROUND_TEX[k] ||= groundTex(k); groundMesh.material.color.set(SEASON[prefs.season] || SEASON.summer); groundMesh.material.needsUpdate = true;
   } else { if (groundMesh.material.map) { groundMesh.material.map = null; groundMesh.material.needsUpdate = true; } groundMesh.material.color.set(p.ground); }
   vrGrid.material.uniforms.aMinor.value = p.grid * 0.6; vrGrid.material.uniforms.aMajor.value = Math.min(1, p.grid * 1.5);
-  fog.color.set(p.bottom); fog.near = p.fog[0]; fog.far = p.fog[1]; scene.fog = state.view === 'orbit' ? null : fog;
+  fog.color.set(p.bottom); fog.near = p.fog[0]; fog.far = p.fog[1]; scene.fog = state.view === 'orbit' && !isReal() ? null : fog;   // realistic: haze in the overview too
 }
 
 
@@ -2378,7 +2538,7 @@ class ModelOutlinePass extends Pass {
   }
   setSize(w, h) { this.rt.setSize(w, h); this.clean.setSize(w, h); this.mat.uniforms.res.value.set(w, h); this.cleanMat.uniforms.res.value.set(w, h); }
   render(renderer, writeBuffer, readBuffer) {
-    const hide = [sky, ground, previewGrid, catcher, gizmo, secVis, compass].filter(o => o.visible);
+    const hide = [sky, ground, previewGrid, catcher, gizmo, secVis, compass, land.group, ...splatInst, dropInst, ...toy.splats].filter(o => o.visible);   // paint never gets outlined
     const lines = []; for (const r of shownRecs()) for (const m of r.meshes || []) if (m.userData.edges?.visible) lines.push(m.userData.edges);
     const glass = []; for (const r of shownRecs()) for (const m of r.meshes || []) if (m.material.transparent && m.material.opacity < 0.5 && m.visible) glass.push(m);
     [...hide, ...lines].forEach(o => { o.visible = false; });
@@ -3479,7 +3639,7 @@ function pickSelectable(wr, tol = 0) {
 }
 
 const TIPS = {
-  nav: { walk: 'Щёлкните по сцене — мышь станет обзором (как в игре). WASD — идти, Shift — бег, Пробел — прыжок, C — присесть. Esc — вернуть курсор', lock: 'Левый щелчок — шарик или крюк (B / G) · правый — отцепиться · WASD — идти, на тросе — раскачка · Shift — бег · Пробел — прыжок · Esc — курсор и всё на место', orbit: '' },
+  nav: { walk: 'Щёлкните по сцене — мышь станет обзором (как в игре). WASD — идти, Shift — бег, Пробел — прыжок, C — присесть. Esc — вернуть курсор', lock: 'Левый щелчок — шарик или крюк (B / G) · правый — отцепиться · WASD — идти · Shift — бег · Пробел — прыжок · Esc — курсор и всё на место', orbit: '' },
   box: { idle: 'Куб: щёлкните первый угол основания', foot: 'Задайте второй угол и щёлкните', height: 'Поднимите на нужную высоту и щёлкните. Esc — отмена' },
   explode: { idle: 'Взрыв-схема: колесо мыши или ползунок — разнести части / собрать. «Этажами вверх» — архитектурная аксонометрия' },
   ref: { idle: 'Репер: щёлкните точку, которую легко найти на месте — угол плиты, ось колонны, отметка на полу. Крупная цветная точка — привязка к вершине' },
@@ -3821,7 +3981,7 @@ function castModel(origin, dir, far, all = false) {
   const hits = physRay.intersectObjects(surfaceMeshes(rec), false);
   return all ? hits : hits[0] || null;
 }
-function floorBelow(x, fromY, z) { const h = castModel(new V3(x, fromY, z), DOWN, fromY + 500); return h ? Math.max(h.point.y, 0) : 0; }
+function floorBelow(x, fromY, z) { const h = castModel(new V3(x, fromY, z), DOWN, fromY + 500), g = landY(x, z); return h ? Math.max(h.point.y, g) : g; }   // the model, else the land (hills in «Реалистично»)
 function applyGravity(b, dt, g = GRAV) {
   const f = floorBelow(b.x, b.y + STEP, b.z);
   if (f > b.y + 0.001) { b.y += (f - b.y) * Math.min(1, dt * 14); if (f - b.y < 0.005) b.y = f; b.vy = 0; }
@@ -4472,7 +4632,7 @@ function mountGun() {
 }
 const GADGET_TIP = {
   balls: 'Пушка: левый щелчок — шарик. Кляксы и сбитые части исчезнут по Esc. G — крюк.',
-  hook: 'Крюк: левый щелчок — выстрел, ещё раз — подтянуться и повиснуть. Правый — отцепиться (летите дальше по инерции), пробел на крюке — запрыгнуть наверх. На тросе WASD раскачивает. B — пушка.',
+  hook: 'Крюк: левый щелчок — выстрел, зацепился — сразу тянет. Правый — отцепиться (летите дальше по инерции), левый на лету — новый выстрел, пробел на крюке — запрыгнуть наверх. B — пушка.',
 };
 function setToy(on) {
   if (on === toy.on) return;
@@ -4614,9 +4774,9 @@ function hookPrimary(ray) {
   if (hook.st === 'idle') {
     const h = hitScene(ray), start = hookMuzzle(new V3()), aim = h ? h.world : ray.origin.clone().addScaledVector(ray.direction, 80);
     const dir = aim.clone().sub(start); if (dir.lengthSq() < 0.01 || dir.dot(ray.direction) < 0) dir.copy(ray.direction); dir.normalize();
-    hook.hp.copy(start); hook.hv.copy(dir).multiplyScalar(95); hook.flew = 0; hook.st = 'fly';
+    hook.hp.copy(start); hook.hv.copy(dir).multiplyScalar(190); hook.flew = 0; hook.st = 'fly';
     blip(260, 0.12, 'square', 0.07, 0.6);
-  } else if (hook.st === 'stuck' && (hook.ps === 'swing')) { hook.ps = 'zip'; blip(140, 0.5, 'sawtooth', 0.05, 3.5); }
+  } else if (hook.st === 'stuck') { hook.ps = 'free'; hook.st = 'idle'; hookPrimary(ray); }     // on the rope: let go and shoot again at once
 }
 function hookRelease(silent = false) {
   if (hook.st === 'idle') { hook.ps = hook.ps === 'free' ? 'free' : null; return; }
@@ -4634,14 +4794,14 @@ function hookUpdate(dt) {
     const h = _tr.intersectObjects(targets, false)[0];
     if (h) {
       hook.anchor.copy(h.point); hook.n.copy(h.face ? h.face.normal.clone().transformDirection(h.object.matrixWorld) : hook.hv.clone().negate().normalize());
-      hook.hp.copy(h.point); hook.st = 'stuck'; hook.ps = 'swing';
+      hook.hp.copy(h.point); hook.st = 'stuck'; hook.ps = 'zip';                       // it bites — and pulls you in at once
       hook.L = Math.max(1, new V3(player.x, player.y + 1, player.z).distanceTo(hook.anchor));
       hook.v.set(walk.v.x, -player.vy, walk.v.z);
-      blip(1100, 0.05, 'square', 0.06, 0.8);
-    } else { hook.hp.addScaledVector(hook.hv, dt); if (hook.flew > 80) hook.st = 'back'; }
+      blip(1100, 0.05, 'square', 0.06, 0.8); blip(140, 0.35, 'sawtooth', 0.05, 3.5);
+    } else { hook.hp.addScaledVector(hook.hv, dt); if (hook.flew > 120) hook.st = 'back'; }
   } else if (hook.st === 'back') {
     hookMuzzle(_hm); _hd.subVectors(_hm, hook.hp); const d = _hd.length();
-    if (d < 1.5 * 60 * dt + 0.05) hook.st = 'idle'; else hook.hp.addScaledVector(_hd.divideScalar(d), Math.min(d, 70 * dt));
+    if (d < 140 * dt + 0.05) hook.st = 'idle'; else hook.hp.addScaledVector(_hd.divideScalar(d), Math.min(d, 140 * dt));
   } else if (hook.st === 'stuck') hook.hp.copy(hook.anchor);
   const out = hook.st !== 'idle';
   hook.head.visible = hook.rope.visible = out;
@@ -4670,8 +4830,8 @@ function hookStep(dt) {
     if (walk.jump) { walk.jump = false; hook.ps = 'free'; v.set(0, 7.5, 0).addScaledVector(hook.n.clone().setY(0).normalize(), -2.5); hook.st = 'back'; }   // climb up over the edge
   } else {
     if (hook.ps === 'zip') {
-      hook.L = Math.max(0.9, hook.L - 20 * dt);
-      v.addScaledVector(hook.anchor.clone().sub(C).normalize(), 40 * dt).multiplyScalar(1 - Math.min(1, dt * 2.5));
+      hook.L = Math.max(0.9, hook.L - 42 * dt);                                       // a sharp yank: twice the old pull
+      v.addScaledVector(hook.anchor.clone().sub(C).normalize(), 95 * dt).multiplyScalar(1 - Math.min(1, dt * 2.8));
       if (C.distanceTo(hook.anchor) < 1.35) { hook.ps = 'hang'; hook.sway = 0; blip(700, 0.06, 'square', 0.05, 0.8); }
     } else {
       v.y -= G * dt;
@@ -5825,7 +5985,7 @@ renderer.setAnimationLoop((t, xrFrame) => {
   else { flyUpdate(dt); controls.update(); }
   explodeUpdate(dt);
   if (sky.visible) { sky.position.copy(camera.getWorldPosition(_v)); sky.scale.setScalar(Math.min(1, camera.far * 0.9 / 1000)); }
-  updateSection(); updateSectionCap(); updateBillboards(); updateLabels(); updateCursor(); updateLighting(); compassUpdate(); skyUpdate(dt); weatherUpdate(dt); peopleUpdate(dt);
+  updateSection(); updateSectionCap(); updateBillboards(); updateLabels(); updateCursor(); updateLighting(); compassUpdate(); skyUpdate(dt); weatherUpdate(dt); peopleUpdate(dt); landUpdate(dt);
   if (cb.on) cbRender(); else renderFrame();
 });
 
