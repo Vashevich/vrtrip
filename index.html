@@ -3898,7 +3898,7 @@ function updateTip() {
   const tip = $('#tip'); if (state.view === 'xr') { drawPalette(); return; }
   let txt = '';
   if (state.tool === 'nav' && sel) txt = `Выделена ${selName()}. Тяните стрелку гизмо: зелёная — вверх-вниз. ${sel.kind === 'note' ? 'Delete — удалить, ' : ''}Esc — снять`;
-  else if (state.tool === 'nav') txt = state.view !== 'walk' ? '' : matchMedia('(pointer:coarse)').matches ? 'Джойстик — идти, тянуть пальцем — осмотреться, касание пола — перейти туда.' : (locked() ? TIPS.nav.lock : TIPS.nav.walk);
+  else if (state.tool === 'nav') txt = state.view !== 'walk' ? '' : matchMedia('(pointer:coarse)').matches ? (matchMedia('(orientation:landscape) and (max-height:600px)').matches ? 'Левый стик — идти, правый — осмотреться, касание пола — перейти туда.' : 'Джойстик — идти, тянуть пальцем — осмотреться, касание пола — перейти туда.') : (locked() ? TIPS.nav.lock : TIPS.nav.walk);
   else txt = TIPS[state.tool][tool.phase] || TIPS[state.tool].idle;
   if (txt && state.view === 'orbit' && state.tool !== 'nav' && !matchMedia('(pointer:coarse)').matches) txt += ' · средняя кнопка — вращать, правая — двигать';
   tip.textContent = txt; tip.hidden = !txt; tip.classList.toggle('tool', state.tool !== 'nav');
