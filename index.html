@@ -1015,7 +1015,7 @@ const UP = new V3(0, 1, 0), DOWN = new V3(0, -1, 0);
 const UNITS = { mm: 0.001, cm: 0.01, m: 1, in: 0.0254, ft: 0.3048 };
 const TABLE_STEPS = [20, 50, 100, 200, 500, 1000];
 const EYE = 1.65, STEP = 0.45, RADIUS = 0.3, GRAV = 9.8;
-const APP_VERSION = '3.33';
+const APP_VERSION = '3.34';
 const BASE_COLORS = ['#f2efe8', '#d8a33f', '#e0604a', '#3f86c9'];
 const KINDS = { issue: { label: 'Замечание', color: '#e0604a' }, question: { label: 'Вопрос', color: '#d8a33f' }, idea: { label: 'Идея', color: '#4fae7f' } };
 const TOOLS = [['nav', 'Выделение'], ['pin', 'Метка'], ['measure', 'Рулетка'], ['pen', 'Карандаш'], ['erase', 'Ластик'], ['section', 'Сечение'], ['ref', 'Репер'], ['explode', 'Взрыв']];   // «Куб» временно скрыт: код инструмента сохранён
@@ -1554,7 +1554,7 @@ function makePerson(look) {
   const A = peopleAcc(), geo = bodyGeo(look), cols = [look.skin, look.top, look.pants, look.shoe, look.coat, look.packCol].map(h => new THREE.Color(h));
   const parts = geo.userData.parts, col = new Float32Array(parts.length * 3);
   parts.forEach((p, i) => cols[p].toArray(col, i * 3));
-  geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  geo.setAttribute('color', new THREE.BufferAttribute(col, 3)); geo.userData.col0 = col.slice();
   people.mat ||= new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide });
   const mesh = new THREE.SkinnedMesh(geo, people.mat), B = makeBones();
   mesh.add(B.root); mesh.updateMatrixWorld(true); mesh.bind(new THREE.Skeleton(BONES.map(n => B[n])));
@@ -1563,6 +1563,7 @@ function makePerson(look) {
   const beanie = hang(A.beanie, look.wool, B.head), scarf = hang(A.scarf, pick(P_WOOL), B.neck); beanie.visible = scarf.visible = false;
   const umb = new THREE.Group(), shaft = new THREE.Mesh(A.shaft, pMat('#2a2c30')), canopy = new THREE.Mesh(A.canopy, pMat(pick(P_UMB)));
   umb.add(shaft, canopy); umb.userData.canopy = canopy; umb.visible = false; mesh.add(umb);
+  for (const o of [hair, beanie, scarf, canopy]) if (o) o.userData.m0 = o.material;
   return { mesh: noRay(mesh), B, hair, beanie, scarf, umb };
 }
 function peopleReset() {
@@ -1659,6 +1660,96 @@ function physics(q, dt) {
   else q.p.y += (fy - q.p.y) * Math.min(1, dt * 12);                            // steps and ramps
 }
 const lerp = (a, b, k) => a + (b - a) * k;
+/* hit by a paint ball: flung away like a rag doll — tumbles backwards through the air, flops onto the ground, lies there
+   a few seconds, gets up and walks on. Not a physics ragdoll: a ballistic body plus a limp pose, cheap enough for a crowd */
+function knockPerson(q, dirL, power) {
+  if (q.partner) endTalk(q); if (q.seat) { q.seat.taken = null; q.seat = null; }
+  const h = Math.hypot(dirL.x, dirL.z) || 1;
+  q.yaw = Math.atan2(-dirL.x / h, -dirL.z / h);                                      // face the shot, fall away from it
+  q.rag = { v: new V3(dirL.x / h * power, 2.2 + power * 0.35, dirL.z / h * power), spin: (Math.random() - 0.5) * 7, roll: 0, rollV: (Math.random() - 0.5) * 3, lie: 2.6 + Math.random() * 2 };
+  q.st = 'fly'; q.air = false; q.wave = 0; q.tiltV = 5 + Math.random() * 3;
+}
+function ragStep(q, dt) {
+  const r = q.rag; if (!r) { q.st = 'idle'; return; }
+  const fy = floorAt(q.p.x, q.p.y + 0.3, q.p.z);
+  if (q.st === 'fly') {
+    r.v.y -= PG * dt;
+    const d = _pv.set(r.v.x, 0, r.v.z).multiplyScalar(dt);
+    if (peopleRay(_j1.set(q.p.x, q.p.y + 0.5, q.p.z), _pd.copy(d).normalize(), d.length() + 0.25) < d.length() + 0.25) { r.v.x *= -0.35; r.v.z *= -0.35; }   // bounced off a wall
+    else { q.p.x += d.x; q.p.z += d.z; }
+    q.p.y += r.v.y * dt; q.yaw += r.spin * dt; r.spin *= 1 - Math.min(1, dt * 1.5);
+    q.tilt = Math.min(Math.PI / 2, (q.tilt || 0) + q.tiltV * dt); r.roll += r.rollV * dt;
+    if (r.v.y < 0 && q.p.y <= fy) {                                                   // thud
+      q.p.y = fy;
+      if (r.v.y < -3.2 && !r.bounced) { r.v.y *= -0.32; r.bounced = true; r.v.x *= 0.5; r.v.z *= 0.5; }
+      else { q.st = 'down'; q.timer = r.lie; r.v.set(r.v.x * 0.6, 0, r.v.z * 0.6); }
+      if (state.view === 'walk') blip(95, 0.12, 'sine', 0.1, 0.5);
+    }
+  } else if (q.st === 'down') {
+    q.p.x += r.v.x * dt; q.p.z += r.v.z * dt; r.v.multiplyScalar(1 - Math.min(1, dt * 6));       // slides a little and stops
+    q.p.y += (fy - q.p.y) * Math.min(1, dt * 10); q.tilt += (Math.PI / 2 - q.tilt) * Math.min(1, dt * 8); r.roll *= 1 - Math.min(1, dt * 3);
+    if ((q.timer -= dt) <= 0) { q.st = 'getup'; q.timer = 1.1; }
+  } else {                                                                            // getting up: sit up, knees in, stand
+    q.p.y += (fy - q.p.y) * Math.min(1, dt * 10);
+    q.tilt = Math.max(0, q.tilt - dt * 1.9); r.roll *= 1 - Math.min(1, dt * 5);
+    if ((q.timer -= dt) <= 0 && q.tilt <= 0) { q.tilt = 0; q.rag = null; q.st = 'idle'; q.timer = 0.4 + Math.random(); }
+  }
+}
+function ragPose(q, t) {
+  const B = q.B, k = q.rk, T = q.tilt || 0, r = q.rag, up = q.st === 'getup' ? Math.sin(Math.min(1, T / (Math.PI / 2)) * Math.PI) : 0;
+  q.mesh.rotation.set(-T, q.yaw, r ? r.roll * Math.sin(T) : 0, 'YXZ');               // tipped over backwards around the feet
+  q.mesh.position.y += 0.11 * q.s * Math.sin(T);                                      // lying on the back, not through the ground
+  const fl = Math.sin(t * 9 + q.i) * 0.25 * (q.st === 'fly' ? 1 : 0);                 // flailing in the air
+  for (let j = 0; j < 2; j++) {
+    const s = j ? 'R' : 'L', side = j ? 1 : -1;
+    B['uarm' + s].rotation.x = lerp(B['uarm' + s].rotation.x, -1.2 + fl, k); B['uarm' + s].rotation.z = lerp(B['uarm' + s].rotation.z, side * (1.25 + fl * 0.5), k);
+    B['farm' + s].rotation.x = lerp(B['farm' + s].rotation.x, -0.5 - fl * 0.6, k);
+    B['thigh' + s].rotation.x = lerp(B['thigh' + s].rotation.x, -0.35 - up * 1.3 + (j ? fl : -fl) * 0.6, k); B['thigh' + s].rotation.z = lerp(B['thigh' + s].rotation.z, side * 0.22, k);
+    B['shin' + s].rotation.x = lerp(B['shin' + s].rotation.x, 0.45 + up * 1.6, k);
+  }
+  B.head.rotation.x = lerp(B.head.rotation.x, -0.35 + up * 0.6, k); B.spine.rotation.x = lerp(B.spine.rotation.x, up * 0.7, k);
+}
+/* paint on a person: the piece of clothing, skin, hair or hat nearest to the hit takes the colour of the ball */
+const _pp = new V3(), _pl = new V3();
+function paintPerson(q, pointW, color) {
+  const m = q.mesh; m.updateMatrixWorld(true); _pl.copy(pointW); m.worldToLocal(_pl);
+  const hat = [q.hair, q.beanie].find(o => o && o.visible);
+  if (q.umb.visible && _pl.y > 1.8) { q.umb.userData.canopy.material = pMat('#' + color.getHexString()); return; }
+  if (hat && _pl.y > 1.6) { hat.material = pMat('#' + color.getHexString()); return; }
+  const pos = m.geometry.attributes.position, parts = m.geometry.userData.parts; let best = -1, bd = Infinity;
+  for (let i = 0; i < pos.count; i += 3) { m.getVertexPosition(i, _pp); const d = _pp.distanceToSquared(_pl); if (d < bd) { bd = d; best = i; } }
+  if (best < 0) return;
+  if (q.scarf.visible && _pl.y > 1.3 && _pl.y < 1.55 && parts[best] !== PART.skin) { q.scarf.material = pMat('#' + color.getHexString()); return; }
+  const pid = parts[best], col = m.geometry.attributes.color;
+  for (let i = 0; i < parts.length; i++) if (parts[i] === pid) col.setXYZ(i, color.r, color.g, color.b);
+  col.needsUpdate = true;
+}
+function peopleWash() {                                    // Esc: the paint comes off
+  for (const q of people.list) {
+    const g = q.mesh.geometry; if (g.userData.col0) { g.attributes.color.array.set(g.userData.col0); g.attributes.color.needsUpdate = true; }
+    for (const o of [q.hair, q.beanie, q.scarf, q.umb.userData.canopy]) if (o?.userData.m0) o.material = o.userData.m0;
+  }
+}
+/* a paint ball against the people: each one a standing cylinder; returns the first hit along a world segment */
+function peopleHit(a, b) {
+  if (!people.list.length || !people.group.visible) return null;
+  holder.updateMatrixWorld(); const k = holder.scale.x || 1;
+  const A = holder.worldToLocal(a.clone()), Bv = holder.worldToLocal(b.clone()), dx = Bv.x - A.x, dz = Bv.z - A.z, dy = Bv.y - A.y;
+  let best = null;
+  for (const q of people.list) {
+    if (q.st === 'fly' || q.st === 'down' || q.st === 'getup') continue;
+    const R = 0.26 * q.s * q.w, H = 1.8 * q.s, ox = A.x - q.p.x, oz = A.z - q.p.z;
+    const qa = dx * dx + dz * dz, qb = 2 * (ox * dx + oz * dz), qc = ox * ox + oz * oz - R * R;
+    let tt;
+    if (qc <= 0) tt = 0;
+    else { if (qa < 1e-9) continue; const D = qb * qb - 4 * qa * qc; if (D < 0) continue; tt = (-qb - Math.sqrt(D)) / (2 * qa); }
+    if (tt < 0 || tt > 1) continue;
+    const y = A.y + dy * tt - q.p.y; if (y < 0 || y > H) continue;
+    if (!best || tt < best.t) best = { q, t: tt, local: new V3(A.x + dx * tt, A.y + dy * tt, A.z + dz * tt) };
+  }
+  if (best) best.world = holder.localToWorld(best.local.clone());
+  return best;
+}
 function peopleUpdate(dt) {
   const z = sceneSize(), want = z && PEOPLE_N[prefs.people] ? prefs.people + '|' + z.toArray().map(v => v.toFixed(2)).join() : (prefs.people + '|');
   if (want !== people.key) peopleReset();
@@ -1671,6 +1762,7 @@ function peopleUpdate(dt) {
     let moving = false;
     q.gest = 0;
     switch (q.st) {
+      case 'fly': case 'down': case 'getup': ragStep(q, dt); break;
       case 'idle':
         if ((q.timer -= dt) <= 0) decide(q, z);
         else q.yaw += Math.sin(performance.now() / 900 + q.i) * dt * 0.4;          // looking around
@@ -1712,11 +1804,11 @@ function peopleUpdate(dt) {
         break;
       }
     }
-    const seated = q.st === 'sit' || q.st === 'rise';
-    if (!seated) physics(q, dt);
+    const seated = q.st === 'sit' || q.st === 'rise', ragged = q.st === 'fly' || q.st === 'down' || q.st === 'getup';
+    if (!seated && !ragged) physics(q, dt);
     if (q.air) moving = true;
     // keep a little distance from others (not from the one you are talking to)
-    if (!seated) for (const o of L) if (o !== q && o !== q.partner && o.st !== 'sit' && o.st !== 'rise') { const dx = q.p.x - o.p.x, dz = q.p.z - o.p.z, d2 = dx * dx + dz * dz; if (d2 < 0.3 && d2 > 1e-6) { const k = (0.55 - Math.sqrt(d2)) * dt * 2; q.p.x += dx * k; q.p.z += dz * k; } }
+    if (!seated && !ragged) for (const o of L) if (o !== q && o !== q.partner && o.st !== 'sit' && o.st !== 'rise' && !o.rag) { const dx = q.p.x - o.p.x, dz = q.p.z - o.p.z, d2 = dx * dx + dz * dz; if (d2 < 0.3 && d2 > 1e-6) { const k = (0.55 - Math.sqrt(d2)) * dt * 2; q.p.x += dx * k; q.p.z += dz * k; } }
     // ---- pose, in the body units of a 1.75 m person; the mesh carries the position, heading and size
     const fr = (k) => Math.min(1, dt * k);
     q.sitK += ((q.st === 'sit' ? 1 : 0) - q.sitK) * fr(6);
@@ -1762,6 +1854,8 @@ function peopleUpdate(dt) {
       B['thigh' + s].rotation.set(a, 0, 0); B['shin' + s].rotation.x = b; B['foot' + s].rotation.x = -(a + b) * (1 - AK) + AK * 0.4;
       B['uarm' + s].rotation.set(u, 0, side * (0.09 + rz)); B['farm' + s].rotation.x = e;
     }
+    q.rk = (q.rk || 0) + (((ragged && q.st !== 'getup') ? 1 : 0) - (q.rk || 0)) * fr(q.st === 'getup' ? 3 : 9);
+    if (q.rk > 0.001 || q.tilt) ragPose(q, t);
     // weather: an umbrella over the head in the rain, a woolly hat and a scarf in the snow
     if (q.uk > 0.25) {                                                               // folded away while it closes
       mesh.updateMatrixWorld(true); B.handR.getWorldPosition(_pv); mesh.worldToLocal(_pv);
@@ -4933,7 +5027,7 @@ function toyReset() {
   drops.length = 0; dropInst.count = 0;
   for (const f of toy.flyers) { f.obj.removeFromParent(); f.obj.traverse(x => x.geometry?.dispose()); } toy.flyers.length = 0;
   for (const h of toy.hidden) { h.attr.array.set(h.orig, h.st * 3); h.attr.needsUpdate = true; } toy.hidden.length = 0;
-  toy.knocked = new Set(); shadowsDirty();
+  toy.knocked = new Set(); peopleWash(); shadowsDirty();
 }
 function shoot(ray) {
   if (!isReady()) return;
@@ -4995,6 +5089,14 @@ function toyUpdate(dt) {
     const step = b.v.length() * dt; if (step < 1e-5) continue;
     _tr.set(b.mesh.position, b.v.clone().normalize()); _tr.far = step + BALL_R;
     const h = _tr.intersectObjects(targets, true)[0];
+    const ph = peopleHit(b.mesh.position, _pp.copy(b.mesh.position).addScaledVector(b.v, dt + BALL_R / Math.max(1e-3, b.v.length())));
+    if (ph && (!h || ph.t * (step + BALL_R) < h.distance)) {                          // a person: paint and knock over
+      paintPerson(ph.q, ph.world, b.color);
+      const dirL = b.v.clone().transformDirection(_dm.copy(holder.matrixWorld).invert());
+      knockPerson(ph.q, dirL, 4.5 + Math.random() * 2.5);
+      for (let k = 0; k < 8 && drops.length < DROP_MAX; k++) drops.push({ p: ph.world.clone(), v: b.v.clone().normalize().multiplyScalar(-2 - Math.random() * 3).add(new V3(Math.random() - 0.5, Math.random() * 0.8, Math.random() - 0.5).multiplyScalar(5)), c: b.color.clone(), t: 0, s: 0.4 + Math.random() });
+      pop(); b.mesh.removeFromParent(); toy.balls.splice(i, 1); continue;
+    }
     if (h) {
       const n = h.face ? h.face.normal.clone().transformDirection(h.object.matrixWorld) : b.v.clone().negate().normalize();
       if (n.dot(b.v) > 0) n.negate();
