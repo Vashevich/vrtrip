@@ -826,7 +826,7 @@ const UP = new V3(0, 1, 0), DOWN = new V3(0, -1, 0);
 const UNITS = { mm: 0.001, cm: 0.01, m: 1, in: 0.0254, ft: 0.3048 };
 const TABLE_STEPS = [20, 50, 100, 200, 500, 1000];
 const EYE = 1.65, STEP = 0.45, RADIUS = 0.3, GRAV = 9.8;
-const APP_VERSION = '3.26';
+const APP_VERSION = '3.27';
 const BASE_COLORS = ['#f2efe8', '#d8a33f', '#e0604a', '#3f86c9'];
 const KINDS = { issue: { label: 'Замечание', color: '#e0604a' }, question: { label: 'Вопрос', color: '#d8a33f' }, idea: { label: 'Идея', color: '#4fae7f' } };
 const TOOLS = [['nav', 'Выделение'], ['pin', 'Метка'], ['measure', 'Рулетка'], ['pen', 'Карандаш'], ['erase', 'Ластик'], ['section', 'Сечение'], ['ref', 'Репер'], ['explode', 'Взрыв']];   // «Куб» временно скрыт: код инструмента сохранён
@@ -928,7 +928,7 @@ const sun = new THREE.DirectionalLight(0xfff6ea, 2.2); sun.position.set(40, 70, 
 const ENV = {
   graphite: { top: '#1b2024', bottom: '#1b2024', ground: '#20262b', grid: 0.22, hemiSky: '#ffffff', hemiGround: '#7f8589', hemi: 2.1, sun: '#fff6ea', sunI: 2.2, sunPos: [40, 70, 25], fog: null, flat: true },
   sky: { top: '#5f93cc', bottom: '#dfe7ea', ground: '#9ea38f', grid: 0.18, hemiSky: '#ffffff', hemiGround: '#7f8589', hemi: 2.0, sun: '#fff4e6', sunI: 2.4, sunPos: [40, 70, 25], fog: [120, 1000] },
-  studio: { top: '#eceded', bottom: '#d6d8d9', ground: '#cdd0d1', grid: 0.35, hemiSky: '#ffffff', hemiGround: '#9aa0a4', hemi: 2.5, sun: '#ffffff', sunI: 1.5, sunPos: [30, 60, 40], fog: [150, 900] },
+  studio: { top: '#eceded', bottom: '#d6d8d9', ground: '#d6d8d9', grid: 0.35, hemiSky: '#ffffff', hemiGround: '#9aa0a4', hemi: 2.5, sun: '#ffffff', sunI: 1.5, sunPos: [30, 60, 40], fog: [150, 900] },
 };
 const skyMat = new THREE.ShaderMaterial({
   side: THREE.BackSide, depthWrite: false, fog: false,
@@ -986,7 +986,8 @@ function makeGrid(radius, color, aMinor, aMajor) {
   m.scale.setScalar(radius); m.renderOrder = -1; m.raycast = () => {}; m.frustumCulled = false;
   return m;
 }
-const vrGrid = makeGrid(100, 0x2a2f2d, 0.35, 0.75); vrGrid.position.y = -0.002; vrGrid.material.polygonOffset = false;   // lies just above the ground disc
+const vrGrid = makeGrid(100, 0x2a2f2d, 0.35, 0.75); vrGrid.position.y = -0.002;   // lies just above the ground disc
+Object.assign(vrGrid.material, { polygonOffsetFactor: -4, polygonOffsetUnits: -16 });   // pulled towards the eye in depth units: no flicker against the disc, however far
 ground.add(groundMesh, vrGrid); ground.visible = false; scene.add(ground);
 /* «Реалистично»: grass (or snow) on the ground, tinted by the season; procedural, tiles every ~1.5 m */
 function groundTex(kind) {
@@ -1061,7 +1062,11 @@ function weatherUpdate(dt) {
 const SKYC = { day: ['#4f87c6', '#dce6ec', '#ffffff'], gold: ['#5d72a0', '#f1a96f', '#ffd6b5'], night: ['#060a15', '#151c2b', '#2b3242'] };
 const _c1 = new THREE.Color(), _c2 = new THREE.Color(), _c3 = new THREE.Color(), _sw = new V3();
 function skyUpdate(dt) {
-  if (!sky.visible || !isReal()) return;
+  if (!sky.visible) return;
+  if (!isReal()) {                                       // studio: an endless floor the colour of the sky, haze scaled to the view
+    if (scene.fog) { camera.getWorldPosition(_sw); const s = sceneSize(), R = s ? Math.hypot(s.x, s.z) : 20; fog.near = Math.max(60, R * 2, _sw.distanceTo(holder.position) * 1.2); fog.far = fog.near * 3 + 200; }
+    return;
+  }
   const u = skyMat.uniforms, cl = CLOAD();
   let top, bot, cc, b = 1;
   const mixC = (A, B, f) => [0, 1, 2].map(i => _c1.set(A[i]).lerp(_c2.set(B[i]), f).getHexString());
@@ -2346,7 +2351,7 @@ function applyEnv() {
     groundMesh.material.map = GROUND_TEX[k] ||= groundTex(k); groundMesh.material.color.set(SEASON[prefs.season] || SEASON.summer); groundMesh.material.needsUpdate = true;
   } else { if (groundMesh.material.map) { groundMesh.material.map = null; groundMesh.material.needsUpdate = true; } groundMesh.material.color.set(p.ground); }
   vrGrid.material.uniforms.aMinor.value = p.grid * 0.6; vrGrid.material.uniforms.aMajor.value = Math.min(1, p.grid * 1.5);
-  fog.color.set(p.bottom); fog.near = p.fog[0]; fog.far = p.fog[1]; scene.fog = state.view === 'orbit' && !isReal() ? null : fog;   // realistic: haze in the overview too
+  fog.color.set(p.bottom); fog.near = p.fog[0]; fog.far = p.fog[1]; scene.fog = fog;   // haze in every view: the floor melts into the sky, no horizon line
 }
 
 
