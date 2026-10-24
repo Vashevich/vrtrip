@@ -239,6 +239,8 @@ h2{display:flex;align-items:center;gap:10px;margin:0;font:600 16px/1.2 var(--f-b
 .scanbtn svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
 .scanbtn:disabled{opacity:.45;cursor:not-allowed}
 .scannote{margin-top:6px}
+.scandlg{position:fixed;max-height:calc(100dvh - 32px);overflow:auto;z-index:70}
+.scandlg ol{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px;font-size:14px}.scandlg p{margin:0;font-size:14px}
 .scanui{position:fixed;left:12px;right:12px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:50;display:flex;flex-direction:column;align-items:center;gap:10px;padding:12px;background:var(--glass);border:2px solid var(--line);color:var(--fg);text-align:center;font:15px/1.35 var(--f-body)}
 .scan-row{display:flex;gap:8px}.scan-row .btn{min-height:48px;min-width:120px}
 .wi{width:16px;height:16px;flex:none;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
@@ -272,7 +274,7 @@ h2{display:flex;align-items:center;gap:10px;margin:0;font:600 16px/1.2 var(--f-b
 .spin{width:18px;height:18px;border-radius:50%;border:2px solid var(--line-strong);border-top-color:var(--accent);animation:spin .8s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion:reduce){.spin{animation-duration:2.4s}}
-@media (pointer:coarse){.whint{display:none}.chip{display:none!important}}
+@media (pointer:coarse){.whint{display:none}.chip{display:none!important}.gameui .sec-info{display:none}}
 
 /* panel toggle: on wide screens it hides the panel for a full-width view; in compact landscape it opens a drawer */
 .lbtns{grid-column:1;grid-row:1;justify-self:start;display:flex;flex-direction:column;gap:6px}
@@ -916,6 +918,17 @@ input[type=range]{accent-color:var(--accent)}
     <button type="button" class="btn small" data-sec="off">Убрать</button>
     <span class="sec-info" id="sec-info"></span>
   </div>
+  <div class="dialog scandlg" id="scandlg" hidden role="dialog" aria-label="Сканирование на iPhone">
+    <h3>Скан комнаты на iPhone</h3>
+    <p>Safari не даёт сайтам доступа к лидару — это ограничение Apple. Поэтому сканируем в приложении, а сюда загружаем файл:</p>
+    <ol>
+      <li>Установите бесплатное <b>3D Scanner App</b> (или Polycam) из App Store.</li>
+      <li>Режим <b>LiDAR</b> или <b>Room</b> — медленно обойдите комнату. Лидар есть на iPhone Pro; на других моделях — режим «Photo».</li>
+      <li>Экспорт → <b>GLB</b>, OBJ или USDZ → «Сохранить в Файлы».</li>
+      <li>Здесь — «Выбрать файл скана»: комната встанет в экспозицию.</li>
+    </ol>
+    <div class="dlg-actions"><button type="button" class="btn" id="scandlg-close">Закрыть</button><button type="button" class="btn primary" id="scandlg-file">Выбрать файл скана</button></div>
+  </div>
   <div class="scanui" id="scanui" hidden>
     <span id="scan-msg">Сканирую комнату: медленно обведите камерой пол, стены и мебель</span>
     <div class="scan-row"><button type="button" class="btn primary" id="scan-done">Готово</button><button type="button" class="btn" id="scan-cancel">Отмена</button></div>
@@ -1034,7 +1047,7 @@ const UP = new V3(0, 1, 0), DOWN = new V3(0, -1, 0);
 const UNITS = { mm: 0.001, cm: 0.01, m: 1, in: 0.0254, ft: 0.3048 };
 const TABLE_STEPS = [20, 50, 100, 200, 500, 1000];
 const EYE = 1.65, STEP = 0.45, RADIUS = 0.3, GRAV = 9.8;
-const APP_VERSION = '3.36';
+const APP_VERSION = '3.37';
 const BASE_COLORS = ['#f2efe8', '#d8a33f', '#e0604a', '#3f86c9'];
 const KINDS = { issue: { label: 'Замечание', color: '#e0604a' }, question: { label: 'Вопрос', color: '#d8a33f' }, idea: { label: 'Идея', color: '#4fae7f' } };
 const TOOLS = [['nav', 'Выделение'], ['pin', 'Метка'], ['measure', 'Рулетка'], ['pen', 'Карандаш'], ['erase', 'Ластик'], ['section', 'Сечение'], ['ref', 'Репер'], ['explode', 'Взрыв'], ['game', 'Игра']];   // «Куб» временно скрыт: код инструмента сохранён
@@ -4021,7 +4034,7 @@ function pickSelectable(wr, tol = 0) {
 }
 
 const TIPS = {
-  game: { idle: 'Игра: левый щелчок — выстрел. B — пушка с краской (сбивает мелкие части и людей), G — крюк (в прогулке). Правый щелчок — отцепиться с крюка, а если не висите — выйти из игры к «Выделению» (всё на место)' },
+  game: { touch: 'Игра: касание — выстрел. Выйти — нажмите «Игра» ещё раз или другой инструмент', idle: 'Игра: левый щелчок — выстрел. B — пушка с краской (сбивает мелкие части и людей), G — крюк (в прогулке). Правый щелчок — отцепиться с крюка, а если не висите — выйти из игры к «Выделению» (всё на место)' },
   nav: { walk: 'Щёлкните по сцене — мышь станет обзором (как в игре). WASD — идти, Shift — бег, Пробел — прыжок, C — присесть. Esc — вернуть курсор', lock: 'Мышь — обзор, левый щелчок — выделить то, что в прицеле · WASD — идти · Shift — бег · Пробел — прыжок · C — присесть · B / G или «Игра» — пушка и крюк · Esc — курсор', orbit: '' },
   box: { idle: 'Куб: щёлкните первый угол основания', foot: 'Задайте второй угол и щёлкните', height: 'Поднимите на нужную высоту и щёлкните. Esc — отмена' },
   explode: { idle: 'Взрыв-схема: колесо мыши или ползунок — разнести части / собрать. «Этажами вверх» — архитектурная аксонометрия' },
@@ -4049,11 +4062,11 @@ function updateTip() {
   let txt = '';
   if (state.tool === 'nav' && sel) txt = `Выделена ${selName()}. Тяните стрелку гизмо: зелёная — вверх-вниз. ${sel.kind === 'note' ? 'Delete — удалить, ' : ''}Esc — снять`;
   else if (state.tool === 'nav') txt = state.view !== 'walk' ? '' : matchMedia('(pointer:coarse)').matches ? (matchMedia('(orientation:landscape) and (max-height:600px)').matches ? 'Левый стик — идти, правый — осмотреться, касание пола — перейти туда.' : 'Джойстик — идти, тянуть пальцем — осмотреться, касание пола — перейти туда.') : (locked() ? TIPS.nav.lock : TIPS.nav.walk);
-  else txt = TIPS[state.tool][tool.phase] || TIPS[state.tool].idle;
+  else txt = (state.tool === 'game' && matchMedia('(pointer:coarse)').matches && TIPS.game.touch) || TIPS[state.tool][tool.phase] || TIPS[state.tool].idle;
   if (txt && state.view === 'orbit' && state.tool !== 'nav' && !matchMedia('(pointer:coarse)').matches) txt += state.tool === 'game' ? ' · средняя кнопка — вращать' : ' · средняя кнопка — вращать, правая — двигать';
   tip.textContent = txt; tip.hidden = !txt; tip.classList.toggle('tool', state.tool !== 'nav');
   clearTimeout(updateTip.t);
-  if (txt && state.view === 'walk' && state.tool === 'nav' && !sel && matchMedia('(pointer:coarse)').matches) updateTip.t = setTimeout(() => { if (tip.textContent === txt) tip.hidden = true; }, 6000);
+  if (txt && matchMedia('(pointer:coarse)').matches) updateTip.t = setTimeout(() => { if (tip.textContent === txt) tip.hidden = true; }, 7000);     // on a phone every hint goes away by itself
   $('#chip').hidden = state.view !== 'orbit' || state.tool !== 'nav' || !!txt;
 }
 
@@ -4072,7 +4085,7 @@ function renderToolbar() {
 }
 $('#toolbar').addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b || b.disabled) return;
-  if (b.dataset.tool) setTool(b.dataset.tool);
+  if (b.dataset.tool) setTool(b.dataset.tool === 'game' && state.tool === 'game' ? 'nav' : b.dataset.tool);   // «Игра» again: back to plain work
   else if (b.dataset.color) setColor(+b.dataset.color);
   canvas.focus({ preventScroll: true });
 });
@@ -5095,7 +5108,7 @@ function setToy(on) {
   toy.on = on;
   if (on) {
     for (const r of shownRecs()) for (const m of r.meshes) if (m.userData.edges) m.userData.edges.visible = false;
-    if (!toy.told[toy.mode]) { toy.told[toy.mode] = true; toast(GADGET_TIP[toy.mode], 'ok'); }
+    if (!toy.told[toy.mode] && !matchMedia('(pointer:coarse)').matches) { toy.told[toy.mode] = true; toast(GADGET_TIP[toy.mode], 'ok'); }
   } else { hookRelease(true); toyReset(); if (VIS.edges) applyEdges(); }
   mountGun(); paintGadgets(); updateCanvasCursor();
 }
@@ -5110,7 +5123,7 @@ function setGadget(mode) {
   toy.mode = mode; lsSet('vrtrip-gadget', mode);
   if (mode === 'hook' && state.view === 'orbit' && isReady()) enterWalk();                   // the hook needs a body to pull
   if (state.tool !== 'game') setTool('game');
-  else { mountGun(); paintGadgets(); if (!toy.told[mode]) { toy.told[mode] = true; toast(GADGET_TIP[mode], 'ok'); } }
+  else { mountGun(); paintGadgets(); if (!toy.told[mode] && !matchMedia('(pointer:coarse)').matches) { toy.told[mode] = true; toast(GADGET_TIP[mode], 'ok'); } }
   renderGameUI();
 }
 $('#gameui').addEventListener('click', e => { const b = e.target.closest('[data-game]'); if (b) setGadget(b.dataset.game); });
@@ -6321,7 +6334,7 @@ $('#modebar').addEventListener('click', e => {
 }, true);
 $('#m-orbit').addEventListener('click', () => { if (state.view === 'walk') exitWalk(); });
 async function checkXR() {
-  const note = $('#xrnote');
+  const note = $('#xrnote'); renderScanBtn();
   if (!window.isSecureContext) { note.textContent = 'VR работает только на странице с адресом https://. Прогулка в браузере доступна и так.'; note.className = 'note warn'; return; }
   if (!navigator.xr) { note.textContent = quickLookOK ? 'На iPhone/iPad VR недоступен, но работает «AR на телефоне» и прогулка в браузере.' : 'Этот браузер не поддерживает VR — доступна прогулка в браузере. Для VR откройте ту же ссылку в браузере Meta Quest 3.'; updateModeButtons(); return; }
   const ok = async m => { try { return await navigator.xr.isSessionSupported(m); } catch { return false; } };
@@ -6343,7 +6356,7 @@ const scan = { session: null, ref: null, scene: new THREE.Scene(), group: new TH
 scan.scene.add(new THREE.HemisphereLight(0xffffff, 0x777777, 2.6), scan.group);
 const SCAN_COL = { floor: '#8f8a80', wall: '#ece6d6', 'door frame': '#a65f4f', 'window frame': '#7e90a3', table: '#c9822f', couch: '#a33d32', bed: '#7a6a8f', storage: '#6e4e46', shelf: '#6e4e46', screen: '#30363a', lamp: '#e3b23c', plant: '#5d7b6c' };
 function scanSupport() {
-  if (isIOS) return { ok: false, why: 'На iPhone браузер не даёт доступа к лидару. Снимите комнату в приложении Polycam или 3D Scanner App (режим LiDAR / Room), сохраните в GLB, OBJ или USDZ и выберите файл выше.' };
+  if (isIOS) return { ok: true, ios: true, why: 'iPhone: браузер не даёт сайтам доступа к лидару — сканируем в приложении и загружаем файл. Нажмите, покажу как.' };
   if (!window.isSecureContext || !navigator.xr || !xrSupport.ar) return { ok: false, why: 'Сканирование работает в шлеме Quest 3 (комната из «Настройки пространства») или на Android-телефоне с AR. На этом устройстве недоступно.' };
   return { ok: true, why: isHeadset ? 'Quest: возьмём комнату из «Настройки пространства» — пол, стены и мебель. Курок — готово, Grip — отмена.' : 'Android: медленно обведите камерой пол и стены, потом «Готово».' };
 }
@@ -6358,6 +6371,7 @@ function scanLabel(text) {
 }
 function scanClear() { for (const o of [...scan.group.children]) { o.removeFromParent(); o.geometry?.dispose(); o.material?.dispose(); } scan.items.clear(); }
 async function startScan() {
+  if (scanSupport().ios) { $('#scandlg').hidden = false; return; }
   if (scan.session || !scanSupport().ok) return;
   if (state.view === 'walk') exitWalk();
   if (state.tool === 'game') setTool('nav');
@@ -6376,6 +6390,8 @@ async function startScan() {
 }
 function finishScan(keep) { if (!scan.session || scan.done) return; scan.done = true; scan.keep = keep; scan.session.end().catch(() => {}); }
 $('#scanbtn').addEventListener('click', startScan);
+$('#scandlg-close').addEventListener('click', () => { $('#scandlg').hidden = true; });
+$('#scandlg-file').addEventListener('click', () => { $('#scandlg').hidden = true; $('#file').click(); });
 $('#scan-done').addEventListener('click', () => finishScan(true));
 $('#scan-cancel').addEventListener('click', () => finishScan(false));
 $('#scanui').addEventListener('beforexrselect', e => e.preventDefault());       // taps on the buttons are not «select»
