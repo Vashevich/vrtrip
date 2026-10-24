@@ -106,6 +106,8 @@ async def run_view(b, name, w, h, touch):
     for mid in ('m-walk', 'm-orbit', 'm-cardboard', 'm-orbit'):
         e0 = len(errs)
         btn = pg.locator(f'#{mid}')
+        if not await btn.is_visible() and await pg.locator('#w-exit').is_visible():   # телефон горизонтально: в прогулке режимы спрятаны, выход — кнопкой ✕
+            await pg.locator('#w-exit').click(); await pg.wait_for_timeout(500)
         if not await btn.is_visible(): ok(f'[{name}] режим {mid}: кнопка видна', False, 'кнопка не видна'); continue
         await btn.click(); await pg.wait_for_timeout(700)
         if mid == 'm-cardboard': await pg.screenshot(path=f'{SHOTS}/{name}_cardboard.png'); await pg.keyboard.press('Escape'); await pg.wait_for_timeout(400)
