@@ -234,7 +234,7 @@ h2{display:flex;align-items:center;gap:10px;margin:0;font:600 16px/1.2 var(--f-b
 .joy{position:absolute;left:18px;bottom:18px;width:124px;height:124px;border-radius:50%;background:var(--glass);border:1px solid var(--line-strong);touch-action:none;cursor:grab}
 .knob{position:absolute;left:50%;top:50%;width:52px;height:52px;margin:-26px 0 0 -26px;border-radius:50%;background:var(--raise);border:2px solid var(--accent);pointer-events:none}
 .floors{position:absolute;right:18px;bottom:18px;display:flex;flex-direction:column;gap:6px}
-.joyr,#w-jump{display:none}
+.joyr,#w-jump,#w-fire,#w-alt,.tx{display:none}
 .wi{width:16px;height:16px;flex:none;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
 .floors .btn{gap:8px}
 .floors .btn{min-width:108px;background:var(--glass)}
@@ -351,17 +351,21 @@ body.panel-off .view{grid-column:2}
   .floors{display:contents}
   .floors .btn{position:absolute;width:48px;height:48px;min-height:0;min-width:0;padding:0;justify-content:center}
   .floors .wt{display:none}.floors .wi{width:24px;height:24px}            /* icons only: the hint and the titles name them */
-  #w-jump{display:inline-flex}
+  #w-jump,#w-fire,#w-alt{display:inline-flex}
   #w-exit,#w-up,#w-down{left:calc(max(16px,env(safe-area-inset-left)) + 32px)}
-  #w-toy,#w-hook,#w-jump{right:calc(max(16px,env(safe-area-inset-right)) + 32px)}
-  #w-down,#w-jump{bottom:138px}
+  #w-toy,#w-hook,#w-jump{right:calc(max(16px,env(safe-area-inset-right)) + 54px)}
+  #w-fire{right:calc(max(16px,env(safe-area-inset-right)) + 108px)}
+  #w-alt{right:max(16px,env(safe-area-inset-right))}
+  #w-down,#w-jump,#w-fire,#w-alt{bottom:138px}
   #w-up,#w-hook{bottom:194px}
   #w-exit,#w-toy{bottom:250px}
+  #w-fire{background:var(--accent);color:var(--accent-ink)}
+  body.walking .tx{display:block}                     /* the aim for the fire button: the centre of the screen */
   .toast{left:50%;transform:translateX(-50%);top:60px;bottom:auto}
   body.walking .tip{top:60px;bottom:auto;max-width:calc(100% - 320px)}
   /* walking: the tools go down to the bottom edge between the sticks, like a game hotbar; the view modes hide (✕ Выйти is above the left stick); only small corners stay on top */
-  body.walking .topbar{bottom:max(10px,env(safe-area-inset-bottom))}
-  body.walking .topbar>.toolbar{position:absolute;bottom:0;left:0;right:0;margin-inline:auto;width:fit-content;max-width:calc(100% - 264px)}
+  body.walking .topbar{left:0;right:0;padding-inline:max(8px,env(safe-area-inset-left)) max(8px,env(safe-area-inset-right));bottom:max(10px,env(safe-area-inset-bottom))}
+  body.walking .topbar>.toolbar{position:absolute;grid-column:auto!important;bottom:0;left:0;right:0;margin-inline:auto;width:fit-content;max-width:calc(100% - 2 * (max(16px,env(safe-area-inset-left),env(safe-area-inset-right)) + 124px))}   /* centred on the screen, between the sticks */
   body.walking .dock>.modebar{display:none}
   body.walking .topbar>.lbtns{flex-direction:row}
   body.walking .clearpop{top:auto;bottom:62px;max-height:calc(100% - 76px);overflow:auto}
@@ -878,6 +882,7 @@ input[type=range]{accent-color:var(--accent)}
     <small>Можно вернуть: «Отменить» или Ctrl+Z</small>
   </div>
   <div class="xhair" id="xhair" hidden></div>
+  <div class="xhair tx" aria-hidden="true"></div>
   <div class="chip" id="chip">Левая кнопка — вращать · правая — двигать · колесо — ближе / дальше · WASD — полёт, Shift — быстрее, Q / E — вниз / вверх</div>
   <div class="walkui" id="walkui" hidden>
     <div class="joy" id="joy" aria-label="Джойстик движения"><div class="knob" id="knob"></div></div>
@@ -888,6 +893,8 @@ input[type=range]{accent-color:var(--accent)}
       <button type="button" class="btn small" id="w-toy" aria-pressed="false" aria-label="Шарики с краской" title="Пинбольная пушка с краской (B)"><svg class="wi" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="13" r="6"/><path d="M18 5.5l2-2M16.5 3v2M21 7.5h-2"/></svg><span class="wt">Шарики</span></button>
       <button type="button" class="btn small" id="w-hook" aria-pressed="false" aria-label="Крюк" title="Крюк-кошка: стрелять и подтягиваться (G)"><svg class="wi" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5" r="2.3"/><path d="M12 7.3V21M7.5 11h9M4.5 14a7.5 7.5 0 0 0 15 0"/></svg><span class="wt">Крюк</span></button>
       <button type="button" class="btn small" id="w-jump" aria-label="Прыжок" title="Прыжок (пробел)"><svg class="wi" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V4M7 9l5-5 5 5M6 20h12"/></svg><span class="wt">Прыжок</span></button>
+      <button type="button" class="btn small" id="w-fire" aria-label="Выстрел — как левая кнопка мыши" title="Выстрел / действие в прицеле — как левая кнопка мыши"><svg class="wi" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="3" width="12" height="18" rx="6"/><path d="M12 3a6 6 0 0 0-6 6v1h6z" fill="currentColor"/><path d="M12 3v7M6 10h12"/></svg><span class="wt">Огонь</span></button>
+      <button type="button" class="btn small" id="w-alt" aria-label="Как правая кнопка мыши: отцепить крюк, отменить" title="Как правая кнопка мыши: отцепить крюк, отменить инструмент"><svg class="wi" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="3" width="12" height="18" rx="6"/><path d="M12 3a6 6 0 0 1 6 6v1h-6z" fill="currentColor"/><path d="M12 3v7M6 10h12"/></svg><span class="wt">Отмена</span></button>
     </div>
     <div class="joy joyr" id="joyr" aria-label="Джойстик обзора"><div class="knob"></div></div>
   </div>
@@ -1008,7 +1015,7 @@ const UP = new V3(0, 1, 0), DOWN = new V3(0, -1, 0);
 const UNITS = { mm: 0.001, cm: 0.01, m: 1, in: 0.0254, ft: 0.3048 };
 const TABLE_STEPS = [20, 50, 100, 200, 500, 1000];
 const EYE = 1.65, STEP = 0.45, RADIUS = 0.3, GRAV = 9.8;
-const APP_VERSION = '3.32';
+const APP_VERSION = '3.33';
 const BASE_COLORS = ['#f2efe8', '#d8a33f', '#e0604a', '#3f86c9'];
 const KINDS = { issue: { label: 'Замечание', color: '#e0604a' }, question: { label: 'Вопрос', color: '#d8a33f' }, idea: { label: 'Идея', color: '#4fae7f' } };
 const TOOLS = [['nav', 'Выделение'], ['pin', 'Метка'], ['measure', 'Рулетка'], ['pen', 'Карандаш'], ['erase', 'Ластик'], ['section', 'Сечение'], ['ref', 'Репер'], ['explode', 'Взрыв']];   // «Куб» временно скрыт: код инструмента сохранён
@@ -4365,6 +4372,20 @@ function touchStick(el, st) {
 }
 touchStick($("#joy"), joy); touchStick($("#joyr"), joyL);
 $('#w-jump').addEventListener('click', () => { walk.jump = true; canvas.focus({ preventScroll: true }); });
+/* the two «mouse buttons» by the right stick act at the centre of the screen, where the aim is */
+$('#w-fire').addEventListener('pointerdown', e => {
+  e.preventDefault(); if (state.view !== 'walk') return;
+  const r = centerRay();
+  if (toy.on && state.tool === 'nav') { if (toy.mode === 'hook') hookPrimary(r); else shoot(r); return; }
+  if (state.tool === 'nav') { const pk = pickSelectable(r, (6 / Math.max(canvas.clientHeight, 1)) * THREE.MathUtils.degToRad(camera.fov)); if (pk.kind === 'none' || (pk.kind !== 'note' && pk.h && pk.h.normal.y > 0.7)) clearSelection(); else selectPick(pk); return; }
+  if (state.tool !== 'section') { toolDown(r); toolUp(r); }
+});
+$('#w-alt').addEventListener('pointerdown', e => {
+  e.preventDefault(); if (state.view !== 'walk') return;
+  if (toy.on && toy.mode === 'hook') hookRelease();
+  else if (state.tool !== 'nav') cancelTool();
+  else clearSelection();
+});
 
 /* panel toggle: drawer on landscape phones, collapse on larger screens */
 const compactMQ = matchMedia('(orientation:landscape) and (max-height:600px)');
@@ -4767,7 +4788,7 @@ const VM = g => { g.traverse(x => { if (x.isMesh) { x.renderOrder = 40; x.materi
 /* pinball plunger launcher: chrome barrel with dark rings, a spring and a red knob at the back that snaps on each shot */
 function makeGun() {
   const g = new THREE.Group();
-  const chrome = new THREE.MeshStandardMaterial({ color: 0xe4e7ec, metalness: 1, roughness: 0.2 }), dark = new THREE.MeshStandardMaterial({ color: 0x23262b, roughness: 0.5 });
+  const chrome = new THREE.MeshStandardMaterial({ color: 0xf4f6f9, metalness: 0.35, roughness: 0.32, emissive: 0x5a5f66 }), dark = new THREE.MeshStandardMaterial({ color: 0xa9b0ba, roughness: 0.45, emissive: 0x2a2d32 });
   const red = new THREE.MeshStandardMaterial({ color: 0xe23b3b, roughness: 0.35, emissive: 0x2a0606 });
   const back = new V3(0.2, -0.17, -0.27), front = new V3(0.08, -0.08, -0.66), L = back.distanceTo(front);
   const arm = new THREE.Group(); arm.position.copy(back); arm.lookAt(front);           // local +Z: back → front
@@ -4775,7 +4796,7 @@ function makeGun() {
   cyl(0.034, L, chrome, L / 2, true).material.side = THREE.DoubleSide;
   for (const z of [0.07, 0.16, L - 0.05]) { const ring = new THREE.Mesh(new THREE.TorusGeometry(0.035, 0.006, 10, 40), dark); ring.position.z = z; arm.add(ring); }
   const lip = new THREE.Mesh(new THREE.TorusGeometry(0.036, 0.008, 12, 40), chrome); lip.position.z = L; arm.add(lip);
-  const hole = new THREE.Mesh(new THREE.CircleGeometry(0.031, 32), new THREE.MeshBasicMaterial({ color: 0x15171a })); hole.position.z = L - 0.006; arm.add(hole);
+  const hole = new THREE.Mesh(new THREE.CircleGeometry(0.031, 32), new THREE.MeshBasicMaterial({ color: 0x3a3f46 })); hole.position.z = L - 0.006; arm.add(hole);
   cyl(0.045, 0.06, dark, -0.01);                                                       // housing
   const plunger = new THREE.Group(); arm.add(plunger);
   const rod = new THREE.Mesh(new THREE.CylinderGeometry(0.006, 0.006, 0.1, 12).rotateX(Math.PI / 2), chrome); rod.position.z = -0.08; plunger.add(rod);
