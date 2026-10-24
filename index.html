@@ -11,6 +11,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=PT+Mono&family=PT+Sans:wght@400;700&family=PT+Serif:ital,wght@0,400;1,400&display=swap">
+<script>try{const t=localStorage.getItem('vrtrip-theme');document.documentElement.dataset.theme=t==='dark'||t==='light'?t:(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light')}catch(e){document.documentElement.dataset.theme='light'}</script>
 <style>
 /* Layout: fixed instrument panel on the left, live 3D viewport on the right; on narrow screens the viewport sits on top */
 :root{
@@ -311,6 +312,7 @@ body.panel-off .view{grid-column:2}
   .floors{bottom:108px}
   .floors .btn{min-height:34px;min-width:92px;font-size:12.5px}
   .toast{bottom:auto;top:56px;left:50%;transform:translateX(-50%)}
+  body.walking .tip{top:56px;bottom:auto}                          /* walking: the hint goes up, the stick and floor buttons keep the bottom */
 }
 /* phones in landscape (low height): the 3D view takes the whole screen, the panel slides in as a drawer */
 @media (orientation:landscape) and (max-height:600px){
@@ -341,6 +343,7 @@ body.panel-off .view{grid-column:2}
   .floors{right:max(14px,env(safe-area-inset-right));bottom:12px}
   .floors .btn{min-height:36px;min-width:96px;font-size:13px}
   .toast{left:50%;transform:translateX(-50%);top:60px;bottom:auto}
+  body.walking .tip{top:60px;bottom:auto;max-width:calc(100% - 24px)}
 }
 
 /* phone-in-headset VR (Homido, Cardboard): the view fills the screen, all other UI is hidden */
@@ -385,10 +388,12 @@ body.cardboard .topbar,body.cardboard .walkui,body.cardboard .chip,body.cardboar
   --f-body:"PT Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
   --f-serif:"PT Serif",Georgia,serif;
   --f-mono:"PT Mono",ui-monospace,Menlo,Consolas,monospace;
+  --hover:#fff8e6;--input:#fbf5e6;--shadow:rgba(27,26,24,.85);--shade:#1b1a18;--grain1:rgba(90,60,20,.07);--grain2:rgba(255,255,255,.22);
+  --veil:rgba(232,218,187,.72);--on-fg:#F6EEDB;--accent-text:#A61E1E;
   color-scheme:light;
 }
 body{background:var(--bg)}
-.panel{background-color:var(--panel);background-image:radial-gradient(rgba(90,60,20,.07) 1px,transparent 1.4px),radial-gradient(rgba(255,255,255,.22) 1px,transparent 1.4px);background-size:5px 5px,9px 9px;background-position:0 0,2px 4px;border-right:3px solid var(--line);scrollbar-color:#1b1a18 transparent;gap:22px}
+.panel{background-color:var(--panel);background-image:radial-gradient(var(--grain1) 1px,transparent 1.4px),radial-gradient(var(--grain2) 1px,transparent 1.4px);background-size:5px 5px,9px 9px;background-position:0 0,2px 4px;border-right:3px solid var(--line);scrollbar-color:var(--line) transparent;gap:22px}
 :focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 /* the brand: an emblem and capitals with wide spacing */
 .mark{font:700 36px/1 var(--f-display);letter-spacing:.2em;text-transform:uppercase;align-items:center;gap:0}
@@ -396,11 +401,11 @@ body{background:var(--bg)}
 .mark::before{content:"";flex:none;width:48px;height:48px;margin-right:14px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 58 58'%3E%3Ccircle cx='29' cy='29' r='26' fill='none' stroke='%231b1a18' stroke-width='3'/%3E%3Cpath d='M6 46L52 14' stroke='%23A61E1E' stroke-width='9'/%3E%3Crect x='22' y='8' width='9' height='42' fill='%231b1a18'/%3E%3C/svg%3E") center/contain no-repeat}
 .lede{font:italic 14px/1.45 var(--f-serif);color:var(--fg)}
 .credit,.foot{font-family:var(--f-serif);font-style:italic}
-.credit a,.link,.toast-act{color:var(--accent)}
+.credit a,.link,.toast-act,.suggest:hover span{color:var(--accent-text)}
 /* sections are album sheets: a heavy frame, a thin second frame, «Лист NN» on the right */
 .sec{border:3px solid var(--line);outline:1px solid var(--line);outline-offset:4px;background:var(--raise);padding:14px 14px 16px;margin:5px}
 .sec > summary h2{font:700 19px/1.15 var(--f-display);letter-spacing:.14em;text-transform:uppercase}
-.sec > summary:hover h2{color:var(--accent)}
+.sec > summary:hover h2{color:var(--accent-text)}
 .sec > summary::after{border-color:var(--fg)}
 h2{font-family:var(--f-display);letter-spacing:.08em}
 .step{order:2;margin-left:auto;border:0;padding:0;color:var(--fg);font:italic 13px/1 var(--f-serif);letter-spacing:0;text-transform:none;white-space:nowrap}
@@ -411,26 +416,26 @@ h2{font-family:var(--f-display);letter-spacing:.08em}
 .note,.empty,.drop-sub,.check small,.mode-d{font-family:var(--f-serif);font-style:italic;color:var(--muted)}
 /* buttons, toggles, inputs: square, inked */
 .btn{border-radius:0;border:2px solid var(--line);background:var(--raise);color:var(--fg);font:600 14px/1 var(--f-display);letter-spacing:.1em;text-transform:uppercase}
-.btn:hover:not(:disabled){background:#fff8e6;border-color:var(--line)}
-.btn.primary{background:var(--accent);border-color:var(--line);color:var(--accent-ink);box-shadow:4px 4px 0 var(--line)}
+.btn:hover:not([aria-pressed="true"]):not(:disabled){background:var(--hover);border-color:var(--line)}
+.btn.primary{background:var(--accent);border-color:var(--line);color:var(--accent-ink);box-shadow:4px 4px 0 var(--shade)}
 .btn.primary:hover:not(:disabled){filter:none;background:#8f1414}
 .btn.armed,.del.armed{border-color:var(--bad);color:var(--bad)}
 .seg{border:2px solid var(--line);border-radius:0;background:var(--raise);padding:0;gap:0}
 .seg button{border-radius:0;font:500 14px/1.1 var(--f-display);letter-spacing:.06em;color:var(--fg)}
 .seg button+button{border-left:2px solid var(--line)}
-.seg button:hover:not(:disabled){background:#fff8e6}
-.seg button[aria-pressed="true"]{background:var(--fg);color:var(--accent-ink);box-shadow:none;font-weight:600}
-#seasonseg button[aria-pressed="true"],#cloudseg button[aria-pressed="true"]{background:var(--ochre);color:var(--fg)}
+.seg button:hover:not([aria-pressed="true"]):not(:disabled){background:var(--hover)}
+.seg button[aria-pressed="true"]{background:var(--fg);color:var(--on-fg);box-shadow:none;font-weight:600}
+#seasonseg button[aria-pressed="true"],#cloudseg button[aria-pressed="true"]{background:var(--ochre);color:#1b1a18}
 #peopleseg button[aria-pressed="true"],#landseg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
-.seg button.mixed{background:repeating-linear-gradient(135deg,rgba(27,26,24,.15) 0 4px,transparent 4px 9px);box-shadow:none}
+.seg button.mixed{background:repeating-linear-gradient(135deg,color-mix(in srgb,var(--fg) 15%,transparent) 0 4px,transparent 4px 9px);box-shadow:none}
 .chips button{border-radius:0;border:2px solid var(--line);color:var(--fg);font-family:var(--f-display);letter-spacing:.04em}
-.chips button[aria-pressed="true"]{background:var(--fg);border-color:var(--fg);color:var(--accent-ink)}
-.url input,.sunplace .city input,.sunplace input[type=number],.sunplace input[type=date],.dialog textarea{border-radius:0;border:2px solid var(--line);background:#fbf5e6;color:var(--fg)}
+.chips button[aria-pressed="true"]{background:var(--fg);border-color:var(--fg);color:var(--on-fg)}
+.url input,.sunplace .city input,.sunplace input[type=number],.sunplace input[type=date],.dialog textarea{border-radius:0;border:2px solid var(--line);background:var(--input);color:var(--fg)}
 input[type=range]{accent-color:var(--accent)}
 .check input{accent-color:var(--accent);width:20px;height:20px}
 .check{font-family:var(--f-display);letter-spacing:.06em;font-size:15px}
-.drop{border:2px solid var(--line);border-radius:0;background:repeating-linear-gradient(-30deg,transparent 0 10px,rgba(27,26,24,.08) 10px 11px),var(--raise);align-items:center;text-align:center}
-.drop:hover,.drop.over{border-color:var(--accent);background:repeating-linear-gradient(-30deg,transparent 0 10px,rgba(166,30,30,.12) 10px 11px),#fff8e6}
+.drop{border:2px solid var(--line);border-radius:0;background:repeating-linear-gradient(-30deg,transparent 0 10px,color-mix(in srgb,var(--fg) 9%,transparent) 10px 11px),var(--raise);align-items:center;text-align:center}
+.drop:hover,.drop.over{border-color:var(--accent);background:repeating-linear-gradient(-30deg,transparent 0 10px,rgba(166,30,30,.12) 10px 11px),var(--hover)}
 .drop-title{font:600 18px/1.2 var(--f-display);letter-spacing:.14em;text-transform:uppercase}
 .pick,.minfo li,.notes li,.dims,.del,.sunplace{border-radius:0;border:2px solid var(--line);background:var(--raise)}
 .pick[aria-pressed="true"]{border-color:var(--line);background:rgba(201,150,59,.28)}
@@ -441,18 +446,18 @@ input[type=range]{accent-color:var(--accent)}
 .suggest{border:2px solid var(--line);border-radius:0;background:var(--raise)}
 .suggest span{font-family:var(--f-display);letter-spacing:.08em;text-transform:uppercase}
 .suggest small{font-family:var(--f-serif);font-style:italic}
-.help dt{color:var(--accent)}
+.help dt,.note.warn,.dims small.warn,.toast.warn .toast-act{color:var(--accent-text)}
 .mode{border-radius:0;border:2px solid var(--line);background:var(--raise)}
 .mode svg{stroke:var(--fg)}
-.mode[aria-pressed="true"]{background:var(--fg);color:var(--accent-ink);border-color:var(--fg)}
-.mode[aria-pressed="true"] svg{stroke:var(--accent-ink)}
+.mode[aria-pressed="true"]{background:var(--fg);color:var(--on-fg);border-color:var(--fg)}
+.mode[aria-pressed="true"] svg{stroke:var(--on-fg)}
 .mode-t{font-family:var(--f-display);letter-spacing:.08em;text-transform:uppercase}
 /* the viewport furniture: an inked strip of tools, the mode strip, sheet captions */
-.toolbar,.modebar,.secui{background:var(--glass);border:3px solid var(--line);border-radius:0;backdrop-filter:none;box-shadow:5px 5px 0 rgba(27,26,24,.85)}
+.toolbar,.modebar,.secui{background:var(--glass);border:3px solid var(--line);border-radius:0;backdrop-filter:none;box-shadow:5px 5px 0 var(--shadow)}
 .toolbar{gap:0;padding:0}
 .tb{border-radius:0;color:var(--fg);font:600 11px/1 var(--f-display);letter-spacing:.12em;text-transform:uppercase}
 .tb+.tb{border-left:2px solid var(--line)}
-.tb:hover:not(:disabled){background:#fff8e6}
+.tb:hover:not([aria-pressed="true"]):not(:disabled){background:var(--hover)}
 .tb[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
 .tb-sep{background:var(--line);width:2px;margin:0}
 .swatches{padding:0 6px}
@@ -462,24 +467,24 @@ input[type=range]{accent-color:var(--accent)}
 .modebar .mode{border:0;border-radius:0;background:transparent;color:var(--fg)}
 .modebar .mode+.mode{border-left:2px solid var(--line)}
 .modebar .mode svg{stroke:var(--fg)}
-.modebar .mode:hover:not(:disabled){background:#fff8e6}
-.modebar .mode[aria-pressed="true"]{background:var(--fg);color:var(--accent-ink)}
-.modebar .mode[aria-pressed="true"] svg{stroke:var(--accent-ink)}
+.modebar .mode:hover:not([aria-pressed="true"]):not(:disabled){background:var(--hover)}
+.modebar .mode[aria-pressed="true"]{background:var(--fg);color:var(--on-fg)}
+.modebar .mode[aria-pressed="true"] svg{stroke:var(--on-fg)}
 .modebar .mode-t{font:600 11px/1 var(--f-display);letter-spacing:.14em}
 .panelbtn{border-radius:0;border:3px solid var(--line);background:var(--glass);color:var(--fg);backdrop-filter:none}
-.panelbtn:hover{background:#fff8e6;border-color:var(--line)}
+.panelbtn:hover{background:var(--hover);border-color:var(--line)}
 .tip,.chip,.gridnote{background:var(--glass);border:2px solid var(--line);border-radius:0;color:var(--fg)}
 .tip{font:italic 14px/1.4 var(--f-serif)}
 .tip.tool{border-color:var(--accent)}
 .chip,.gridnote{font-family:var(--f-mono)}
-.toast{border-radius:0;border:3px solid var(--line);background:var(--raise);color:var(--fg);box-shadow:6px 6px 0 var(--line)}
+.toast{border-radius:0;border:3px solid var(--line);background:var(--raise);color:var(--fg);box-shadow:6px 6px 0 var(--shade)}
 .toast.bad{border-color:var(--bad)}.toast.warn{border-color:var(--ochre)}.toast.ok{border-color:var(--ok)}
-.dialog,.clearpop,.cb-set{border-radius:0;border:3px solid var(--line);outline:1px solid var(--line);outline-offset:4px;background:var(--raise);box-shadow:10px 10px 0 rgba(27,26,24,.85)}
+.dialog,.clearpop,.cb-set{border-radius:0;border:3px solid var(--line);outline:1px solid var(--line);outline-offset:4px;background:var(--raise);box-shadow:10px 10px 0 var(--shadow)}
 .dialog h3{font:700 18px/1.2 var(--f-display);letter-spacing:.12em;text-transform:uppercase}
-.clearpop button{border-radius:0}.clearpop button:hover:not(:disabled){background:#fff8e6}
+.clearpop button{border-radius:0}.clearpop button:hover:not(:disabled){background:var(--hover)}
 .clearpop button.all{border-top:2px solid var(--line);color:var(--bad)}
-.busy{background:rgba(232,218,187,.72);font-family:var(--f-display);letter-spacing:.12em;text-transform:uppercase}
-.spin{border-color:rgba(27,26,24,.25);border-top-color:var(--accent)}
+.busy{background:var(--veil);font-family:var(--f-display);letter-spacing:.12em;text-transform:uppercase}
+.spin{border-color:color-mix(in srgb,var(--fg) 25%,transparent);border-top-color:var(--accent)}
 .joy{background:var(--glass);border:3px solid var(--line)}
 .knob{background:var(--accent);border:3px solid var(--line)}
 .floors .btn{background:var(--glass)}
@@ -488,10 +493,35 @@ input[type=range]{accent-color:var(--accent)}
 .ar-bottom .btn{background:var(--glass)}
 .ar-bottom .btn.primary,.ar-ask .btn.primary{background:var(--accent);color:var(--accent-ink)}
 .cb-stick i{background:rgba(166,30,30,.8)}
-.scrim{background:rgba(27,26,24,.4)}
+.scrim{background:rgba(0,0,0,.45)}
 #envseg{grid-template-columns:repeat(3,1fr)}
 @container (max-width:900px){.swatches{padding:0 2px}.sw{margin:0 1px}.toolbar .tb{min-width:38px}}
 @media (max-width:820px), (orientation:portrait) and (max-width:1000px){.panel{border-top:3px solid var(--line)}}
+/* a pressed control keeps its look under the pointer (the base hover rules are stronger than the pressed ones) */
+.seg button[aria-pressed="true"]:hover:not(:disabled){background:var(--fg);color:var(--on-fg)}
+#seasonseg button[aria-pressed="true"]:hover:not(:disabled),#cloudseg button[aria-pressed="true"]:hover:not(:disabled){background:var(--ochre);color:#1b1a18}
+#peopleseg button[aria-pressed="true"]:hover:not(:disabled),#landseg button[aria-pressed="true"]:hover:not(:disabled){background:var(--accent);color:var(--accent-ink)}
+.toolbar .tb[aria-pressed="true"]:hover:not(:disabled){background:var(--accent);color:var(--accent-ink)}
+.modebar .mode[aria-pressed="true"]:hover:not(:disabled){background:var(--fg);color:var(--on-fg)}
+.chips button[aria-pressed="true"]:hover{background:var(--fg);color:var(--on-fg)}
+/* the night sheet: the same drawing in cream lines on deep blue, red and gold — «Тёмная» */
+:root[data-theme="dark"]{
+  --bg:#0B1120;--panel:#0E1526;--raise:#141D33;--line:#E9E2CF;--line-strong:#E9E2CF;--fg:#E9E2CF;--muted:#A9B3C9;
+  --accent:#C8102E;--accent-ink:#FBF3E2;--accent-wash:rgba(200,16,46,.2);--accent-text:#FF7A8A;--ochre:#F2C14E;
+  --glass:rgba(14,21,38,.94);--ok:#7fc39a;--bad:#ff7a8a;--hover:#1c2742;--input:#0B1120;--shadow:rgba(0,0,0,.65);--shade:#000;
+  --grain1:rgba(255,255,255,.035);--grain2:rgba(242,193,78,.045);--veil:rgba(11,17,32,.74);--on-fg:#0E1526;
+  color-scheme:dark;
+}
+:root[data-theme="dark"] .mark::before{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 58 58'%3E%3Ccircle cx='29' cy='29' r='26' fill='%23F2C14E'/%3E%3Cpath d='M6 46L52 14' stroke='%230E1526' stroke-width='9'/%3E%3Crect x='22' y='8' width='9' height='42' fill='%23C8102E'/%3E%3C/svg%3E")}
+:root[data-theme="dark"] .mark{color:#F2C14E}
+:root[data-theme="dark"] .pick[aria-pressed="true"] .box::after{border-color:var(--on-fg)}
+:root[data-theme="dark"] .tb[aria-pressed="true"],:root[data-theme="dark"] .btn.primary{box-shadow:0 0 16px rgba(200,16,46,.55)}
+:root[data-theme="dark"] .sec{background:var(--raise)}
+.brand{position:relative}
+.themebtn{position:absolute;right:0;top:4px;display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 10px;border:2px solid var(--line);border-radius:0;background:var(--raise);color:var(--fg);font:600 12px/1 var(--f-display);letter-spacing:.12em;text-transform:uppercase;cursor:pointer}
+.themebtn:hover{background:var(--hover)}
+.themebtn svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.brand .mark{padding-right:96px}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script type="importmap">
@@ -508,6 +538,7 @@ input[type=range]{accent-color:var(--accent)}
 <aside class="panel">
   <header class="brand">
     <div class="mark">VR<span>trip</span></div>
+    <button type="button" class="themebtn" id="themebtn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg><span>Ночь</span></button>
     <div class="update" id="update" hidden><span>Вышла новая версия VRtrip <b id="upd-ver"></b>.</span><button type="button" class="btn small primary" id="upd-btn">Обновить</button></div>
     <p class="lede">Архитектурные 3D-модели в Meta Quest&nbsp;3 и в браузере: прогулка от первого лица, макет на столе, сквозной режим, разметка и комментарии.</p>
     <a class="suggest" href="https://t.me/VRtrip_AR_MR" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21.5 4.5 2.8 11.7c-.9.4-.9 1.6.1 1.9l4.6 1.4 1.8 5.5c.3.8 1.3 1 1.9.4l2.6-2.5 4.8 3.5c.7.5 1.7.1 1.9-.7L22.9 5.9c.2-1-.6-1.8-1.4-1.4Z"/></svg><span>Предложить улучшение</span><small>Telegram-канал VRtrip</small></a>
@@ -945,7 +976,7 @@ const UP = new V3(0, 1, 0), DOWN = new V3(0, -1, 0);
 const UNITS = { mm: 0.001, cm: 0.01, m: 1, in: 0.0254, ft: 0.3048 };
 const TABLE_STEPS = [20, 50, 100, 200, 500, 1000];
 const EYE = 1.65, STEP = 0.45, RADIUS = 0.3, GRAV = 9.8;
-const APP_VERSION = '3.28';
+const APP_VERSION = '3.29';
 const BASE_COLORS = ['#f2efe8', '#d8a33f', '#e0604a', '#3f86c9'];
 const KINDS = { issue: { label: 'Замечание', color: '#e0604a' }, question: { label: 'Вопрос', color: '#d8a33f' }, idea: { label: 'Идея', color: '#4fae7f' } };
 const TOOLS = [['nav', 'Выделение'], ['pin', 'Метка'], ['measure', 'Рулетка'], ['pen', 'Карандаш'], ['erase', 'Ластик'], ['section', 'Сечение'], ['ref', 'Репер'], ['explode', 'Взрыв']];   // «Куб» временно скрыт: код инструмента сохранён
@@ -1043,6 +1074,33 @@ controls.screenSpacePanning = true;
 
 const hemi = new THREE.HemisphereLight(0xffffff, 0x7f8589, 2.1); scene.add(hemi);
 const sun = new THREE.DirectionalLight(0xfff6ea, 2.2); sun.position.set(40, 70, 25); scene.add(sun);
+/* the sun on the sky: a disc with a soft halo exactly where the light comes from; buildings hide it, it sets at night;
+   on the «Бумага» sheet it is a red disc, as on a constructivist drawing */
+const sunDisc = (() => {
+  const c = document.createElement('canvas'); c.width = c.height = 256; const x = c.getContext('2d');
+  const g = x.createRadialGradient(128, 128, 0, 128, 128, 128);
+  g.addColorStop(0, 'rgba(255,255,255,1)'); g.addColorStop(0.33, 'rgba(255,255,255,1)'); g.addColorStop(0.36, 'rgba(255,255,255,.5)');
+  g.addColorStop(0.55, 'rgba(255,255,255,.14)'); g.addColorStop(1, 'rgba(255,255,255,0)');
+  x.fillStyle = g; x.fillRect(0, 0, 256, 256);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
+  const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: t, transparent: true, depthWrite: false, fog: false, toneMapped: false }));
+  s.renderOrder = -9; s.frustumCulled = false; s.raycast = () => {}; s.visible = false; scene.add(s); return s;
+})();
+const SUN_DISC = { sky: '#fff2c8', studio: '#ffcf5a', paper: '#B3201A', graphite: '#d8a33f' };
+const _sd = new V3(), _sp = new V3();
+function sunDiscUpdate() {
+  const world = state.view === 'orbit' || state.view === 'walk' || (state.view === 'xr' && !state.passthrough);
+  _sd.copy(sun.position).sub(sun.target.position).normalize();
+  const cl = isReal() ? CLOAD() : 0;
+  sunDisc.visible = world && _sd.y > -0.03 && cl < 0.95;
+  if (!sunDisc.visible) return;
+  camera.getWorldPosition(_sp);
+  const d = Math.min(800, camera.far * 0.7);
+  sunDisc.position.copy(_sp).addScaledVector(_sd, d);
+  sunDisc.scale.setScalar(d * (prefs.env === 'paper' ? 0.15 : 0.1));      // the disc ~2° across (on the paper sheet ~3°, a bold red sun)
+  sunDisc.material.color.set(SUN_DISC[prefs.env] || SUN_DISC.graphite);
+  sunDisc.material.opacity = (1 - cl * 0.85) * THREE.MathUtils.clamp((_sd.y + 0.03) / 0.08, 0, 1);   // fades at the horizon and behind clouds
+}
 
 const ENV = {
   graphite: { top: '#1b2024', bottom: '#1b2024', ground: '#20262b', grid: 0.22, hemiSky: '#ffffff', hemiGround: '#7f8589', hemi: 2.1, sun: '#fff6ea', sunI: 2.2, sunPos: [40, 70, 25], fog: null, flat: true },
@@ -2428,6 +2486,15 @@ for (const [id, k] of [['#seasonseg', 'season'], ['#cloudseg', 'clouds'], ['#pre
   $(id).addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; prefs[k] = b.dataset.val; savePrefs(); renderPrefs(); applyEnv(); shadowsDirty(); });
 $('#p-gravity').addEventListener('change', e => { prefs.gravity = e.target.checked; savePrefs(); player.vy = 0; drawPalette(); });
 $('#p-collide').addEventListener('change', e => { prefs.collide = e.target.checked; savePrefs(); });
+/* interface theme: the light paper sheet or the night one; remembered, else follows the system */
+function renderTheme() {
+  const dark = document.documentElement.dataset.theme === 'dark', b = $('#themebtn');
+  b.setAttribute('aria-pressed', String(dark)); b.title = dark ? 'Светлая тема' : 'Тёмная тема';
+  b.querySelector('span').textContent = dark ? 'День' : 'Ночь';
+  b.querySelector('path').setAttribute('d', dark ? 'M12 4V2M12 22v-2M4 12H2M22 12h-2M5.6 5.6 4.2 4.2M19.8 19.8l-1.4-1.4M5.6 18.4l-1.4 1.4M19.8 4.2l-1.4 1.4M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z' : 'M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z');
+}
+$('#themebtn').addEventListener('click', () => { const r = document.documentElement; r.dataset.theme = r.dataset.theme === 'dark' ? 'light' : 'dark'; lsSet('vrtrip-theme', r.dataset.theme); renderTheme(); });
+renderTheme();
 $('#envseg').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; prefs.env = prefs.plainEnv = b.dataset.val; savePrefs(); renderPrefs(); applyEnv(); });
 $('#lookseg').addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; prefs.env = b.dataset.val === 'real' ? 'sky' : prefs.plainEnv; savePrefs(); renderPrefs(); applyEnv(); shadowsDirty(); });
 
@@ -2665,7 +2732,7 @@ class ModelOutlinePass extends Pass {
   }
   setSize(w, h) { this.rt.setSize(w, h); this.clean.setSize(w, h); this.mat.uniforms.res.value.set(w, h); this.cleanMat.uniforms.res.value.set(w, h); }
   render(renderer, writeBuffer, readBuffer) {
-    const hide = [sky, ground, previewGrid, catcher, gizmo, secVis, compass, land.group, ...splatInst, dropInst, ...toy.splats].filter(o => o.visible);   // paint never gets outlined
+    const hide = [sky, sunDisc, ground, previewGrid, catcher, gizmo, secVis, compass, land.group, ...splatInst, dropInst, ...toy.splats].filter(o => o.visible);   // paint never gets outlined
     const lines = []; for (const r of shownRecs()) for (const m of r.meshes || []) if (m.userData.edges?.visible) lines.push(m.userData.edges);
     const glass = []; for (const r of shownRecs()) for (const m of r.meshes || []) if (m.material.transparent && m.material.opacity < 0.5 && m.visible) glass.push(m);
     [...hide, ...lines].forEach(o => { o.visible = false; });
@@ -2741,8 +2808,25 @@ const UI_LAYER = 5;
 let lineState = null;
 camera.layers.enable(UI_LAYER);
 function toUI(o) { o.traverse(x => { if (x.material && x.material !== PICK_MAT && (x.isSprite || x.material.isMeshBasicMaterial || x.material.isLineBasicMaterial)) x.layers.set(UI_LAYER); }); return o; }
+/* floating bars find their own place: the section / explode bar and the grid legend sit just below whatever the top
+   bar takes right now (one row or two, with the left buttons or not), never on top of it */
+let barsT = 0;
+function placeBars() {
+  const now = performance.now(); if (now - barsT < 250) return; barsT = now;
+  const vr = $('.view').getBoundingClientRect(); if (!vr.height) return;
+  const top = [...document.querySelectorAll('.topbar > *')].map(e => e.getBoundingClientRect()).filter(r => r.height > 0 && r.top - vr.top < vr.height / 3);
+  for (const id of ['#secui', '#explui']) {
+    const e = $(id); if (e.hidden) continue;
+    e.style.top = top.length ? Math.round(Math.max(...top.map(r => r.bottom)) - vr.top + 10) + 'px' : '';   // bars at the bottom (phones): leave it to the stylesheet
+  }
+  const gn = $('#gridnote'); if (gn.hidden) return;
+  const lb = $('.lbtns').getBoundingClientRect(); let t = lb.bottom - vr.top + 10;
+  const g = gn.getBoundingClientRect();
+  for (const id of ['#secui', '#explui']) { const e = $(id); if (e.hidden) continue; const br = e.getBoundingClientRect(); if (br.left < g.right + 6 && br.right > g.left) t = Math.max(t, br.bottom - vr.top + 10); }
+  gn.style.top = Math.round(t) + 'px';
+}
 function renderFrame() {
-  updateGrid();
+  updateGrid(); placeBars();
   const gn = $('#gridnote'), gnOff = state.view !== 'orbit' || isReal() || !(previewGrid.visible || ground.visible) || !shownRecs().length; if (gn.hidden !== gnOff) gn.hidden = gnOff;
   const crease = VIS.edges && !outlineActive();                  // 1-px crease lines only where the outline pass does not run (headset, glasses)
   if (crease !== lineState) { lineState = crease; for (const r of shownRecs()) for (const m of r.meshes || []) if (m.userData.edges) m.userData.edges.visible = crease; }
@@ -6112,7 +6196,7 @@ renderer.setAnimationLoop((t, xrFrame) => {
   else { flyUpdate(dt); controls.update(); }
   explodeUpdate(dt);
   if (sky.visible) { sky.position.copy(camera.getWorldPosition(_v)); sky.scale.setScalar(Math.min(1, camera.far * 0.9 / 1000)); }
-  updateSection(); updateSectionCap(); updateBillboards(); updateLabels(); updateCursor(); updateLighting(); compassUpdate(); skyUpdate(dt); weatherUpdate(dt); peopleUpdate(dt); landUpdate(dt);
+  updateSection(); updateSectionCap(); updateBillboards(); updateLabels(); updateCursor(); updateLighting(); compassUpdate(); skyUpdate(dt); sunDiscUpdate(); weatherUpdate(dt); peopleUpdate(dt); landUpdate(dt);
   if (cb.on) cbRender(); else renderFrame();
 });
 
