@@ -305,8 +305,7 @@ body.panel-off .view{grid-column:2}
   .panelbtn{width:40px;height:40px;border-radius:10px}
   .topbar>.toolbar,.view .topbar>.toolbar{order:1;width:auto;max-width:100%;justify-self:auto;flex-wrap:nowrap;justify-content:flex-start;overflow-x:auto;scrollbar-width:none;padding:3px;gap:1px}
   .toolbar::-webkit-scrollbar{display:none}
-  .topbar>.toolbar{-webkit-mask-image:linear-gradient(to right,#000 88%,transparent);mask-image:linear-gradient(to right,#000 88%,transparent)}
-  .topbar>.toolbar.end{-webkit-mask-image:none;mask-image:none}
+  .topbar>.toolbar{background:linear-gradient(to left,transparent,var(--glass) 70%) right center/34px 100% no-repeat local,linear-gradient(to left,color-mix(in srgb,var(--fg) 30%,transparent),transparent) right center/14px 100% no-repeat scroll,var(--glass)}                 /* more tools to the right: a soft shadow at the edge, the frame stays whole */
   .topbar>.dock,.view .topbar>.dock{order:2;align-self:center;flex-direction:row;flex-wrap:wrap;justify-content:center;align-items:flex-start;gap:6px}
   .modebar,.mediabar{padding:3px;gap:1px}
   .swatches{flex-wrap:nowrap}
@@ -336,8 +335,7 @@ body.panel-off .view{grid-column:2}
   body.drawer .panel{transform:none}
   .topbar{top:8px;left:max(8px,env(safe-area-inset-left));right:max(8px,env(safe-area-inset-right));grid-template-columns:auto minmax(0,1fr) auto!important;gap:6px}
   .topbar>.lbtns{grid-column:1}
-  .topbar>.toolbar{grid-column:2!important;justify-self:center;flex-wrap:nowrap;justify-content:flex-start;overflow-x:auto;max-width:100%;scrollbar-width:none;-webkit-mask-image:linear-gradient(to right,#000 90%,transparent);mask-image:linear-gradient(to right,#000 90%,transparent)}
-  .topbar>.toolbar.end{-webkit-mask-image:none;mask-image:none}
+  .topbar>.toolbar{grid-column:2!important;justify-self:center;flex-wrap:nowrap;justify-content:flex-start;overflow-x:auto;max-width:100%;scrollbar-width:none;background:linear-gradient(to left,transparent,var(--glass) 70%) right center/34px 100% no-repeat local,linear-gradient(to left,color-mix(in srgb,var(--fg) 30%,transparent),transparent) right center/14px 100% no-repeat scroll,var(--glass)}
   .view .topbar>.dock{grid-column:3!important;grid-row:1!important;justify-self:end;flex-direction:row;gap:6px}
   .panelbtn{width:42px;height:42px}
   .toolbar,.modebar,.mediabar{padding:3px;gap:1px}
@@ -532,7 +530,7 @@ input[type=range]{accent-color:var(--accent)}
 #envseg{grid-template-columns:repeat(3,1fr)}
 @media (min-width:821px) and (min-height:601px){body.walking .tip{max-width:max(200px,calc(100% - 400px))}}   /* between the stick and the floor buttons */
 @container (max-width:900px){.swatches{padding:0 2px}.sw{margin:0 1px}.toolbar .tb{min-width:38px}}
-@media (max-width:820px), (orientation:portrait) and (max-width:1000px){.panel{border-top:3px solid var(--line)}}
+@media (max-width:820px) and (min-height:601px), (orientation:portrait) and (max-width:1000px){.panel{border-top:0}.view{box-shadow:0 3px 0 var(--line)}}   /* the rule under the view rides with it while the panel scrolls */
 /* a pressed control keeps its look under the pointer (the base hover rules are stronger than the pressed ones) */
 .seg button[aria-pressed="true"]:hover:not(:disabled){background:var(--fg);color:var(--on-fg)}
 #seasonseg button[aria-pressed="true"]:hover:not(:disabled),#cloudseg button[aria-pressed="true"]:hover:not(:disabled){background:var(--ochre);color:#1b1a18}
@@ -1047,7 +1045,7 @@ const UP = new V3(0, 1, 0), DOWN = new V3(0, -1, 0);
 const UNITS = { mm: 0.001, cm: 0.01, m: 1, in: 0.0254, ft: 0.3048 };
 const TABLE_STEPS = [20, 50, 100, 200, 500, 1000];
 const EYE = 1.65, STEP = 0.45, RADIUS = 0.3, GRAV = 9.8;
-const APP_VERSION = '3.37';
+const APP_VERSION = '3.38';
 const BASE_COLORS = ['#f2efe8', '#d8a33f', '#e0604a', '#3f86c9'];
 const KINDS = { issue: { label: 'Замечание', color: '#e0604a' }, question: { label: 'Вопрос', color: '#d8a33f' }, idea: { label: 'Идея', color: '#4fae7f' } };
 const TOOLS = [['nav', 'Выделение'], ['pin', 'Метка'], ['measure', 'Рулетка'], ['pen', 'Карандаш'], ['erase', 'Ластик'], ['section', 'Сечение'], ['ref', 'Репер'], ['explode', 'Взрыв'], ['game', 'Игра']];   // «Куб» временно скрыт: код инструмента сохранён
