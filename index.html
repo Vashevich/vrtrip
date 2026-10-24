@@ -234,6 +234,7 @@ h2{display:flex;align-items:center;gap:10px;margin:0;font:600 16px/1.2 var(--f-b
 .joy{position:absolute;left:18px;bottom:18px;width:124px;height:124px;border-radius:50%;background:var(--glass);border:1px solid var(--line-strong);touch-action:none;cursor:grab}
 .knob{position:absolute;left:50%;top:50%;width:52px;height:52px;margin:-26px 0 0 -26px;border-radius:50%;background:var(--raise);border:2px solid var(--accent);pointer-events:none}
 .floors{position:absolute;right:18px;bottom:18px;display:flex;flex-direction:column;gap:6px}
+.joyr,#w-jump{display:none}
 .floors .btn{min-width:108px;background:var(--glass)}
 .floors .btn[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
 .dialog{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(420px,calc(100% - 32px));display:flex;flex-direction:column;gap:12px;padding:18px;background:var(--panel);border:1px solid var(--line-strong);border-radius:12px;box-shadow:0 20px 50px rgba(0,0,0,.5);z-index:20}
@@ -342,11 +343,20 @@ body.panel-off .view{grid-column:2}
   .secui{top:60px}
   .chip{display:none}
   .tip{bottom:10px;max-width:calc(100% - 300px);font-size:12.5px;padding:6px 10px}
-  .joy{width:96px;height:96px;left:max(14px,env(safe-area-inset-left));bottom:12px}
-  .floors{right:max(14px,env(safe-area-inset-right));bottom:12px}
-  .floors .btn{min-height:36px;min-width:96px;font-size:13px}
+  /* walking like a phone game: move stick on the left, look stick on the right, the buttons stacked above each stick, the middle left free */
+  .joy{width:112px;height:112px;left:max(16px,env(safe-area-inset-left));bottom:14px}
+  .joyr{display:block;left:auto;right:max(16px,env(safe-area-inset-right))}
+  .floors{display:contents}
+  .floors .btn{position:absolute;min-height:36px;height:36px;min-width:0;width:112px;padding:0 6px;font-size:12.5px;justify-content:center}
+  #w-jump{display:inline-flex}
+  .floors .btn{white-space:nowrap}.wfl{display:none}               /* «▲ выше» — fits the narrow column */
+  #w-exit,#w-up,#w-down{left:max(16px,env(safe-area-inset-left))}
+  #w-toy,#w-hook,#w-jump{right:max(16px,env(safe-area-inset-right))}
+  #w-down,#w-jump{bottom:140px}
+  #w-up,#w-hook{bottom:182px}
+  #w-exit,#w-toy{bottom:224px}
   .toast{left:50%;transform:translateX(-50%);top:60px;bottom:auto}
-  body.walking .tip{top:60px;bottom:auto;max-width:calc(100% - 24px)}
+  body.walking .tip{top:60px;bottom:auto;max-width:calc(100% - 320px)}
 }
 
 /* phone-in-headset VR (Homido, Cardboard): the view fills the screen, all other UI is hidden */
@@ -490,6 +500,7 @@ input[type=range]{accent-color:var(--accent)}
 .spin{border-color:color-mix(in srgb,var(--fg) 25%,transparent);border-top-color:var(--accent)}
 .joy{background:var(--glass);border:3px solid var(--line)}
 .knob{background:var(--accent);border:3px solid var(--line)}
+.joyr .knob{background:var(--ochre)}                 /* the look stick: ochre, the move stick: red */
 .floors .btn{background:var(--glass)}
 .floors .btn[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--line)}
 .ar-top span,.ar-ask{border-radius:0;border:2px solid var(--line);background:var(--glass);color:var(--fg)}
@@ -863,11 +874,13 @@ input[type=range]{accent-color:var(--accent)}
     <div class="joy" id="joy" aria-label="Джойстик движения"><div class="knob" id="knob"></div></div>
     <div class="floors">
       <button type="button" class="btn small" id="w-exit">✕ Выйти</button>
-      <button type="button" class="btn small" id="w-up">▲ Этаж выше</button>
-      <button type="button" class="btn small" id="w-down">▼ Этаж ниже</button>
+      <button type="button" class="btn small" id="w-up">▲ <span class="wfl">Этаж </span>выше</button>
+      <button type="button" class="btn small" id="w-down">▼ <span class="wfl">Этаж </span>ниже</button>
       <button type="button" class="btn small" id="w-toy" aria-pressed="false" title="Пинбольная пушка с краской (B)">● Шарики</button>
       <button type="button" class="btn small" id="w-hook" aria-pressed="false" title="Крюк-кошка: стрелять и подтягиваться (G)">⚓ Крюк</button>
+      <button type="button" class="btn small" id="w-jump" title="Прыжок (пробел)">⤒ Прыжок</button>
     </div>
+    <div class="joy joyr" id="joyr" aria-label="Джойстик обзора"><div class="knob"></div></div>
   </div>
   <div class="secui" id="secui" hidden>
     <button type="button" class="btn small" data-sec="plan">План</button>
@@ -986,7 +999,7 @@ const UP = new V3(0, 1, 0), DOWN = new V3(0, -1, 0);
 const UNITS = { mm: 0.001, cm: 0.01, m: 1, in: 0.0254, ft: 0.3048 };
 const TABLE_STEPS = [20, 50, 100, 200, 500, 1000];
 const EYE = 1.65, STEP = 0.45, RADIUS = 0.3, GRAV = 9.8;
-const APP_VERSION = '3.30';
+const APP_VERSION = '3.31';
 const BASE_COLORS = ['#f2efe8', '#d8a33f', '#e0604a', '#3f86c9'];
 const KINDS = { issue: { label: 'Замечание', color: '#e0604a' }, question: { label: 'Вопрос', color: '#d8a33f' }, idea: { label: 'Идея', color: '#4fae7f' } };
 const TOOLS = [['nav', 'Выделение'], ['pin', 'Метка'], ['measure', 'Рулетка'], ['pen', 'Карандаш'], ['erase', 'Ластик'], ['section', 'Сечение'], ['ref', 'Репер'], ['explode', 'Взрыв']];   // «Куб» временно скрыт: код инструмента сохранён
@@ -3889,6 +3902,8 @@ function updateTip() {
   else txt = TIPS[state.tool][tool.phase] || TIPS[state.tool].idle;
   if (txt && state.view === 'orbit' && state.tool !== 'nav' && !matchMedia('(pointer:coarse)').matches) txt += ' · средняя кнопка — вращать, правая — двигать';
   tip.textContent = txt; tip.hidden = !txt; tip.classList.toggle('tool', state.tool !== 'nav');
+  clearTimeout(updateTip.t);
+  if (txt && state.view === 'walk' && state.tool === 'nav' && !sel && matchMedia('(pointer:coarse)').matches) updateTip.t = setTimeout(() => { if (tip.textContent === txt) tip.hidden = true; }, 6000);
   $('#chip').hidden = state.view !== 'orbit' || state.tool !== 'nav' || !!txt;
 }
 
@@ -4256,7 +4271,7 @@ function exitWalk() {
   if (cb.on) exitCardboard();
   if (toy.on) setToy(false);
   stopAim();
-  state.view = 'orbit'; keys.clear(); joy.x = joy.y = 0; cancelTool();
+  state.view = 'orbit'; keys.clear(); joy.x = joy.y = joyL.x = joyL.y = 0; cancelTool();
   document.body.classList.remove('walking'); $('#walkui').hidden = true; updateCanvasCursor();
   camera.fov = 55; camera.rotation.set(0, 0, 0); controls.enabled = true;
   applyEnv(); frame(); updateTip(); onResize(); updateModeButtons();
@@ -4270,6 +4285,10 @@ function walkUpdate(dt) {
     const ey = aimEdge.y < 0.08 ? (aimEdge.y - 0.08) / 0.08 : aimEdge.y > 0.92 ? (aimEdge.y - 0.92) / 0.08 : 0;
     if (ex) player.yaw -= THREE.MathUtils.clamp(ex, -1, 1) * 2.4 * dt;
     if (ey) player.pitch = THREE.MathUtils.clamp(player.pitch - THREE.MathUtils.clamp(ey, -1, 1) * 1.4 * dt, -1.5, 1.5);
+  }
+  if (joyL.x || joyL.y) {                                 // look stick: a soft curve — fine aim near the centre, a quick turn at the rim
+    player.yaw -= joyL.x * Math.abs(joyL.x) * 2.6 * dt;
+    player.pitch = THREE.MathUtils.clamp(player.pitch - joyL.y * Math.abs(joyL.y) * 1.6 * dt, -1.5, 1.5);
   }
   if (hookStep(dt)) return;                              // on the grappling hook: its own physics
   let fwd = (k('KeyW') || k('ArrowUp') ? 1 : 0) - (k('KeyS') || k('ArrowDown') ? 1 : 0) - joy.y;
@@ -4320,17 +4339,23 @@ $('#w-up').addEventListener('click', () => walkFloor(true));
 $('#w-down').addEventListener('click', () => walkFloor(false));
 
 /* joystick (touch, mouse, Quest browser pointer) */
-const joyEl = $('#joy'), knob = $('#knob');
-function joyMove(e) {
-  const r = joyEl.getBoundingClientRect(); const R = r.width / 2;
-  let x = (e.clientX - r.left - R) / R, y = (e.clientY - r.top - R) / R; const m = Math.hypot(x, y); if (m > 1) { x /= m; y /= m; }
-  joy.x = Math.abs(x) < 0.12 ? 0 : x; joy.y = Math.abs(y) < 0.12 ? 0 : y;
-  knob.style.transform = `translate(${x * R * 0.62}px, ${y * R * 0.62}px)`;
+/* the look stick (landscape phones): held over — the view keeps turning, like the right stick of a gamepad */
+const joyL = { x: 0, y: 0, id: null };
+function touchStick(el, st) {
+  const kn = el.querySelector('.knob');
+  const move = e => {
+    const r = el.getBoundingClientRect(); const R = r.width / 2;
+    let x = (e.clientX - r.left - R) / R, y = (e.clientY - r.top - R) / R; const m = Math.hypot(x, y); if (m > 1) { x /= m; y /= m; }
+    st.x = Math.abs(x) < 0.12 ? 0 : x; st.y = Math.abs(y) < 0.12 ? 0 : y;
+    kn.style.transform = `translate(${x * R * 0.62}px, ${y * R * 0.62}px)`;
+  };
+  el.addEventListener('pointerdown', e => { st.id = e.pointerId; el.setPointerCapture(e.pointerId); move(e); e.preventDefault(); });
+  el.addEventListener('pointermove', e => { if (e.pointerId === st.id) move(e); });
+  const end = e => { if (e.pointerId !== st.id) return; st.id = null; st.x = st.y = 0; kn.style.transform = ''; };
+  el.addEventListener('pointerup', end); el.addEventListener('pointercancel', end);
 }
-joyEl.addEventListener('pointerdown', e => { joy.id = e.pointerId; joyEl.setPointerCapture(e.pointerId); joyMove(e); e.preventDefault(); });
-joyEl.addEventListener('pointermove', e => { if (e.pointerId === joy.id) joyMove(e); });
-const joyEnd = e => { if (e.pointerId !== joy.id) return; joy.id = null; joy.x = joy.y = 0; knob.style.transform = ''; };
-joyEl.addEventListener('pointerup', joyEnd); joyEl.addEventListener('pointercancel', joyEnd);
+touchStick($("#joy"), joy); touchStick($("#joyr"), joyL);
+$('#w-jump').addEventListener('click', () => { walk.jump = true; canvas.focus({ preventScroll: true }); });
 
 /* panel toggle: drawer on landscape phones, collapse on larger screens */
 const compactMQ = matchMedia('(orientation:landscape) and (max-height:600px)');
