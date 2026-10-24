@@ -822,7 +822,7 @@ const UP = new V3(0, 1, 0), DOWN = new V3(0, -1, 0);
 const UNITS = { mm: 0.001, cm: 0.01, m: 1, in: 0.0254, ft: 0.3048 };
 const TABLE_STEPS = [20, 50, 100, 200, 500, 1000];
 const EYE = 1.65, STEP = 0.45, RADIUS = 0.3, GRAV = 9.8;
-const APP_VERSION = '3.23';
+const APP_VERSION = '3.24';
 const BASE_COLORS = ['#f2efe8', '#d8a33f', '#e0604a', '#3f86c9'];
 const KINDS = { issue: { label: 'Замечание', color: '#e0604a' }, question: { label: 'Вопрос', color: '#d8a33f' }, idea: { label: 'Идея', color: '#4fae7f' } };
 const TOOLS = [['nav', 'Выделение'], ['pin', 'Метка'], ['measure', 'Рулетка'], ['pen', 'Карандаш'], ['erase', 'Ластик'], ['section', 'Сечение'], ['ref', 'Репер'], ['explode', 'Взрыв']];   // «Куб» временно скрыт: код инструмента сохранён
@@ -1075,13 +1075,12 @@ function skyUpdate(dt) {
   if (scene.fog) { fog.color.copy(u.bottom.value); fog.near = prefs.precip === 'none' ? 120 : 40; fog.far = prefs.precip === 'none' ? 1000 : 260; }
 }
 const CLOAD = () => isReal() ? CLOUD_K[prefs.clouds] ?? 0.5 : 0;
-/* people: a little life around the installation — low-poly figures with real proportions and flat two-tone shading
-   (faceless, muted clothes, like the people on architectural presentations), real scale.
+/* people: a little life around the installation — low-poly people made the way game characters are (~700 triangles,
+   one continuous mesh on a skeleton, so knees and elbows bend without gaps), real proportions, faceted shading, no faces.
    Each person wanders, meets someone and chats (a thought cloud over the one speaking, gestures), sits down on a bench
    or on the edge of a low ledge (knees bent, feet on the floor below), walks up steps, jumps onto ledges up to ~1.4 m,
-   drops down from them and turns away from walls.
-   Everything is instanced — a crowd is ~15 draw calls; rays use the model's BVH. No shadows (they would redraw the
-   shadow map every frame). */
+   drops down from them and turns away from walls. In the rain they open umbrellas, in the snow they wear woolly hats
+   and scarves. Rays use the model's BVH. No shadows (they would redraw the shadow map every frame). */
 const PEOPLE_N = { none: 0, few: 8, many: 24 };
 const P_SKIN = ['#f1cfb4', '#e3b48f', '#c99068', '#9b6748', '#704630', '#f4d6c0'];
 const P_TOP = ['#6b7075', '#3e5166', '#8b9a7c', '#c7a86b', '#a65f4f', '#e2ddd3', '#30363a', '#7e90a3', '#d58a44', '#5d7b6c', '#8c6f8f', '#b8bec4'];
@@ -1090,51 +1089,140 @@ const P_PANTS = ['#2a2d31', '#3a4552', '#5a5348', '#4f6a8a', '#c7bdab', '#6d737a
 const P_SHOE = ['#232327', '#4a3a2e', '#e4e0d8', '#1b1b1e', '#6b5440'];
 const P_HAIR = ['#1e1a17', '#3a2a20', '#6a4a2f', '#a57b4e', '#c4bdb3', '#7e3a28'];
 const P_HAT = ['#e7922f', '#d9d4c8', '#3e5166', '#a33d32'];
+const P_PACK = ['#26292d', '#3e5166', '#6b5440', '#5d7b6c', '#a33d32'];
+const P_WOOL = ['#b8322f', '#e3b23c', '#2f4f7a', '#5d7b6c', '#d9d4c8', '#8c6f8f', '#d58a44', '#3a3d42'];
+const P_UMB = ['#24272b', '#b8322f', '#2f4f7a', '#e3b23c', '#4f7a5a', '#e9e4da', '#8c6f8f'];
 // body of a 1.75 m person (each one is scaled 0.9–1.06 and made a bit slimmer or broader); y up, facing +z
-const PB = { hip: 0.9, hipX: 0.092, th: 0.43, sh: 0.41, ank: 0.06, shY: 1.43, shX: 0.205, ua: 0.29, fa: 0.26, neck: 1.53 };
-const HAIR_STYLES = ['short', 'short', 'short', 'long', 'long', 'hat', null];
-const people = { list: [], group: new THREE.Group(), m: null, ray: new THREE.Raycaster(), key: '', seats: [], benches: [], bubbleMats: null, bubbles: [] };
+const PB = { hip: 0.9, hipX: 0.092, th: 0.43, sh: 0.41, ank: 0.06, ua: 0.29, fa: 0.26 };
+const BONES = ['root', 'hips', 'spine', 'chest', 'neck', 'head', 'uarmL', 'farmL', 'handL', 'uarmR', 'farmR', 'handR', 'thighL', 'shinL', 'footL', 'thighR', 'shinR', 'footR', 'coat'];
+const BI = Object.fromEntries(BONES.map((n, i) => [n, i]));
+const HEAD_Y = 1.55, NECK_Y = 1.49;                                   // where the head and neck bones are at rest
+const PART = { skin: 0, top: 1, pants: 2, shoe: 3, coat: 4, pack: 5 };
+const people = { list: [], group: new THREE.Group(), mat: null, mats: new Map(), acc: null, ray: new THREE.Raycaster(), key: '', seats: [], benches: [], bubbleMats: null, bubbles: [] };
 people.ray.firstHitOnly = true; people.group.visible = false;
 const UPV = new V3(0, 1, 0), DOWNV = new V3(0, -1, 0), PG = 9.8;
-const _pm = new THREE.Matrix4(), _pb = new THREE.Matrix4(), _pq = new THREE.Quaternion(), _pe = new THREE.Euler(), _ps = new V3(), _po = new V3(), _pd = new V3(), _pc = new THREE.Color(), _pf = new V3(), _pv = new V3();
-const _j1 = new V3(), _j2 = new V3(), _j3 = new V3(), _je = new THREE.Euler(), ZERO_M = new THREE.Matrix4().makeScale(0, 0, 0);
+const _pm = new THREE.Matrix4(), _pq = new THREE.Quaternion(), _pe = new THREE.Euler(), _ps = new V3(), _po = new V3(), _pd = new V3(), _pc = new THREE.Color(), _pf = new V3(), _pv = new V3(), _j1 = new V3();
 const pick = a => a[Math.floor(Math.random() * a.length)];
+const noRay = (o) => { o.traverse(x => { x.raycast = () => {}; x.frustumCulled = false; }); return o; };
 function toonMat(extra = {}) {
   people.grad ||= (() => { const t = new THREE.DataTexture(new Uint8Array([110, 185, 255]), 3, 1, THREE.RedFormat); t.minFilter = t.magFilter = THREE.NearestFilter; t.needsUpdate = true; return t; })();
   return new THREE.MeshToonMaterial({ gradientMap: people.grad, ...extra });
 }
-/* the low-poly parts: tapered faceted prisms hanging from their joints, a faceted head, three hair styles */
-function peopleMeshes() {
-  const max = PEOPLE_N.many;
-  const grad = new THREE.DataTexture(new Uint8Array([80, 255]), 2, 1, THREE.RedFormat); grad.minFilter = grad.magFilter = THREE.NearestFilter; grad.needsUpdate = true;
-  const mat = new THREE.MeshToonMaterial({ gradientMap: grad, flatShading: true });          // flat facets, light side / shadow side
-  const mk = (geo, count) => { const o = new THREE.InstancedMesh(geo, mat, count); o.instanceMatrix.setUsage(THREE.DynamicDrawUsage); o.frustumCulled = false; o.count = 0; o.raycast = () => {}; people.group.add(o); return o; };
-  const limb = (len, r0, r1, seg = 6, sx = 1, sz = 1) => new THREE.CylinderGeometry(r0, r1, len, seg, 1).translate(0, -len / 2, 0).scale(sx, 1, sz);
-  const up = (h, r0, r1, seg, sx, sz, start = 0) => new THREE.CylinderGeometry(r1, r0, h, seg, 1, false, start).translate(0, h / 2, 0).scale(sx, 1, sz);
-  const HEAD = 0.1;                                                   // head centre above the neck joint
-  const cap = () => new THREE.SphereGeometry(1, 9, 6, 0, Math.PI * 2, 0, Math.PI * 0.62).rotateX(-0.62).scale(0.097, 0.127, 0.112).translate(0, HEAD + 0.006, 0.004);
-  const shoe = new THREE.BoxGeometry(0.095, 0.07, 0.25, 1, 1, 1);
-  { const p = shoe.attributes.position; for (let i = 0; i < p.count; i++) if (p.getZ(i) > 0 && p.getY(i) > 0) p.setY(i, p.getY(i) - 0.03); }   // a lower toe
-  shoe.translate(0, -0.025, 0.055);
-  people.m = {
-    pelvis: mk(new THREE.CylinderGeometry(0.16, 0.15, 0.17, 8, 1, false, Math.PI / 8).translate(0, -0.085, 0).scale(1, 1, 0.62), max),
-    torso: mk(up(0.46, 0.15, 0.19, 8, 1, 0.6, Math.PI / 8), max),
-    coat: mk(new THREE.CylinderGeometry(0.153, 0.2, 0.42, 8, 1, false, Math.PI / 8).translate(0, -0.21, 0).scale(1, 1, 0.64), max),     // the skirt of a coat, from the waist
-    neck: mk(limb(0.13, 0.045, 0.05, 6), max),
-    head: mk(new THREE.SphereGeometry(1, 7, 6).scale(0.088, 0.118, 0.103).translate(0, HEAD, 0.008), max),
-    short: mk(cap(), max),
-    long: mk(mergeGeometries([cap(), new THREE.BoxGeometry(0.19, 0.26, 0.06).translate(0, HEAD - 0.11, -0.085)]), max),
-    hat: mk(mergeGeometries([new THREE.SphereGeometry(1, 9, 5, 0, Math.PI * 2, 0, Math.PI / 2).scale(0.1, 0.1, 0.112).translate(0, HEAD + 0.03, 0),
-      new THREE.CylinderGeometry(0.135, 0.135, 0.014, 10, 1).translate(0, HEAD + 0.03, 0.012)]), max),
-    thigh: mk(limb(PB.th, 0.078, 0.056, 6), max * 2),
-    shin: mk(limb(PB.sh, 0.054, 0.04, 6), max * 2),
-    shoe: mk(shoe, max * 2),
-    uarm: mk(limb(PB.ua, 0.052, 0.042, 6), max * 2),
-    farm: mk(limb(PB.fa, 0.04, 0.031, 6), max * 2),
-    hand: mk(limb(0.085, 0.032, 0.024, 5, 0.75, 1), max * 2),
+const pMat = (hex) => { let m = people.mats.get(hex); if (!m) people.mats.set(hex, m = new THREE.MeshLambertMaterial({ color: hex, side: THREE.DoubleSide })); return m; };
+/* a low-poly loft: rings of points (cross-sections) joined into bands of triangles, each band one colour part;
+   faces are flat (every triangle has its own vertices), optional bone weights per ring for skinning */
+function loft(skin) {
+  const P = [], C = [], I = [], W = [];
+  const wts = (w) => { const i = [0, 0, 0, 0], v = [0, 0, 0, 0]; (w || [[0, 1]]).forEach(([b, k], j) => { i[j] = b; v[j] = k; }); return [i, v]; };
+  const ring = (axis, at, c1, c2, r1, r2, o = {}) => {             // axis 'y': a horizontal ring; 'z': a ring across a shoe
+    const n = o.n || 8, ph = o.ph ?? Math.PI / n, pts = [];
+    for (let j = 0; j < n; j++) {
+      const t = ph + j * 2 * Math.PI / n, a = Math.cos(t), b = Math.sin(t);
+      pts.push(axis === 'y' ? [c1 + r1 * a, at + (o.tilt || 0) * r2 * b, c2 + r2 * b] : [c1 + r1 * a, c2 + r2 * b, at]);
+    }
+    return { c: axis === 'y' ? [c1, at, c2] : [c1, c2, at], pts, w: wts(o.w) };
   };
+  const R = (y, rx, rz, o = {}) => ring('y', y, o.cx || 0, o.cz || 0, rx, rz, o);
+  const RZ = (z, rx, ry, o = {}) => ring('z', z, o.cx || 0, ry * 0.866, rx, ry, { ph: 0, ...o });     // flat sole at y = 0
+  const v3 = (p) => new V3(p[0], p[1], p[2]);
+  const tri = (a, b, c, wa, wb, wc, part, out) => {                  // out: a point the face must look away from
+    const A = v3(a), B = v3(b), Cc = v3(c), nrm = B.clone().sub(A).cross(Cc.clone().sub(A));
+    const mid = A.clone().add(B).add(Cc).multiplyScalar(1 / 3);
+    if (nrm.dot(mid.sub(out)) < 0) { [b, c] = [c, b]; [wb, wc] = [wc, wb]; }
+    for (const [p, w] of [[a, wa], [b, wb], [c, wc]]) { P.push(...p); C.push(part); if (skin) { I.push(...w[0]); W.push(...w[1]); } }
+  };
+  const band = (r0, r1, part) => {
+    const n = r0.pts.length, out = v3(r0.c).add(v3(r1.c)).multiplyScalar(0.5);
+    for (let j = 0; j < n; j++) {
+      const k = (j + 1) % n;
+      tri(r0.pts[j], r0.pts[k], r1.pts[k], r0.w, r0.w, r1.w, part, out);
+      tri(r0.pts[j], r1.pts[k], r1.pts[j], r0.w, r1.w, r1.w, part, out);
+    }
+  };
+  const cap = (r, from, part) => {
+    const n = r.pts.length, c = r.c, out = v3(from.c);
+    for (let j = 0; j < n; j++) tri(c, r.pts[j], r.pts[(j + 1) % n], r.w, r.w, r.w, part, out);
+  };
+  const chain = (rings, parts, caps = [true, true]) => {
+    for (let k = 0; k < rings.length - 1; k++) band(rings[k], rings[k + 1], Array.isArray(parts) ? parts[k] : parts);
+    const p0 = Array.isArray(parts) ? parts[0] : parts, p1 = Array.isArray(parts) ? parts[parts.length - 1] : parts;
+    if (caps[0]) cap(rings[0], rings[1], p0);
+    if (caps[1]) cap(rings[rings.length - 1], rings[rings.length - 2], p1);
+  };
+  const build = (dy = 0) => {
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(P, 3));
+    if (skin) { g.setAttribute('skinIndex', new THREE.Uint16BufferAttribute(I, 4)); g.setAttribute('skinWeight', new THREE.Float32BufferAttribute(W, 4)); }
+    if (dy) g.translate(0, dy, 0);
+    g.computeVertexNormals(); g.userData.parts = C; return g;
+  };
+  return { R, RZ, chain, tri, build, wts };
 }
-const PAIRED = ['thigh', 'shin', 'shoe', 'uarm', 'farm', 'hand'];
+/* the body: one mesh, ~700 triangles; look = { outfit: tee|long|coat|dress, pack } */
+function bodyGeo(look) {
+  const L = loft(true), { R, RZ, chain } = L, w1 = (b) => [[BI[b], 1]], w2 = (a, b, k) => [[BI[a], 1 - k], [BI[b], k]];
+  const S = PART.skin, coat = look.outfit === 'coat', dress = look.outfit === 'dress';
+  const top = coat ? PART.coat : PART.top, low = dress ? PART.top : PART.pants, legP = dress ? S : PART.pants;
+  const sleeve = coat ? PART.coat : look.outfit === 'long' ? PART.top : S;
+  // torso: hips — waist — chest — shoulders
+  chain([R(0.83, 0.12, 0.085, { w: w1('hips') }), R(0.9, 0.155, 0.1, { w: w1('hips') }), R(1.02, 0.157, 0.102, { w: w2('hips', 'spine', 0.3) }),
+    R(1.14, 0.148, 0.098, { w: w1('spine') }), R(1.25, 0.165, 0.108, { w: w2('spine', 'chest', 0.6) }), R(1.36, 0.178, 0.112, { w: w1('chest') }),
+    R(1.43, 0.165, 0.098, { w: w1('chest') }), R(1.475, 0.08, 0.062, { w: w2('chest', 'neck', 0.4) })], [low, low, top, top, top, top, top]);
+  chain([R(1.44, 0.052, 0.055, { n: 6, w: w2('chest', 'neck', 0.5) }), R(1.565, 0.047, 0.05, { n: 6, cz: 0.005, w: w2('neck', 'head', 0.5) })], S, [false, false]);
+  // head: jaw, cheeks, crown; a nose and ears for the silhouette
+  const h = w1('head');
+  chain([R(1.515, 0.045, 0.05, { cz: 0.025, w: h }), R(1.55, 0.07, 0.085, { cz: 0.012, w: h }), R(1.6, 0.083, 0.098, { cz: 0.005, w: h }),
+    R(1.65, 0.087, 0.1, { w: h }), R(1.7, 0.08, 0.095, { cz: -0.005, w: h }), R(1.74, 0.055, 0.07, { cz: -0.008, w: h }), R(1.758, 0.02, 0.03, { cz: -0.008, w: h })], S);
+  const hw = L.wts(h), nose = [0, 1.61, 0.128], o = [0, 1.62, 0];
+  L.tri(nose, [-0.016, 1.645, 0.098], [0.016, 1.645, 0.098], hw, hw, hw, S, o);
+  L.tri(nose, [-0.016, 1.645, 0.098], [0, 1.6, 0.102], hw, hw, hw, S, o);
+  L.tri(nose, [0.016, 1.645, 0.098], [0, 1.6, 0.102], hw, hw, hw, S, o);
+  for (const X of [-1, 1]) {
+    const e = (y, z, d) => [X * (0.084 + d), y, z];
+    L.tri(e(1.66, 0.0, 0), e(1.6, 0.0, 0), e(1.65, -0.035, 0.02), hw, hw, hw, S, [0, 1.63, 0]);
+    L.tri(e(1.6, 0.0, 0), e(1.6, -0.03, 0.015), e(1.65, -0.035, 0.02), hw, hw, hw, S, [0, 1.63, 0]);
+  }
+  for (const [X, s] of [[-1, 'L'], [1, 'R']]) {
+    const ua = 'uarm' + s, fa = 'farm' + s, hd = 'hand' + s, cx = X * 0.2;
+    chain([R(1.47, 0.05, 0.055, { n: 6, cx, w: w1(ua) }), R(1.4, 0.052, 0.056, { n: 6, cx, w: w1(ua) }), R(1.285, 0.047, 0.049, { n: 6, cx, w: w1(ua) }),
+      R(1.275, 0.041, 0.044, { n: 6, cx, w: w1(ua) }), R(1.13, 0.038, 0.04, { n: 6, cx, w: w2(ua, fa, 0.5) }), R(1.0, 0.035, 0.036, { n: 6, cx, w: w1(fa) }),
+      R(0.885, 0.028, 0.027, { n: 6, cx, w: w2(fa, hd, 0.3) }), R(0.86, 0.023, 0.042, { n: 6, cx, w: w1(hd) }), R(0.8, 0.022, 0.04, { n: 6, cx, w: w1(hd) }),
+      R(0.765, 0.012, 0.024, { n: 6, cx, w: w1(hd) })], [top, top, top, sleeve, sleeve, sleeve, S, S, S]);
+    const th = 'thigh' + s, sh = 'shin' + s, ft = 'foot' + s;
+    chain([R(1.0, 0.085, 0.09, { n: 6, cx: X * 0.095, w: w1(th) }), R(0.88, 0.082, 0.088, { n: 6, cx: X * 0.093, w: w1(th) }), R(0.7, 0.066, 0.072, { n: 6, cx: X * 0.09, w: w1(th) }),
+      R(0.48, 0.05, 0.055, { n: 6, cx: X * 0.088, w: w2(th, sh, 0.5) }), R(0.4, 0.048, 0.053, { n: 6, cx: X * 0.087, cz: -0.006, w: w1(sh) }),
+      R(0.28, 0.046, 0.05, { n: 6, cx: X * 0.086, cz: -0.01, w: w1(sh) }), R(0.13, 0.036, 0.038, { n: 6, cx: X * 0.085, w: w1(sh) }),
+      R(0.07, 0.033, 0.035, { n: 6, cx: X * 0.085, w: w2(sh, ft, 0.5) })], legP);
+    const f = { n: 6, cx: X * 0.085, w: w1(ft) };
+    chain([RZ(-0.07, 0.042, 0.045, f), RZ(-0.02, 0.047, 0.05, f), RZ(0.06, 0.048, 0.042, f), RZ(0.14, 0.045, 0.03, f), RZ(0.19, 0.032, 0.022, f)], PART.shoe);
+  }
+  if (coat) chain([R(1.03, 0.16, 0.106, { w: w1('coat') }), R(0.85, 0.178, 0.122, { w: w1('coat') }), R(0.6, 0.2, 0.14, { w: w1('coat') })], PART.coat, [false, false]);
+  if (dress) chain([R(1.02, 0.16, 0.106, { w: w1('coat') }), R(0.8, 0.19, 0.13, { w: w1('coat') }), R(0.6, 0.215, 0.15, { w: w1('coat') })], PART.top, [false, false]);
+  if (look.pack) { const p = { n: 4, ph: Math.PI / 4, w: w1('chest') };
+    chain([R(1.42, 0.12, 0.055, { ...p, cz: -0.165 }), R(1.4, 0.13, 0.062, { ...p, cz: -0.17 }), R(1.13, 0.13, 0.062, { ...p, cz: -0.17 }), R(1.11, 0.12, 0.055, { ...p, cz: -0.165 })], PART.pack); }
+  return L.build();
+}
+/* hair, hats, the umbrella: shared plain meshes hung on the head / neck / hand (built at body height, moved to the bone) */
+function peopleAcc() {
+  if (people.acc) return people.acc;
+  const mk = (f, dy) => { const L = loft(false); f(L); return L.build(dy); };
+  const shell = (L) => L.chain([L.R(1.6225, 0.095, 0.108, { cz: -0.008, tilt: 0.62 }), L.R(1.7, 0.094, 0.105, { cz: -0.006, tilt: 0.2 }), L.R(1.745, 0.07, 0.08), L.R(1.772, 0.028, 0.032)], 0, [false, true]);
+  const canopy = new THREE.ConeGeometry(0.55, 0.24, 8, 1, true).translate(0, 0.86, 0).toNonIndexed(); canopy.computeVertexNormals();
+  people.acc = {
+    short: mk(shell, -HEAD_Y),
+    long: mk((L) => { shell(L); L.chain([L.R(1.62, 0.088, 0.04, { n: 6, cz: -0.075 }), L.R(1.45, 0.095, 0.035, { n: 6, cz: -0.09 }), L.R(1.36, 0.085, 0.025, { n: 6, cz: -0.09 })], 0); }, -HEAD_Y),
+    hat: mk((L) => { L.chain([L.R(1.655, 0.1, 0.113, { tilt: 0.15 }), L.R(1.72, 0.09, 0.1), L.R(1.765, 0.05, 0.055), L.R(1.78, 0.015, 0.015)], 0, [false, true]);
+      L.chain([L.R(1.668, 0.135, 0.16, { n: 10, cz: 0.025 }), L.R(1.652, 0.135, 0.16, { n: 10, cz: 0.025 })], 0); }, -HEAD_Y),
+    beanie: mk((L) => { L.chain([L.R(1.618, 0.106, 0.119, { cz: -0.006, tilt: 0.35 }), L.R(1.665, 0.106, 0.119, { cz: -0.006, tilt: 0.35 }), L.R(1.668, 0.1, 0.112, { cz: -0.006, tilt: 0.35 }),
+      L.R(1.72, 0.096, 0.106), L.R(1.77, 0.07, 0.08), L.R(1.795, 0.025, 0.03)], 0, [false, true]);
+      L.chain([L.R(1.785, 0.02, 0.02, { n: 6 }), L.R(1.81, 0.03, 0.03, { n: 6 }), L.R(1.838, 0.02, 0.02, { n: 6 }), L.R(1.845, 0.004, 0.004, { n: 6 })], 0); }, -HEAD_Y),
+    scarf: mk((L) => { L.chain([L.R(1.43, 0.08, 0.082), L.R(1.465, 0.078, 0.08), L.R(1.535, 0.07, 0.074)], 0, [false, false]);
+      L.chain([L.R(1.46, 0.032, 0.012, { n: 4, cx: 0.05, cz: 0.085 }), L.R(1.24, 0.034, 0.012, { n: 4, cx: 0.065, cz: 0.105 })], 0); }, -NECK_Y),
+    shaft: mk((L) => { L.chain([L.R(-0.09, 0.012, 0.012, { n: 5 }), L.R(0.98, 0.008, 0.008, { n: 5 })], 0); }),
+    canopy,
+  };
+  return people.acc;
+}
 /* thought clouds over the one who speaks: a few doodles, like on architectural visualisations — no words, just the mood */
 function bubbleMats() {
   const draw = (k) => {
@@ -1216,37 +1304,55 @@ function findSeats(z) {
 }
 function peopleClear() {
   for (const b of people.benches) b.parent?.removeFromParent();
+  for (const q of people.list) { q.mesh.removeFromParent(); q.mesh.geometry.dispose(); q.mesh.skeleton.dispose(); }
   people.benches = []; people.seats = []; people.list.length = 0;
   for (const s of people.bubbles) s.removeFromParent(); people.bubbles = [];
+}
+function makeBones() {
+  const B = {}, mk = (n, parent, x, y, z) => { const b = new THREE.Bone(); b.name = n; b.position.set(x, y, z); if (parent) B[parent].add(b); B[n] = b; };
+  mk('root', null, 0, 0, 0); mk('hips', 'root', 0, PB.hip, 0); mk('spine', 'hips', 0, 0.12, 0); mk('chest', 'spine', 0, 0.2, 0);
+  mk('neck', 'chest', 0, NECK_Y - 1.22, 0); mk('head', 'neck', 0, HEAD_Y - NECK_Y, 0);
+  for (const [s, X] of [['L', -1], ['R', 1]]) {
+    mk('uarm' + s, 'chest', X * 0.2, 0.2, 0); mk('farm' + s, 'uarm' + s, 0, -PB.ua, 0); mk('hand' + s, 'farm' + s, 0, -PB.fa, 0);
+    mk('thigh' + s, 'hips', X * PB.hipX, 0, 0); mk('shin' + s, 'thigh' + s, 0, -PB.th, 0); mk('foot' + s, 'shin' + s, 0, -PB.sh, 0);
+  }
+  mk('coat', 'hips', 0, 0.1, 0);
+  return B;
+}
+/* one person: body mesh with its own colours and skeleton, plus hair or a hat, a woolly hat, a scarf and an umbrella */
+function makePerson(look) {
+  const A = peopleAcc(), geo = bodyGeo(look), cols = [look.skin, look.top, look.pants, look.shoe, look.coat, look.packCol].map(h => new THREE.Color(h));
+  const parts = geo.userData.parts, col = new Float32Array(parts.length * 3);
+  parts.forEach((p, i) => cols[p].toArray(col, i * 3));
+  geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  people.mat ||= new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide });
+  const mesh = new THREE.SkinnedMesh(geo, people.mat), B = makeBones();
+  mesh.add(B.root); mesh.updateMatrixWorld(true); mesh.bind(new THREE.Skeleton(BONES.map(n => B[n])));
+  const hang = (geo, hex, bone) => { const m = new THREE.Mesh(geo, pMat(hex)); bone.add(m); return m; };
+  const hair = look.hair ? hang(A[look.hair], look.hair === 'hat' ? pick(P_HAT) : look.hairCol, B.head) : null;
+  const beanie = hang(A.beanie, look.wool, B.head), scarf = hang(A.scarf, pick(P_WOOL), B.neck); beanie.visible = scarf.visible = false;
+  const umb = new THREE.Group(), shaft = new THREE.Mesh(A.shaft, pMat('#2a2c30')), canopy = new THREE.Mesh(A.canopy, pMat(pick(P_UMB)));
+  umb.add(shaft, canopy); umb.userData.canopy = canopy; umb.visible = false; mesh.add(umb);
+  return { mesh: noRay(mesh), B, hair, beanie, scarf, umb };
 }
 function peopleReset() {
   const z = sceneSize(), n = z ? PEOPLE_N[prefs.people] || 0 : 0;
   people.key = prefs.people + '|' + (z ? z.toArray().map(v => v.toFixed(2)).join() : '');
   peopleClear(); people.group.visible = n > 0; if (!n) return;
-  if (!people.m) peopleMeshes();
   people.bubbleMats ||= bubbleMats();
   holder.updateMatrixWorld();
   people.seats = findSeats(z);
-  const M = people.m, C = (h) => new THREE.Color(h);
-  for (const k of ['coat', 'short', 'long', 'hat']) for (let i = 0; i < n; i++) M[k].setMatrixAt(i, ZERO_M);
   for (let i = 0; i < n; i++) {
+    const outfit = pick(['tee', 'tee', 'long', 'long', 'coat', 'dress']);
+    const look = { outfit, pack: outfit !== 'coat' && Math.random() < 0.3, hair: outfit === 'dress' ? pick(['long', 'long', 'short']) : pick(['short', 'short', 'short', 'long', 'hat', null]),
+      skin: pick(P_SKIN), top: pick(P_TOP), coat: pick(P_COAT), pants: pick(P_PANTS), shoe: pick(P_SHOE), packCol: pick(P_PACK), hairCol: pick(P_HAIR), wool: pick(P_WOOL) };
     const p = peopleSpot(z), s = 0.9 + Math.random() * 0.16;
     const q = { i, p, t: p.clone(), yaw: Math.random() * 6.28, sp: 1.0 + Math.random() * 0.45, ph: Math.random() * 6.28, s, w: 0.9 + Math.random() * 0.24, st: 'idle', timer: Math.random() * 3,
-      vy: 0, air: false, look: 0, partner: null, seat: null, gest: 0, wave: 0, sitK: 0, wk: 0, ak: 0, wait: 0, knee: 1.5, sitP: new V3(), standP: new V3(),
-      hs: pick(HAIR_STYLES), coat: Math.random() < 0.28 };
-    people.list.push(q);
-    const sk = C(pick(P_SKIN)), top = C(pick(P_TOP)), coat = C(pick(P_COAT)), pa = C(pick(P_PANTS)), sh = C(pick(P_SHOE));
-    const sleeve = q.coat ? coat : top, fore = q.coat || Math.random() < 0.5 ? sleeve : sk;
-    M.pelvis.setColorAt(i, pa); M.torso.setColorAt(i, q.coat ? coat : top); M.coat.setColorAt(i, coat); M.neck.setColorAt(i, sk); M.head.setColorAt(i, sk);
-    if (q.hs) M[q.hs].setColorAt(i, C(q.hs === 'hat' ? pick(P_HAT) : pick(P_HAIR)));
-    for (const j of [i * 2, i * 2 + 1]) { M.thigh.setColorAt(j, pa); M.shin.setColorAt(j, pa); M.shoe.setColorAt(j, sh); M.uarm.setColorAt(j, sleeve); M.farm.setColorAt(j, fore); M.hand.setColorAt(j, sk); }
+      vy: 0, air: false, look: 0, partner: null, seat: null, gest: 0, wave: 0, sitK: 0, wk: 0, ak: 0, uk: 0, wait: 0, knee: 1.5, sitP: new V3(), standP: new V3(),
+      ...makePerson(look) };
+    people.list.push(q); people.group.add(q.mesh);
     const bub = new THREE.Sprite(people.bubbleMats[0]); bub.center.set(0.5, 0); bub.scale.setScalar(0.85); bub.visible = false; bub.layers.set(UI_LAYER); bub.raycast = () => {};
     people.group.add(bub); people.bubbles.push(bub);
-  }
-  for (const [k, m] of Object.entries(M)) {
-    m.count = PAIRED.includes(k) ? n * 2 : n;
-    if (!m.instanceColor) m.setColorAt(0, _pc.set(0xffffff));                // a style nobody got still needs the colour buffer
-    m.instanceColor.needsUpdate = true;
   }
   if (people.group.parent !== holder) holder.add(people.group);
 }
@@ -1330,7 +1436,7 @@ function peopleUpdate(dt) {
   if (people.group.parent !== holder) holder.add(people.group);
   holder.updateMatrixWorld();
   dt = Math.min(dt, 0.05);
-  const M = people.m, L = people.list;
+  const L = people.list, rain = isReal() && prefs.precip === 'rain', snow = isReal() && prefs.precip === 'snow';
   for (const q of L) {
     let moving = false;
     q.gest = 0;
@@ -1381,53 +1487,52 @@ function peopleUpdate(dt) {
     if (q.air) moving = true;
     // keep a little distance from others (not from the one you are talking to)
     if (!seated) for (const o of L) if (o !== q && o !== q.partner && o.st !== 'sit' && o.st !== 'rise') { const dx = q.p.x - o.p.x, dz = q.p.z - o.p.z, d2 = dx * dx + dz * dz; if (d2 < 0.3 && d2 > 1e-6) { const k = (0.55 - Math.sqrt(d2)) * dt * 2; q.p.x += dx * k; q.p.z += dz * k; } }
-    // ---- pose, in the body units of a 1.75 m person; the root carries the position, heading and size
+    // ---- pose, in the body units of a 1.75 m person; the mesh carries the position, heading and size
     const fr = (k) => Math.min(1, dt * k);
     q.sitK += ((q.st === 'sit' ? 1 : 0) - q.sitK) * fr(6);
     q.wk += ((moving && !q.air ? 1 : 0) - q.wk) * fr(8);
     q.ak += ((q.air ? 1 : 0) - q.ak) * fr(10);
+    q.uk += ((rain ? 1 : 0) - q.uk) * fr(2.5);                                      // the umbrella opens in the rain
     if (moving && !q.air) q.ph += q.sp * dt * 4.4;
     q.wave = Math.max(0, q.wave - dt);
-    const t = performance.now() / 1000 + q.i, K = q.sitK, AK = q.ak, A = 0.42 * q.wk, sp = Math.sin(q.ph);
+    const t = performance.now() / 1000 + q.i, K = q.sitK, AK = q.ak, A = 0.42 * q.wk, sp = Math.sin(q.ph), free = q.uk > 0.5 ? 0 : 1;   // free: which hand is not holding an umbrella
     const bend = (ph) => 0.05 + 0.85 * q.wk * Math.max(0, Math.cos(ph - 0.5)) ** 2;      // the knee folds while the leg swings forward
     const leg = [[-A * sp, bend(q.ph)], [A * sp, bend(q.ph + Math.PI)]];
     const arm = [[A * sp * 0.8, 0], [-A * sp * 0.8, 0]].map(([u]) => [u, -0.16 - 0.3 * Math.max(0, -u), 0]);
-    if (q.st === 'talk' && q.gest) { arm[1] = [-0.55 + Math.sin(t * 5.3) * 0.25, -1.0 + Math.sin(t * 6.5) * 0.35, 0]; arm[0] = [-0.2 + Math.sin(t * 4.1) * 0.15, -0.7, 0]; }
-    if (q.wave > 0) arm[1] = [-2.75 + Math.sin(t * 14) * 0.18, -0.35, 0.3];
+    if (q.st === 'talk' && q.gest) { arm[free] = [-0.55 + Math.sin(t * 5.3) * 0.25, -1.0 + Math.sin(t * 6.5) * 0.35, 0]; if (free) arm[0] = [-0.2 + Math.sin(t * 4.1) * 0.15, -0.7, 0]; }
+    if (q.wave > 0) arm[free] = [-2.75 + Math.sin(t * 14) * 0.18, -0.35, 0.3];
     for (const l of leg) { l[0] = lerp(lerp(l[0], -0.85, AK), -1.5, K); l[1] = lerp(lerp(l[1], 1.4, AK), q.knee, K); }
     for (const a of arm) { a[0] = lerp(lerp(a[0], -2.3, AK), -0.38, K); a[1] = lerp(lerp(a[1], -0.3, AK), -0.85, K); }
+    const uh = q.uk * (1 - AK), ar = arm[1];                                          // right hand holds the umbrella up
+    if (uh > 0) { ar[0] = lerp(ar[0], -0.3, uh); ar[1] = lerp(ar[1], -1.4, uh); ar[2] = lerp(ar[2], -0.3, uh); }
     // feet on the ground: the body sinks by what the longer leg is missing (that is the walking bob too)
     const reach = Math.max(...leg.map(([a, b]) => PB.th * Math.cos(a) + PB.sh * Math.cos(a + b)));
     const yo = -(PB.th + PB.sh - reach) * (1 - K) * (1 - AK) + Math.sin(t * 1.3) * 0.004 * (1 - q.wk);
     const nod = (q.st === 'talk' && !q.gest ? Math.sin(t * 5) * 0.08 : 0) + 0.12 * K;
-    _pb.compose(q.p, _pq.setFromAxisAngle(UPV, q.yaw), _ps.set(q.s * q.w, q.s, q.s * q.w));
-    const put = (mesh, idx, at, rx = 0, rz = 0, sy = 1) => { _pm.compose(at, _pq.setFromEuler(_pe.set(rx, 0, rz)), _ps.set(1, sy, 1)); mesh.setMatrixAt(idx, _pm.premultiply(_pb)); };
-    const joint = (out, from, rx, rz, len) => out.set(0, -len, 0).applyEuler(_je.set(rx, 0, rz)).add(from);
-    put(M.pelvis, q.i, _j1.set(0, 1.02 + yo, 0));
-    put(M.torso, q.i, _j1.set(0, 1.0 + yo, 0), 0.03 * q.wk);
-    if (q.coat) put(M.coat, q.i, _j1.set(0, 1.0 + yo, 0), 0.03 * q.wk, 0, 1 - 0.62 * K);           // the hem gathers up when sitting
-    put(M.neck, q.i, _j1.set(0, 1.57 + yo, 0.005));
-    put(M.head, q.i, _j1.set(0, PB.neck + yo, 0.01), nod);
-    if (q.hs) put(M[q.hs], q.i, _j1, nod);
+    const B = q.B, mesh = q.mesh;
+    mesh.position.copy(q.p); mesh.rotation.y = q.yaw; mesh.scale.set(q.s * q.w, q.s, q.s * q.w);
+    B.hips.position.y = PB.hip + yo; B.spine.rotation.x = 0.03 * q.wk; B.head.rotation.x = nod;
+    B.coat.scale.y = 1 - 0.62 * K;                                                     // a coat or skirt hem gathers up when sitting
     for (let k = 0; k < 2; k++) {
-      const side = k ? 1 : -1, j = q.i * 2 + k, [a, b] = leg[k];
-      put(M.thigh, j, _j1.set(side * PB.hipX, PB.hip + yo, 0), a);
-      joint(_j2, _j1, a, 0, PB.th); put(M.shin, j, _j2, a + b);
-      joint(_j3, _j2, a + b, 0, PB.sh); put(M.shoe, j, _j3, AK * 0.4);
-      const [u, e, rz] = arm[k], rr = side * (0.09 + rz);
-      put(M.uarm, j, _j1.set(side * PB.shX, PB.shY + yo, 0), u, rr);
-      joint(_j2, _j1, u, rr, PB.ua); put(M.farm, j, _j2, u + e, rr);
-      joint(_j3, _j2, u + e, rr, PB.fa); put(M.hand, j, _j3, u + e, rr);
+      const s = k ? 'R' : 'L', side = k ? 1 : -1, [a, b] = leg[k], [u, e, rz] = arm[k];
+      B['thigh' + s].rotation.set(a, 0, 0); B['shin' + s].rotation.x = b; B['foot' + s].rotation.x = -(a + b) * (1 - AK) + AK * 0.4;
+      B['uarm' + s].rotation.set(u, 0, side * (0.09 + rz)); B['farm' + s].rotation.x = e;
     }
+    // weather: an umbrella over the head in the rain, a woolly hat and a scarf in the snow
+    if (q.uk > 0.25) {                                                               // folded away while it closes
+      mesh.updateMatrixWorld(true); B.handR.getWorldPosition(_pv); mesh.worldToLocal(_pv);
+      const k = (q.uk - 0.25) / 0.75, o = 0.12 + 0.88 * k;
+      q.umb.visible = true; q.umb.position.copy(_pv); q.umb.userData.canopy.scale.set(o, 0.5 + 0.5 * k, o);
+    } else q.umb.visible = false;
+    if (q.beanie.visible !== snow) { q.beanie.visible = q.scarf.visible = snow; if (q.hair && q.hair.geometry === people.acc.hat) q.hair.visible = !snow; }
     // thought cloud over the one who speaks
     const bub = people.bubbles[q.i];
     if (bub) {
       const on = q.st === 'talk' && q.gest;
       if (on && !bub.visible) bub.material = pick(people.bubbleMats);
-      bub.visible = on; if (on) bub.position.set(q.p.x, q.p.y + (1.86 + Math.sin(t * 3) * 0.02) * q.s, q.p.z);
+      bub.visible = on; if (on) bub.position.set(q.p.x, q.p.y + ((q.uk > 0.3 ? 2.12 : 1.86) + Math.sin(t * 3) * 0.02) * q.s, q.p.z);
     }
   }
-  for (const m of Object.values(M)) m.instanceMatrix.needsUpdate = true;
 }
 /* compass rose on the floor next to the model — shows where north is when the sun is set by place */
 const compass = (() => {
