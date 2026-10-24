@@ -826,7 +826,7 @@ const UP = new V3(0, 1, 0), DOWN = new V3(0, -1, 0);
 const UNITS = { mm: 0.001, cm: 0.01, m: 1, in: 0.0254, ft: 0.3048 };
 const TABLE_STEPS = [20, 50, 100, 200, 500, 1000];
 const EYE = 1.65, STEP = 0.45, RADIUS = 0.3, GRAV = 9.8;
-const APP_VERSION = '3.25';
+const APP_VERSION = '3.26';
 const BASE_COLORS = ['#f2efe8', '#d8a33f', '#e0604a', '#3f86c9'];
 const KINDS = { issue: { label: 'Замечание', color: '#e0604a' }, question: { label: 'Вопрос', color: '#d8a33f' }, idea: { label: 'Идея', color: '#4fae7f' } };
 const TOOLS = [['nav', 'Выделение'], ['pin', 'Метка'], ['measure', 'Рулетка'], ['pen', 'Карандаш'], ['erase', 'Ластик'], ['section', 'Сечение'], ['ref', 'Репер'], ['explode', 'Взрыв']];   // «Куб» временно скрыт: код инструмента сохранён
@@ -1589,18 +1589,18 @@ function landSite() {
   return _lb.isEmpty() ? null : _lb;
 }
 function landColors() {
-  const s = prefs.season, base = new THREE.Color(SEASON[s] || SEASON.summer).multiplyScalar(s === 'winter' ? 0.93 : 0.6);   // like the textured lawn
+  const s = prefs.season, base = new THREE.Color(SEASON[s] || SEASON.summer);   // exactly the lawn's tint: the same texture runs on
   const C = (h) => new THREE.Color(h);
   return {
     winter: s === 'winter', grass: base,
-    rock: [C('#8f8b84'), C('#a29d94'), C('#7d7a75')], snow: C('#f2f4f6'),
+    rock: [C('#b4afa6'), C('#c4bfb5'), C('#a39e95')], snow: C('#ffffff'),
     crown: (s === 'autumn' ? ['#c9822f', '#b9582b', '#d6a843', '#9a7a38', '#7f8f43'] : s === 'winter' ? ['#cfd5da', '#c3c9ce', '#d9dee2'] : s === 'spring' ? ['#86b552', '#9cc464', '#74a14a', '#e3c3cf'] : ['#5f8f3e', '#6e9c47', '#4f7d36', '#7aa24f']).map(C),
     conifer: (s === 'winter' ? ['#3e5a46', '#4a6650'] : ['#3f6440', '#4a7046', '#365a3a']).map(C),
     bush: (s === 'autumn' ? ['#9a7a38', '#b0652f', '#7f8f43'] : s === 'winter' ? ['#c3c9ce', '#aeb5ba'] : ['#4f7d36', '#5d8a3f', '#456f31']).map(C),
     trunk: C('#5b4a3c'),
   };
 }
-function landClear() { for (const o of land.built) { o.removeFromParent(); o.geometry?.dispose(); if (o.material?.map) o.material.map.dispose(); o.material?.dispose(); } land.built = []; }
+function landClear() { for (const o of land.built) { o.removeFromParent(); o.geometry?.dispose(); if (o.material?.map && !o.material.userData.sharedMap) o.material.map.dispose(); o.material?.dispose(); } land.built = []; }
 function landBuild(site) {
   landClear();
   land.cx = (site.min.x + site.max.x) / 2; land.cz = (site.min.z + site.max.z) / 2;
@@ -1612,22 +1612,23 @@ function landBuild(site) {
   const V = rings.map((r, i) => { const row = []; for (let j = 0; j < SEG; j++) {
     const a = (j + (i ? (lhash(i, j) - 0.5) * 0.7 : 0)) / SEG * Math.PI * 2, rr = r + (i ? (lhash(j, i + 0.5) - 0.5) * 0.5 * (r - rings[i - 1]) : 0);
     const x = land.cx + Math.cos(a) * rr, z = land.cz + Math.sin(a) * rr; row.push([x, landH(x, z), z]); } return row; });
-  const P = [], CC = [], c = new THREE.Color(), A = new V3(), B = new V3(), Cv = new V3(), N = new V3();
+  const P = [], CC = [], UV = [], c = new THREE.Color(), A = new V3(), B = new V3(), Cv = new V3(), N = new V3();
   const face = (p, q, r) => {
     if (p[1] < 0.02 && q[1] < 0.02 && r[1] < 0.02) return;                       // the flat site is the lawn disc
     A.fromArray(p); B.fromArray(q); Cv.fromArray(r); N.copy(B).sub(A).cross(_pv.copy(Cv).sub(A)).normalize(); if (N.y < 0) { [q, r] = [r, q]; N.negate(); }
     const h = (p[1] + q[1] + r[1]) / 3, cx = (p[0] + q[0] + r[0]) / 3, cz = (p[2] + q[2] + r[2]) / 3, n = lnoise(cx / 9, cz / 9);
     const rockK = smooth01((0.86 - N.y) / 0.14) * 0.85 + smooth01((h - 70) / 50) * 0.7;
-    c.copy(col.grass).multiplyScalar(0.92 + n * 0.18).lerp(col.rock[(lhash(cx, cz) * 3) | 0], Math.min(1, rockK));
+    c.copy(col.grass).multiplyScalar(1 + (n - 0.5) * 0.16 * smooth01(landD(cx, cz) / 60)).lerp(col.rock[(lhash(cx, cz) * 3) | 0], Math.min(1, rockK));   // right at the site: the lawn's own colour
     if (col.winter ? h > 4 && N.y > 0.55 : h > 105 + n * 25 && N.y > 0.5) c.lerp(col.snow, col.winter ? 0.85 : 0.9);
-    for (const v of [p, q, r]) { P.push(v[0], v[1], v[2]); CC.push(c.r, c.g, c.b); }
+    for (const v of [p, q, r]) { P.push(v[0], v[1], v[2]); CC.push(c.r, c.g, c.b); UV.push((v[0] / 900 + 1) / 2, (-v[2] / 900 + 1) / 2); }   // the lawn disc's UVs: one continuous texture
   };
   for (let i = 0; i < rings.length - 1; i++) for (let j = 0; j < SEG; j++) {
     const k = (j + 1) % SEG, a = V[i][j], b = V[i][k], d = V[i + 1][j], e = V[i + 1][k];
     face(a, b, e); face(a, e, d);
   }
-  const tg = new THREE.BufferGeometry(); tg.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); tg.setAttribute('color', new THREE.Float32BufferAttribute(CC, 3)); tg.computeVertexNormals();
-  add(new THREE.Mesh(tg, new THREE.MeshLambertMaterial({ vertexColors: true })));
+  const tg = new THREE.BufferGeometry(); tg.setAttribute('position', new THREE.Float32BufferAttribute(P, 3)); tg.setAttribute('color', new THREE.Float32BufferAttribute(CC, 3)); tg.setAttribute('uv', new THREE.Float32BufferAttribute(UV, 2)); tg.computeVertexNormals();
+  const gk = col.winter ? 'snow' : 'grass', tm = new THREE.MeshLambertMaterial({ vertexColors: true, map: GROUND_TEX[gk] ||= groundTex(gk) }); tm.userData.sharedMap = true;
+  add(new THREE.Mesh(tg, tm));
   // ---- things on the land: scatter by distance from the site, groves where the noise says so
   const place = (n, dMin, dMax, ok) => {
     const out = [], Rt = land.R0 + dMax;
@@ -1673,7 +1674,7 @@ function landBuild(site) {
     const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace;
     const q1 = new THREE.PlaneGeometry(1, 1).translate(0, 0.5, 0), q2 = q1.clone().rotateY(Math.PI / 2), gq = mergeGeometries([q1, q2]);
     const clumps = place(2600, 0.5, 140, (x, z, d) => rnd() < 0.35 + 0.65 * Math.exp(-d / 35));
-    inst(gq, new THREE.MeshLambertMaterial({ map: tex, alphaTest: 0.5, side: THREE.DoubleSide, color: col.grass.clone().multiplyScalar(1.15) }), clumps, (m, i, p) => {
+    inst(gq, new THREE.MeshLambertMaterial({ map: tex, alphaTest: 0.5, side: THREE.DoubleSide, color: col.grass.clone().multiplyScalar(0.8) }), clumps, (m, i, p) => {
       const s = 0.35 + rnd() * 0.45; set(m, i, p[0], p[1] - 0.03, p[2], s * 1.4, s, s * 1.4, rnd() * 6.28); });
   }
 }
