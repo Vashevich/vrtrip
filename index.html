@@ -235,14 +235,6 @@ h2{display:flex;align-items:center;gap:10px;margin:0;font:600 16px/1.2 var(--f-b
 .knob{position:absolute;left:50%;top:50%;width:52px;height:52px;margin:-26px 0 0 -26px;border-radius:50%;background:var(--raise);border:2px solid var(--accent);pointer-events:none}
 .floors{position:absolute;right:18px;bottom:18px;display:flex;flex-direction:column;gap:6px}
 .joyr,#w-jump,#w-fire,#w-alt,.tx{display:none}
-.scanbtn{width:100%;justify-content:center;gap:10px;margin-top:10px}
-.scanbtn svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
-.scanbtn:disabled{opacity:.45;cursor:not-allowed}
-.scannote{margin-top:6px}
-.scandlg{position:fixed;max-height:calc(100dvh - 32px);overflow:auto;z-index:70}
-.scandlg ol{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px;font-size:14px}.scandlg p{margin:0;font-size:14px}
-.scanui{position:fixed;left:12px;right:12px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:50;display:flex;flex-direction:column;align-items:center;gap:10px;padding:12px;background:var(--glass);border:2px solid var(--line);color:var(--fg);text-align:center;font:15px/1.35 var(--f-body)}
-.scan-row{display:flex;gap:8px}.scan-row .btn{min-height:48px;min-width:120px}
 .wi{width:16px;height:16px;flex:none;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
 .floors .btn{gap:8px}
 .floors .btn{min-width:108px;background:var(--glass)}
@@ -594,8 +586,6 @@ input[type=range]{accent-color:var(--accent)}
       <input id="url" type="url" placeholder="или прямая ссылка на модель или .zip" autocomplete="off" aria-label="Ссылка на модель">
       <button type="submit" class="btn">Скачать</button>
     </form>
-    <button type="button" class="btn scanbtn" id="scanbtn" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3"/><path d="M8 15.5V10l4-2.5 4 2.5v5.5l-4 2.5z"/><path d="M8 10l4 2.5 4-2.5M12 12.5V18"/></svg>Отсканировать комнату</button>
-    <p class="note scannote" id="scannote">Проверяю, умеет ли устройство сканировать…</p>
     <button class="link" id="sample" type="button">Добавить пример — двухэтажный павильон</button>
     <h3 class="sub">Экспозиция</h3>
     <p class="note">Щёлкните по модели, чтобы добавить её в сцену или убрать. В сцене может быть сколько угодно моделей сразу.</p>
@@ -916,21 +906,6 @@ input[type=range]{accent-color:var(--accent)}
     <button type="button" class="btn small" data-sec="off">Убрать</button>
     <span class="sec-info" id="sec-info"></span>
   </div>
-  <div class="dialog scandlg" id="scandlg" hidden role="dialog" aria-label="Сканирование на iPhone">
-    <h3>Скан комнаты на iPhone</h3>
-    <p>Safari не даёт сайтам доступа к лидару — это ограничение Apple. Поэтому сканируем в приложении, а сюда загружаем файл:</p>
-    <ol>
-      <li>Установите бесплатное <b>3D Scanner App</b> (или Polycam) из App Store.</li>
-      <li>Режим <b>LiDAR</b> или <b>Room</b> — медленно обойдите комнату. Лидар есть на iPhone Pro; на других моделях — режим «Photo».</li>
-      <li>Экспорт → <b>GLB</b>, OBJ или USDZ → «Сохранить в Файлы».</li>
-      <li>Здесь — «Выбрать файл скана»: комната встанет в экспозицию.</li>
-    </ol>
-    <div class="dlg-actions"><button type="button" class="btn" id="scandlg-close">Закрыть</button><button type="button" class="btn primary" id="scandlg-file">Выбрать файл скана</button></div>
-  </div>
-  <div class="scanui" id="scanui" hidden>
-    <span id="scan-msg">Сканирую комнату: медленно обведите камерой пол, стены и мебель</span>
-    <div class="scan-row"><button type="button" class="btn primary" id="scan-done">Готово</button><button type="button" class="btn" id="scan-cancel">Отмена</button></div>
-  </div>
   <div class="secui gameui" id="gameui" hidden role="group" aria-label="Игра">
     <button type="button" class="btn small" data-game="balls">● Шарики</button>
     <button type="button" class="btn small" data-game="hook" title="Крюк работает в прогулке — включит её">⚓ Крюк</button>
@@ -1019,7 +994,6 @@ import { MTLLoader } from 'three/addons/loaders/MTLLoader.js';
 import { XRControllerModelFactory } from 'three/addons/webxr/XRControllerModelFactory.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { USDZExporter } from 'three/addons/exporters/USDZExporter.js';
-import { GLTFExporter } from 'three/addons/exporters/GLTFExporter.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
@@ -1045,7 +1019,7 @@ const UP = new V3(0, 1, 0), DOWN = new V3(0, -1, 0);
 const UNITS = { mm: 0.001, cm: 0.01, m: 1, in: 0.0254, ft: 0.3048 };
 const TABLE_STEPS = [20, 50, 100, 200, 500, 1000];
 const EYE = 1.65, STEP = 0.45, RADIUS = 0.3, GRAV = 9.8;
-const APP_VERSION = '3.40';
+const APP_VERSION = '3.41';
 const BASE_COLORS = ['#f2efe8', '#d8a33f', '#e0604a', '#3f86c9'];
 const KINDS = { issue: { label: 'Замечание', color: '#e0604a' }, question: { label: 'Вопрос', color: '#d8a33f' }, idea: { label: 'Идея', color: '#4fae7f' } };
 const TOOLS = [['nav', 'Выделение'], ['pin', 'Метка'], ['measure', 'Рулетка'], ['pen', 'Карандаш'], ['erase', 'Ластик'], ['section', 'Сечение'], ['ref', 'Репер'], ['explode', 'Взрыв'], ['game', 'Игра']];   // «Куб» временно скрыт: код инструмента сохранён
@@ -6332,7 +6306,7 @@ $('#modebar').addEventListener('click', e => {
 }, true);
 $('#m-orbit').addEventListener('click', () => { if (state.view === 'walk') exitWalk(); });
 async function checkXR() {
-  const note = $('#xrnote'); renderScanBtn();
+  const note = $('#xrnote');
   if (!window.isSecureContext) { note.textContent = 'VR работает только на странице с адресом https://. Прогулка в браузере доступна и так.'; note.className = 'note warn'; return; }
   if (!navigator.xr) { note.textContent = quickLookOK ? 'На iPhone/iPad VR недоступен, но работает «AR на телефоне» и прогулка в браузере.' : 'Этот браузер не поддерживает VR — доступна прогулка в браузере. Для VR откройте ту же ссылку в браузере шлема виртуальной реальности.'; updateModeButtons(); return; }
   const ok = async m => { try { return await navigator.xr.isSessionSupported(m); } catch { return false; } };
@@ -6341,118 +6315,9 @@ async function checkXR() {
   else if (xrSupport.ar) { note.textContent = 'Шлем готов. Внутри кнопка B переключает сквозной режим, A — 1:1 и макет.'; note.className = 'note'; }
   else if (xrSupport.vr) { note.textContent = 'Сквозной режим в этом браузере недоступен, работает VR с окружением.'; note.className = 'note warn'; }
   else note.textContent = 'Шлем не обнаружен — на этом устройстве доступна прогулка в браузере. Для VR откройте ссылку в браузере Quest.';
-  updateModeButtons(); renderScanBtn();
+  updateModeButtons();
 }
 
-
-/* ================= room scan → a model in the exposition =================
-   Quest 3: WebXR gives the room the headset already knows from «Настройка пространства» (Space Setup) — floor and
-   walls as planes, furniture as boxes. Android with AR: the planes the phone finds while you sweep the camera around.
-   iPhone: Safari gives web pages no LiDAR — scan in an app (Polycam, 3D Scanner App) and load the file. The result
-   is saved as GLB and added like any other model. */
-const scan = { session: null, ref: null, scene: new THREE.Scene(), group: new THREE.Group(), items: new Map(), done: false, keep: false, label: null, t: 0 };
-scan.scene.add(new THREE.HemisphereLight(0xffffff, 0x777777, 2.6), scan.group);
-const SCAN_COL = { floor: '#8f8a80', wall: '#ece6d6', 'door frame': '#a65f4f', 'window frame': '#7e90a3', table: '#c9822f', couch: '#a33d32', bed: '#7a6a8f', storage: '#6e4e46', shelf: '#6e4e46', screen: '#30363a', lamp: '#e3b23c', plant: '#5d7b6c' };
-function scanSupport() {
-  if (isIOS) return { ok: true, ios: true, why: 'iPhone: браузер не даёт сайтам доступа к лидару — сканируем в приложении и загружаем файл. Нажмите, покажу как.' };
-  if (!window.isSecureContext || !navigator.xr || !xrSupport.ar) return { ok: false, why: 'Сканирование работает в шлеме Quest 3 (комната из «Настройки пространства») или на Android-телефоне с AR. На этом устройстве недоступно.' };
-  return { ok: true, why: isHeadset ? 'Quest: возьмём комнату из «Настройки пространства» — пол, стены и мебель. Курок — готово, Grip — отмена.' : 'Android: медленно обведите камерой пол и стены, потом «Готово».' };
-}
-function renderScanBtn() { const s = scanSupport(), b = $('#scanbtn'); b.disabled = !s.ok; b.title = s.why; $('#scannote').textContent = s.why; }
-function scanLabel(text) {
-  const c = document.createElement('canvas'); c.width = 1024; c.height = 256; const x = c.getContext('2d');
-  x.fillStyle = 'rgba(24,24,23,.88)'; x.fillRect(0, 0, 1024, 256); x.strokeStyle = '#e9e2cf'; x.lineWidth = 8; x.strokeRect(4, 4, 1016, 248);
-  x.fillStyle = '#e9e2cf'; x.font = '600 50px system-ui, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
-  text.split('\n').forEach((l, i, a) => x.fillText(l, 512, 128 + (i - (a.length - 1) / 2) * 64));
-  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
-  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: t, depthTest: false, transparent: true })); sp.scale.set(0.8, 0.2, 1); sp.renderOrder = 10; return sp;
-}
-function scanClear() { for (const o of [...scan.group.children]) { o.removeFromParent(); o.geometry?.dispose(); o.material?.dispose(); } scan.items.clear(); }
-async function startScan() {
-  if (scanSupport().ios) { $('#scandlg').hidden = false; return; }
-  if (scan.session || !scanSupport().ok) return;
-  if (state.view === 'walk') exitWalk();
-  if (state.tool === 'game') setTool('nav');
-  let session;
-  try { session = await navigator.xr.requestSession('immersive-ar', { requiredFeatures: ['local-floor'], optionalFeatures: ['mesh-detection', 'plane-detection', 'dom-overlay'], domOverlay: { root: $('#scanui') } }); }
-  catch (e) { toast(`Сканирование не запустилось: ${e.message}`, 'bad'); return; }
-  scan.session = session; scan.done = false; scan.keep = false; scan.t = 0; scanClear();
-  scan.label ||= scanLabel('Сканирую комнату…\nКурок — готово · Grip — отмена'); scan.scene.add(scan.label);
-  state.view = 'scan'; controls.enabled = false; $('#scanui').hidden = false;
-  session.addEventListener('select', () => finishScan(true));
-  session.addEventListener('squeeze', () => finishScan(false));
-  session.addEventListener('end', onScanEnd);
-  renderer.xr.setReferenceSpaceType('local-floor');
-  await renderer.xr.setSession(session);
-  scan.ref = renderer.xr.getReferenceSpace();
-}
-function finishScan(keep) { if (!scan.session || scan.done) return; scan.done = true; scan.keep = keep; scan.session.end().catch(() => {}); }
-$('#scanbtn').addEventListener('click', startScan);
-$('#scandlg-close').addEventListener('click', () => { $('#scandlg').hidden = true; });
-$('#scandlg-file').addEventListener('click', () => { $('#scandlg').hidden = true; $('#file').click(); });
-$('#scan-done').addEventListener('click', () => finishScan(true));
-$('#scan-cancel').addEventListener('click', () => finishScan(false));
-$('#scanui').addEventListener('beforexrselect', e => e.preventDefault());       // taps on the buttons are not «select»
-/* every frame: keep one mesh per detected plane / object, rebuilt when it changes, placed by its pose */
-function scanItem(key, label, build) {
-  let it = scan.items.get(key);
-  if (!it) { it = { mesh: new THREE.Mesh(new THREE.BufferGeometry(), new THREE.MeshLambertMaterial({ color: SCAN_COL[label] || '#c7bdab', transparent: true, opacity: 0.55, side: THREE.DoubleSide, flatShading: true })), t: -1, label };
-    it.mesh.matrixAutoUpdate = false; scan.group.add(it.mesh); scan.items.set(key, it); }
-  return it;
-}
-function scanFrame(frame, dt) {
-  scan.t += dt;
-  const xc = renderer.xr.getCamera(); xc.getWorldPosition(_v); const fw = xc.getWorldDirection(new V3());
-  if (scan.label) scan.label.position.copy(_v).addScaledVector(fw, 1.2).add(new V3(0, -0.28, 0));
-  if (!frame || !scan.ref) return;
-  const ref = scan.ref;
-  const planes = frame.detectedPlanes, meshes = frame.detectedMeshes;
-  if (planes) for (const pl of planes) {
-    if ((pl.semanticLabel || '') === 'ceiling') continue;
-    const it = scanItem(pl, pl.semanticLabel || (pl.orientation === 'horizontal' ? 'floor' : 'wall'));
-    if (it.t !== pl.lastChangedTime) {
-      it.t = pl.lastChangedTime;
-      const pts = pl.polygon.map(p => new THREE.Vector2(p.x, p.z)), tris = THREE.ShapeUtils.triangulateShape(pts, []);
-      const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pl.polygon.flatMap(p => [p.x, 0, p.z]), 3)); g.setIndex(tris.flat()); g.computeVertexNormals();
-      it.mesh.geometry.dispose(); it.mesh.geometry = g;
-    }
-    const pose = frame.getPose(pl.planeSpace, ref); if (pose) { it.mesh.matrix.fromArray(pose.transform.matrix); it.mesh.matrixWorldNeedsUpdate = true; }
-  }
-  if (meshes) for (const m of meshes) {
-    const lab = m.semanticLabel || 'other';
-    if (lab === 'ceiling' || (lab === 'global mesh' && planes && planes.size)) continue;            // the room box comes from the planes
-    const it = scanItem(m, lab);
-    if (it.t !== m.lastChangedTime) {
-      it.t = m.lastChangedTime;
-      const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(new Float32Array(m.vertices), 3)); g.setIndex(new THREE.BufferAttribute(new Uint32Array(m.indices), 1)); g.computeVertexNormals();
-      it.mesh.geometry.dispose(); it.mesh.geometry = g;
-    }
-    const pose = frame.getPose(m.meshSpace, ref); if (pose) { it.mesh.matrix.fromArray(pose.transform.matrix); it.mesh.matrixWorldNeedsUpdate = true; }
-  }
-  for (const [k, it] of scan.items) if (!(planes?.has?.(k) || meshes?.has?.(k))) { it.mesh.removeFromParent(); it.mesh.geometry.dispose(); it.mesh.material.dispose(); scan.items.delete(k); }
-}
-async function onScanEnd() {
-  const keep = scan.keep && scan.items.size > 0, n = scan.items.size;
-  scan.session = null; scan.ref = null; if (scan.label) scan.label.removeFromParent();
-  state.view = 'orbit'; controls.enabled = true; $('#scanui').hidden = true;
-  camera.fov = 55; camera.near = 0.05; camera.far = 3000; camera.updateProjectionMatrix(); applyEnv(); frame(); onResize(); updateTip();
-  if (!scan.keep) { scanClear(); return; }
-  if (!keep) { scanClear(); toast('Комната не найдена. На Quest 3 пройдите «Настройка пространства» (Настройки → Окружение) и попробуйте снова; на Android обведите камерой пол и стены.', 'warn'); return; }
-  try {
-    busy('Собираю модель комнаты…');
-    const out = new THREE.Group(); out.name = 'Комната';
-    for (const it of scan.items.values()) {
-      const g = it.mesh.geometry.clone(); g.applyMatrix4(it.mesh.matrix);
-      const m = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ color: SCAN_COL[it.label] || '#c7bdab', roughness: 0.85, side: THREE.DoubleSide })); m.name = it.label; out.add(m);
-    }
-    const glb = await new GLTFExporter().parseAsync(out, { binary: true });
-    out.traverse(o => { o.geometry?.dispose(); o.material?.dispose(); }); scanClear();
-    const stamp = new Date().toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }).replace(/[.,: ]+/g, '-');
-    await addFromFiles([new File([glb], `Комната-скан-${stamp}.glb`, { type: 'model/gltf-binary' })]);
-    toast(`Комната добавлена в экспозицию: ${n} ${n === 1 ? 'часть' : 'частей'}.`, 'ok');
-  } catch (e) { toast(`Не удалось собрать модель комнаты: ${e.message}`, 'bad'); }
-  finally { busy(null); }
-}
 
 /* ================= phone AR ================= */
 /* Android (Chrome, ARCore): WebXR immersive-ar with hit-test and a DOM overlay.
@@ -6643,7 +6508,6 @@ $('#upd-btn').addEventListener('click', () => location.replace(location.pathname
 const clock = new THREE.Clock();
 renderer.setAnimationLoop((t, xrFrame) => {
   const dt = Math.min(clock.getDelta(), 0.1);
-  if (state.view === 'scan') { scanFrame(xrFrame, dt); renderer.render(scan.scene, camera); return; }
   if (state.view === 'ar') arUpdate(xrFrame);
   else if (state.view === 'xr') pollInput(dt);
   else if (state.view === 'walk') { if (cb.on) cbPre(dt); walkUpdate(dt); if (cb.on) cbPost(dt); toyUpdate(dt); }
