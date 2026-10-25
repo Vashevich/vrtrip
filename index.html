@@ -7,7 +7,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <title>VRtrip</title>
 <meta name="author" content="Сергей Дмитриев, Rock Parametric">
-<meta name="description" content="VRtrip — просмотр архитектурных OBJ-моделей в Meta Quest 3 и в браузере. Автор: Сергей Дмитриев, Rock Parametric.">
+<meta name="description" content="VRtrip — просмотр архитектурных 3D-моделей в шлемах виртуальной реальности и в браузере. Автор: Сергей Дмитриев, Rock Parametric.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=PT+Mono&family=PT+Sans:wght@400;700&family=PT+Serif:ital,wght@0,400;1,400&display=swap">
@@ -575,7 +575,7 @@ input[type=range]{accent-color:var(--accent)}
     <div class="mark">VR<span>trip</span></div>
     <button type="button" class="themebtn" id="themebtn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg><span>Ночь</span></button>
     <div class="update" id="update" hidden><span>Вышла новая версия VRtrip <b id="upd-ver"></b>.</span><button type="button" class="btn small primary" id="upd-btn">Обновить</button></div>
-    <p class="lede">Архитектурные 3D-модели в Meta Quest&nbsp;3 и в браузере: прогулка от первого лица, макет на столе, сквозной режим, разметка и комментарии.</p>
+    <p class="lede">Архитектурные 3D-модели в&nbsp;шлемах виртуальной реальности и в браузере: прогулка от первого лица, макет на столе, сквозной режим, разметка и комментарии.</p>
     <a class="suggest" href="https://t.me/rock_parametric_chat" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21.5 4.5 2.8 11.7c-.9.4-.9 1.6.1 1.9l4.6 1.4 1.8 5.5c.3.8 1.3 1 1.9.4l2.6-2.5 4.8 3.5c.7.5 1.7.1 1.9-.7L22.9 5.9c.2-1-.6-1.8-1.4-1.4Z"/></svg><span>Предложить улучшение</span><small>Чат Rock Parametric в Telegram</small></a>
   </header>
 
@@ -1045,7 +1045,7 @@ const UP = new V3(0, 1, 0), DOWN = new V3(0, -1, 0);
 const UNITS = { mm: 0.001, cm: 0.01, m: 1, in: 0.0254, ft: 0.3048 };
 const TABLE_STEPS = [20, 50, 100, 200, 500, 1000];
 const EYE = 1.65, STEP = 0.45, RADIUS = 0.3, GRAV = 9.8;
-const APP_VERSION = '3.39';
+const APP_VERSION = '3.40';
 const BASE_COLORS = ['#f2efe8', '#d8a33f', '#e0604a', '#3f86c9'];
 const KINDS = { issue: { label: 'Замечание', color: '#e0604a' }, question: { label: 'Вопрос', color: '#d8a33f' }, idea: { label: 'Идея', color: '#4fae7f' } };
 const TOOLS = [['nav', 'Выделение'], ['pin', 'Метка'], ['measure', 'Рулетка'], ['pen', 'Карандаш'], ['erase', 'Ластик'], ['section', 'Сечение'], ['ref', 'Репер'], ['explode', 'Взрыв'], ['game', 'Игра']];   // «Куб» временно скрыт: код инструмента сохранён
@@ -6314,7 +6314,7 @@ function updateModeButtons() {
   set('#m-orbit', true, '', state.view === 'orbit'); $('#m-orbit').disabled = false;
   set('#m-walk', true, '', state.view === 'walk' && !cb.on);
   set('#m-cardboard', isPhone, 'Режим для телефона в VR-очках (Homido, Google Cardboard и похожие). Откройте эту ссылку на телефоне.', cb.on);
-  const noXR = !window.isSecureContext ? 'VR работает только на странице с адресом https://.' : 'Нужен шлем: откройте эту же ссылку в браузере Meta Quest 3.';
+  const noXR = !window.isSecureContext ? 'VR работает только на странице с адресом https://.' : 'Нужен шлем: откройте эту же ссылку в браузере шлема виртуальной реальности.';
   set('#m-mr', canMR, isPhone ? 'Это режим для шлема Quest 3. На телефоне — «AR телефон».' : xrSupport.vr ? 'Сквозной режим в этом браузере недоступен — выберите «VR мир».' : noXR);
   set('#m-vr', canVR, isPhone ? 'Это режим для шлема Quest. На телефоне — «AR телефон».' : noXR);
   set('#m-phone', !!k, 'AR через камеру работает на телефоне: Android (Chrome) или iPhone/iPad. Откройте эту ссылку на телефоне.');
@@ -6334,7 +6334,7 @@ $('#m-orbit').addEventListener('click', () => { if (state.view === 'walk') exitW
 async function checkXR() {
   const note = $('#xrnote'); renderScanBtn();
   if (!window.isSecureContext) { note.textContent = 'VR работает только на странице с адресом https://. Прогулка в браузере доступна и так.'; note.className = 'note warn'; return; }
-  if (!navigator.xr) { note.textContent = quickLookOK ? 'На iPhone/iPad VR недоступен, но работает «AR на телефоне» и прогулка в браузере.' : 'Этот браузер не поддерживает VR — доступна прогулка в браузере. Для VR откройте ту же ссылку в браузере Meta Quest 3.'; updateModeButtons(); return; }
+  if (!navigator.xr) { note.textContent = quickLookOK ? 'На iPhone/iPad VR недоступен, но работает «AR на телефоне» и прогулка в браузере.' : 'Этот браузер не поддерживает VR — доступна прогулка в браузере. Для VR откройте ту же ссылку в браузере шлема виртуальной реальности.'; updateModeButtons(); return; }
   const ok = async m => { try { return await navigator.xr.isSessionSupported(m); } catch { return false; } };
   [xrSupport.ar, xrSupport.vr] = await Promise.all([ok('immersive-ar'), ok('immersive-vr')]);
   if (isPhone && xrSupport.ar) { note.textContent = 'Телефон поддерживает AR — выберите «AR на телефоне».'; note.className = 'note'; }
