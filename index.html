@@ -576,7 +576,7 @@ input[type=range]{accent-color:var(--accent)}
     <button type="button" class="themebtn" id="themebtn" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg><span>Ночь</span></button>
     <div class="update" id="update" hidden><span>Вышла новая версия VRtrip <b id="upd-ver"></b>.</span><button type="button" class="btn small primary" id="upd-btn">Обновить</button></div>
     <p class="lede">Архитектурные 3D-модели в Meta Quest&nbsp;3 и в браузере: прогулка от первого лица, макет на столе, сквозной режим, разметка и комментарии.</p>
-    <a class="suggest" href="https://t.me/VRtrip_AR_MR" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21.5 4.5 2.8 11.7c-.9.4-.9 1.6.1 1.9l4.6 1.4 1.8 5.5c.3.8 1.3 1 1.9.4l2.6-2.5 4.8 3.5c.7.5 1.7.1 1.9-.7L22.9 5.9c.2-1-.6-1.8-1.4-1.4Z"/></svg><span>Предложить улучшение</span><small>Telegram-канал VRtrip</small></a>
+    <a class="suggest" href="https://t.me/rock_parametric_chat" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21.5 4.5 2.8 11.7c-.9.4-.9 1.6.1 1.9l4.6 1.4 1.8 5.5c.3.8 1.3 1 1.9.4l2.6-2.5 4.8 3.5c.7.5 1.7.1 1.9-.7L22.9 5.9c.2-1-.6-1.8-1.4-1.4Z"/></svg><span>Предложить улучшение</span><small>Чат Rock Parametric в Telegram</small></a>
   </header>
 
 
@@ -816,7 +816,7 @@ input[type=range]{accent-color:var(--accent)}
   </details>
 
   <p class="foot">Модели и заметки хранятся только в этом браузере и остаются после перезагрузки. Для плавной работы в шлеме держите модель в пределах 1–2 млн треугольников.</p>
-  <p class="credit"><span><b>Сергей Дмитриев</b> · Rock Parametric<br>VRtrip <span id="ver"></span> © 2026 · <a href="https://t.me/VRtrip_AR_MR" target="_blank" rel="noopener">идеи и ошибки — в Telegram</a></span></p>
+  <p class="credit"><span><b>Сергей Дмитриев</b> · Rock Parametric<br>VRtrip <span id="ver"></span> © 2026 · <a href="https://t.me/rock_parametric_chat" target="_blank" rel="noopener">идеи и ошибки — в Telegram</a></span></p>
   <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 </aside>
 
@@ -1045,7 +1045,7 @@ const UP = new V3(0, 1, 0), DOWN = new V3(0, -1, 0);
 const UNITS = { mm: 0.001, cm: 0.01, m: 1, in: 0.0254, ft: 0.3048 };
 const TABLE_STEPS = [20, 50, 100, 200, 500, 1000];
 const EYE = 1.65, STEP = 0.45, RADIUS = 0.3, GRAV = 9.8;
-const APP_VERSION = '3.38';
+const APP_VERSION = '3.39';
 const BASE_COLORS = ['#f2efe8', '#d8a33f', '#e0604a', '#3f86c9'];
 const KINDS = { issue: { label: 'Замечание', color: '#e0604a' }, question: { label: 'Вопрос', color: '#d8a33f' }, idea: { label: 'Идея', color: '#4fae7f' } };
 const TOOLS = [['nav', 'Выделение'], ['pin', 'Метка'], ['measure', 'Рулетка'], ['pen', 'Карандаш'], ['erase', 'Ластик'], ['section', 'Сечение'], ['ref', 'Репер'], ['explode', 'Взрыв'], ['game', 'Игра']];   // «Куб» временно скрыт: код инструмента сохранён
