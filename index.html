@@ -799,7 +799,7 @@ body:not(.gaming) #w-toy,body:not(.gaming) #w-hook{display:none!important}   /* 
     </div>
     <h3>Браузер</h3>
     <dl>
-      <dt>Мышь</dt><dd>В обзоре: левая кнопка — вращать, правая — двигать (лапка), колесо — ближе / дальше к курсору. С инструментом вращать — средней кнопкой.</dd>
+      <dt>Мышь</dt><dd>В обзоре: левая кнопка — вращать, правая — двигать (лапка), колесо — ближе / дальше к курсору. С инструментом вращать — средней кнопкой. В прогулке: левая — действие (поставить, выделить, схватить и тащить), правая — режим инструмента по кругу, колесо — цвет.</dd>
       <dt>W A S D</dt><dd>В обзоре — плавный полёт по сцене, Shift — быстрее, Q / E — вниз / вверх. В прогулке — идти. На телефоне и в Quest — джойстик в углу.</dd>
       <dt>Выделение</dt><dd>Клик по части модели или по разметке — выделить, стрелки гизмо — передвинуть (вверх-вниз — зелёная). Delete — удалить разметку, Esc — снять выделение.</dd>
       <dt>Прогулка</dt><dd>Как в игре: щёлкните по сцене — мышь станет обзором. WASD — идти, Shift — бег, Пробел — прыжок (без гравитации — вверх), C — присесть (без гравитации — вниз), клик по полу — перейти туда, R / F — этаж, Esc — вернуть курсор. Инструменты работают по прицелу в центре. B — пинбольная пушка с краской: шарики сбивают мелкие части и всё заляпывают. G — крюк-кошка: левый щелчок — выстрел, крюк цепляется и сразу резко тянет к себе, ещё щелчок — новый выстрел на лету, правый — отцепиться и лететь по инерции, пробел на крюке — запрыгнуть наверх. Esc убирает кляксы и возвращает части на место. B — игрушечный шарикомёт: шарики отскакивают и сбивают части модели, Esc возвращает всё на место.</dd>
@@ -824,13 +824,13 @@ body:not(.gaming) #w-toy,body:not(.gaming) #w-hook{display:none!important}   /* 
   </div>
   <div class="toolbar" id="toolbar" role="toolbar" aria-label="Инструменты">
     <button type="button" class="tb" data-tool="nav" title="Выделение: клик по части модели или разметке, стрелки — передвинуть (1)"><i class="tn" aria-hidden="true">1</i><svg viewBox="0 0 24 24"><path d="M5 3l14 7.5-6.2 1.8L10 19z"/></svg><span>Выделение</span></button>
-    <button type="button" class="tb" data-tool="pin" title="Метка с комментарием (2)"><i class="tn" aria-hidden="true">2</i><svg viewBox="0 0 24 24"><path d="M12 21s-6-6.2-6-11a6 6 0 0 1 12 0c0 4.8-6 11-6 11z"/><circle cx="12" cy="10" r="2.2"/></svg><span>Метка</span></button>
+    <button type="button" class="tb" data-tool="pen" title="Карандаш (2)"><i class="tn" aria-hidden="true">2</i><svg viewBox="0 0 24 24"><path d="M4 20l4-1 11-11-3-3L5 16z"/><path d="M14 6l3 3"/></svg><span>Карандаш</span></button>
     <button type="button" class="tb" data-tool="measure" title="Рулетка (3)"><i class="tn" aria-hidden="true">3</i><svg viewBox="0 0 24 24"><path d="M3 17L17 3l4 4L7 21z"/><path d="M7 13l2 2M10 10l2 2M13 7l2 2"/></svg><span>Рулетка</span></button>
-    <button type="button" class="tb" data-tool="pen" title="Карандаш (4)"><i class="tn" aria-hidden="true">4</i><svg viewBox="0 0 24 24"><path d="M4 20l4-1 11-11-3-3L5 16z"/><path d="M14 6l3 3"/></svg><span>Карандаш</span></button>
-    <button type="button" class="tb" data-tool="erase" title="Ластик (5)"><i class="tn" aria-hidden="true">5</i><svg viewBox="0 0 24 24"><path d="M8 20h12"/><path d="M4 15.5l9.5-9.5 6 6-7.5 7.5H8z"/></svg><span>Ластик</span></button>
-    <button type="button" class="tb" data-tool="section" title="Сечение (6)"><i class="tn" aria-hidden="true">6</i><svg viewBox="0 0 24 24"><path d="M4 8l8-4 8 4v8l-8 4-8-4z"/><path d="M2.5 14.5L21.5 9.5" stroke-dasharray="2.2 1.6"/><path d="M12 12v8"/></svg><span>Сечение</span></button>
-    <button type="button" class="tb" data-tool="explode" title="Взрыв-схема: части модели разлетаются, колесо мыши — сильнее / слабее (7)"><i class="tn" aria-hidden="true">7</i><svg viewBox="0 0 24 24"><rect x="9.5" y="9.5" width="5" height="5" rx="1"/><path d="M3 3l4 4M21 3l-4 4M3 21l4-4M21 21l-4-4"/><path d="M3 6.5V3h3.5M21 6.5V3h-3.5M3 17.5V21h3.5M21 17.5V21h-3.5"/></svg><span>Взрыв</span></button>
-    <button type="button" class="tb" data-tool="game" title="Игра: пушка с краской или крюк — в обзоре и в прогулке (8). Esc — выйти, всё на место"><i class="tn" aria-hidden="true">8</i><svg viewBox="0 0 24 24"><path d="M7 8h10a4 4 0 0 1 4 4v3.5a2.5 2.5 0 0 1-4.6 1.4L15 15H9l-1.4 1.9A2.5 2.5 0 0 1 3 15.5V12a4 4 0 0 1 4-4z"/><path d="M8 10.5v3M6.5 12h3"/><circle cx="15.5" cy="11.2" r=".6"/><circle cx="17.3" cy="13" r=".6"/></svg><span>Игра</span></button>
+    <button type="button" class="tb" data-tool="pin" title="Метка с комментарием (4)"><i class="tn" aria-hidden="true">4</i><svg viewBox="0 0 24 24"><path d="M12 21s-6-6.2-6-11a6 6 0 0 1 12 0c0 4.8-6 11-6 11z"/><circle cx="12" cy="10" r="2.2"/></svg><span>Метка</span></button>
+    <button type="button" class="tb" data-tool="section" title="Сечение (5)"><i class="tn" aria-hidden="true">5</i><svg viewBox="0 0 24 24"><path d="M4 8l8-4 8 4v8l-8 4-8-4z"/><path d="M2.5 14.5L21.5 9.5" stroke-dasharray="2.2 1.6"/><path d="M12 12v8"/></svg><span>Сечение</span></button>
+    <button type="button" class="tb" data-tool="explode" title="Взрыв-схема: части модели разлетаются, зажмите левую и тяните вверх / вниз — сильнее / слабее, правая — как разлетаются (6)"><i class="tn" aria-hidden="true">6</i><svg viewBox="0 0 24 24"><rect x="9.5" y="9.5" width="5" height="5" rx="1"/><path d="M3 3l4 4M21 3l-4 4M3 21l4-4M21 21l-4-4"/><path d="M3 6.5V3h3.5M21 6.5V3h-3.5M3 17.5V21h3.5M21 17.5V21h-3.5"/></svg><span>Взрыв</span></button>
+    <button type="button" class="tb" data-tool="game" title="Игра: пушка с краской или крюк — в обзоре и в прогулке (7). Esc — выйти, всё на место"><i class="tn" aria-hidden="true">7</i><svg viewBox="0 0 24 24"><path d="M7 8h10a4 4 0 0 1 4 4v3.5a2.5 2.5 0 0 1-4.6 1.4L15 15H9l-1.4 1.9A2.5 2.5 0 0 1 3 15.5V12a4 4 0 0 1 4-4z"/><path d="M8 10.5v3M6.5 12h3"/><circle cx="15.5" cy="11.2" r=".6"/><circle cx="17.3" cy="13" r=".6"/></svg><span>Игра</span></button>
+    <button type="button" class="tb" data-tool="erase" title="Ластик (8)"><i class="tn" aria-hidden="true">8</i><svg viewBox="0 0 24 24"><path d="M8 20h12"/><path d="M4 15.5l9.5-9.5 6 6-7.5 7.5H8z"/></svg><span>Ластик</span></button>
     <span class="tb-sep"></span>
     <button type="button" class="tb" id="tb-undo" title="Отменить (Ctrl+Z)"><svg viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg><span>Отменить</span></button>
     <span class="tb-sep"></span>
@@ -897,7 +897,7 @@ body:not(.gaming) #w-toy,body:not(.gaming) #w-hook{display:none!important}   /* 
       <button type="button" class="btn small" id="w-hook" aria-pressed="false" aria-label="Крюк" title="Крюк-кошка: стрелять и подтягиваться (G)"><svg class="wi" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5" r="2.3"/><path d="M12 7.3V21M7.5 11h9M4.5 14a7.5 7.5 0 0 0 15 0"/></svg><span class="wt">Крюк</span></button>
       <button type="button" class="btn small" id="w-jump" aria-label="Прыжок" title="Прыжок (пробел)"><svg class="wi" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V4M7 9l5-5 5 5M6 20h12"/></svg><span class="wt">Прыжок</span></button>
       <button type="button" class="btn small" id="w-fire" aria-label="Выстрел — как левая кнопка мыши" title="Выстрел / действие в прицеле — как левая кнопка мыши"><svg class="wi" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="3" width="12" height="18" rx="6"/><path d="M12 3a6 6 0 0 0-6 6v1h6z" fill="currentColor"/><path d="M12 3v7M6 10h12"/></svg><span class="wt">Огонь</span></button>
-      <button type="button" class="btn small" id="w-alt" aria-label="Как правая кнопка мыши: отцепить крюк, отменить" title="Как правая кнопка мыши: отцепить крюк, отменить инструмент"><svg class="wi" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="3" width="12" height="18" rx="6"/><path d="M12 3a6 6 0 0 1 6 6v1h-6z" fill="currentColor"/><path d="M12 3v7M6 10h12"/></svg><span class="wt">Отмена</span></button>
+      <button type="button" class="btn small" id="w-alt" aria-label="Как правая кнопка мыши: режим инструмента" title="Как правая кнопка мыши: режим инструмента по кругу"><svg class="wi" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="3" width="12" height="18" rx="6"/><path d="M12 3a6 6 0 0 1 6 6v1h-6z" fill="currentColor"/><path d="M12 3v7M6 10h12"/></svg><span class="wt">Режим</span></button>
     </div>
     <div class="joy joyr" id="joyr" aria-label="Джойстик обзора"><div class="knob"></div></div>
   </div>
@@ -913,7 +913,7 @@ body:not(.gaming) #w-toy,body:not(.gaming) #w-hook{display:none!important}   /* 
   <div class="secui gameui" id="gameui" hidden role="group" aria-label="Игра">
     <button type="button" class="btn small" data-game="balls">● Шарики</button>
     <button type="button" class="btn small" data-game="hook" title="Крюк работает в прогулке — включит её">⚓ Крюк</button>
-    <span class="sec-info">левый щелчок — выстрел · правый — выйти</span>
+    <span class="sec-info">левый щелчок — выстрел · правый — пушка / крюк · Esc — выйти</span>
   </div>
   <div class="secui explui" id="explui" hidden>
     <div class="seg" id="expl-mode" role="group" aria-label="Как разлетаются части">
@@ -1024,10 +1024,10 @@ const UP = new V3(0, 1, 0), DOWN = new V3(0, -1, 0);
 const UNITS = { mm: 0.001, cm: 0.01, m: 1, in: 0.0254, ft: 0.3048 };
 const TABLE_STEPS = [20, 50, 100, 200, 500, 1000];
 const EYE = 1.65, STEP = 0.45, RADIUS = 0.3, GRAV = 9.8;
-const APP_VERSION = '3.46';
+const APP_VERSION = '3.47';
 const BASE_COLORS = ['#f2efe8', '#d8a33f', '#e0604a', '#3f86c9'];
 const KINDS = { issue: { label: 'Замечание', color: '#e0604a' }, question: { label: 'Вопрос', color: '#d8a33f' }, idea: { label: 'Идея', color: '#4fae7f' } };
-const TOOLS = [['nav', 'Выделение'], ['pin', 'Метка'], ['measure', 'Рулетка'], ['pen', 'Карандаш'], ['erase', 'Ластик'], ['section', 'Сечение'], ['explode', 'Взрыв'], ['game', 'Игра'], ['ref', 'Репер']];   // 1–8 — клавиши в порядке панели; «Репер» — из «Привязки к месту», без клавиши
+const TOOLS = [['nav', 'Выделение'], ['pen', 'Карандаш'], ['measure', 'Рулетка'], ['pin', 'Метка'], ['section', 'Сечение'], ['explode', 'Взрыв'], ['game', 'Игра'], ['erase', 'Ластик'], ['ref', 'Репер']];   // 1–8 — клавиши в порядке панели; «Репер» — из «Привязки к месту», без клавиши
 const KEY_TOOLS = TOOLS.filter(t => t[0] !== 'ref');   // «Куб» временно скрыт: код инструмента сохранён
 const AUTHOR = 'Сергей Дмитриев · Rock Parametric';
 const base = p => String(p).split(/[\\/]/).pop();
@@ -1117,7 +1117,7 @@ scene.background = PREVIEW_BG;
 const rig = new THREE.Group(); scene.add(rig);
 const camera = new THREE.PerspectiveCamera(55, 1, 0.05, 3000); camera.rotation.order = 'YXZ'; rig.add(camera);
 const controls = new OrbitControls(camera, canvas); controls.enableDamping = true; controls.dampingFactor = 0.08;
-controls.mouseButtons = { LEFT: THREE.MOUSE.ROTATE, MIDDLE: THREE.MOUSE.ROTATE, RIGHT: THREE.MOUSE.PAN };   // left: orbit, right: pan (hand), wheel: closer / farther; with a tool active the middle button orbits
+controls.mouseButtons = { LEFT: THREE.MOUSE.ROTATE, MIDDLE: THREE.MOUSE.ROTATE, RIGHT: THREE.MOUSE.PAN };   // обзор как в Rhino: левая — вращать, правая — двигать, колесо — ближе / дальше; с инструментом вращать — средней. Свои правила кнопок — только в прогулке
 controls.zoomToCursor = true; controls.minDistance = 0.01;
 controls.screenSpacePanning = true;
 
@@ -3264,17 +3264,20 @@ function makeNoteObj(n) {
     const lab = makeLabel(`Р${n.num}`, null, { bg: REF_COLOR, depthTest: false });
     lab.center.set(-0.18, -0.25); lab.position.copy(p);
     g.add(dot, pk, lab); pick.push(pk);
-  } else if (n.type === 'measure') {
-    const a = vec(n.a), b = vec(n.b), d = a.distanceTo(b);
-    const mat = new THREE.LineBasicMaterial({ color: MEASURE_COLOR, depthTest: false, transparent: true });
-    const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints([a, b]), mat); line.renderOrder = 11;
-    const endMat = new THREE.MeshBasicMaterial({ color: MEASURE_COLOR, depthTest: false, transparent: true });
-    const ek = Math.min(1, d * 0.6);                 // end dots shrink on small models
-    for (const p of [a, b]) { const e = shared(new THREE.Mesh(END_GEO, endMat), true, false); e.position.copy(p); e.scale.setScalar(ek); e.renderOrder = 11; g.add(e); }
-    const cyl = new THREE.Mesh(new THREE.CylinderGeometry(0.07 * ek, 0.07 * ek, Math.max(d, 0.01), 6), PICK_MAT); cyl.userData.sharedMat = true;
-    cyl.position.copy(a).add(b).multiplyScalar(0.5); cyl.quaternion.setFromUnitVectors(UP, b.clone().sub(a).normalize());
-    const lab = makeLabel(`${fmt2(d)} м`, null, { depthTest: false }); lab.position.copy(a).add(b).multiplyScalar(0.5);
-    g.add(line, cyl, lab); pick.push(cyl);
+  } else if (n.type === 'measure') {                  // архитектурный размер: жирная линия, засечки 45° на концах, крупная подпись
+    const a = vec(n.a), b = vec(n.b), d = a.distanceTo(b), col = n.color || MEASURE_COLOR;
+    const dir = b.clone().sub(a).normalize(), side = Math.abs(dir.y) > 0.9 ? new V3(1, 0, 0) : UP.clone();
+    const perp = new V3().crossVectors(dir, side).normalize();
+    const mat = new THREE.MeshBasicMaterial({ color: col, depthTest: false, transparent: true });
+    const r = THREE.MathUtils.clamp(d * 0.004, 0.006, 0.03), tk = THREE.MathUtils.clamp(d * 0.07, 0.08, 0.45);
+    const bar = (p, q, rad) => { const m = new THREE.Mesh(new THREE.CylinderGeometry(rad, rad, p.distanceTo(q), 6), mat); m.position.copy(p).add(q).multiplyScalar(0.5); m.quaternion.setFromUnitVectors(UP, q.clone().sub(p).normalize()); m.renderOrder = 11; m.raycast = () => {}; return m; };
+    g.add(bar(a.clone().addScaledVector(dir, -tk * 0.35), b.clone().addScaledVector(dir, tk * 0.35), r));        // линия чуть выходит за засечки, как на чертеже
+    const sl = dir.clone().add(perp).normalize();
+    for (const p of [a, b]) g.add(bar(p.clone().addScaledVector(sl, -tk / 2), p.clone().addScaledVector(sl, tk / 2), r * 1.6));
+    const cyl = new THREE.Mesh(new THREE.CylinderGeometry(Math.max(0.07, r * 3), Math.max(0.07, r * 3), Math.max(d, 0.01), 6), PICK_MAT); cyl.userData.sharedMat = true;
+    cyl.position.copy(a).add(b).multiplyScalar(0.5); cyl.quaternion.setFromUnitVectors(UP, dir);
+    const lab = makeLabel(`${fmt2(d)} м`, null, { depthTest: false }); lab.position.copy(a).add(b).multiplyScalar(0.5); lab.userData.hk = 1.45;
+    g.add(cyl, lab); pick.push(cyl);
   } else if (n.type === 'line') {
     let m;
     if (n.p2) {
@@ -3654,7 +3657,7 @@ function cancelTool() { if (tool.erasing) eraseEnd(); tool.phase = 'idle'; tool.
 function setTool(id) {
   if (!TOOLS.some(t => t[0] === id)) return;
   if (state.tool === 'section' && sec.mode !== 'fixed') sec.mode = 'fixed';
-  cancelTool(); setHot([]); if (id !== 'nav') clearSelection(); state.tool = id; marker.visible = false; hideCursor(); renderToolbar(); document.body.classList.toggle('gaming', id === 'game');
+  cancelTool(); setHot([]); if (id !== 'nav') clearSelection(); if (secGhost) secGhost.visible = false; state.tool = id; marker.visible = false; hideCursor(); renderToolbar(); document.body.classList.toggle('gaming', id === 'game');
   setToy(id === 'game' && (state.view === 'orbit' || state.view === 'walk'));             // «Игра» is a tool: the gun only with it, any other tool is plain work
   if (id === 'section') { if (state.view === 'xr') { sec.on = true; sec.mode = 'live'; } else if (!sec.on) secPreset('plan'); }
   updateTip(); layoutPalette(); updateCanvasCursor(); drawToolTag(); renderSecUI(); renderExplUI();
@@ -3794,7 +3797,7 @@ function toolDown(wr) {
 }
 function finishMeasure() {
   const a = tool.a, b = tool.b; clearPreview(); tool.phase = 'idle';
-  if (a.distanceTo(b) >= 0.01) addNote({ type: 'measure', a: arr(a), b: arr(b) });
+  if (a.distanceTo(b) >= 0.01) addNote({ type: 'measure', a: arr(a), b: arr(b), color: curColor() });
 }
 function toolMove(wr) {
   if (!isReady()) return;
@@ -4012,16 +4015,16 @@ function pickSelectable(wr, tol = 0) {
 }
 
 const TIPS = {
-  game: { touch: 'Игра: касание — выстрел. Выйти — нажмите «Игра» ещё раз или другой инструмент', idle: 'Игра: левый щелчок — выстрел. B — пушка с краской (сбивает мелкие части и людей), G — крюк (в прогулке). Правый щелчок — отцепиться с крюка, а если не висите — выйти из игры к «Выделению» (всё на место)' },
+  game: { touch: 'Игра: касание — выстрел. Выйти — нажмите «Игра» ещё раз или другой инструмент', idle: 'Игра: левый щелчок — выстрел. Правый — на крюке отцепиться; в прогулке — пушка ↔ крюк, колесо — цвет шариков. Esc или 1 — выйти, всё на место' },
   nav: { walk: 'Щёлкните по сцене — мышь станет обзором (как в игре). WASD — идти, Shift — бег, Пробел — прыжок, C — присесть. Esc — вернуть курсор', lock: 'Мышь — обзор, левый щелчок — выделить то, что в прицеле · WASD — идти · Shift — бег · Пробел — прыжок · C — присесть · B / G или «Игра» — пушка и крюк · Esc — курсор', orbit: '' },
   box: { idle: 'Куб: щёлкните первый угол основания', foot: 'Задайте второй угол и щёлкните', height: 'Поднимите на нужную высоту и щёлкните. Esc — отмена' },
-  explode: { idle: 'Взрыв-схема: колесо мыши или ползунок — разнести части / собрать. «Этажами вверх» — архитектурная аксонометрия' },
-  ref: { idle: 'Репер: щёлкните точку, которую легко найти на месте — угол плиты, ось колонны, отметка на полу. Крупная цветная точка — привязка к вершине' },
-  pin: { idle: 'Метка: щёлкните по поверхности, чтобы оставить комментарий. Крупная цветная точка — привязка к углу' },
-  measure: { idle: 'Рулетка: щёлкните первую точку. Крупная цветная точка — привязка к вершине', m: 'Щёлкните вторую точку. Esc — отмена' },
-  pen: { idle: 'Карандаш: нажмите на модель и рисуйте — линия ляжет в плоскость перед вами' },
+  explode: { idle: 'Взрыв-схема: зажмите левую и тяните вверх — разнести, вниз — собрать (или ползунок). В прогулке правый щелчок — как разлетаются: из центра, этажами вверх, в стороны' },
+  ref: { idle: 'Репер (в прогулке правый щелчок — обратно к метке): щёлкните точку, которую легко найти на месте — угол плиты, ось колонны, отметка на полу. Крупная цветная точка — привязка к вершине' },
+  pin: { idle: 'Метка: щёлкните по поверхности — комментарий. В прогулке: колесо — цвет, правый щелчок — репер. Крупная цветная точка — привязка к углу' },
+  measure: { idle: 'Рулетка: щёлкните первую точку. Колесо — цвет. Крупная цветная точка — привязка к вершине', m: 'Щёлкните вторую точку. Esc или правый щелчок — отмена' },
+  pen: { idle: 'Карандаш: нажмите на модель и рисуйте — линия ляжет в плоскость перед вами. Колесо — цвет' },
   erase: { idle: 'Ластик: ведите с зажатой кнопкой — стирается всё, что подсветилось красным' },
-  section: { idle: 'Сечение: тяните мышью — плоскость сдвигается, клик по модели — провести через точку' },
+  section: { idle: 'Сечение: клик по модели — плоскость встаёт в точку, зажал и тянешь — ближе / дальше. В прогулке правый щелчок — план → разрез X → разрез Z' },
 };
 const VR_TIPS = {
   game: { idle: 'Игра работает в браузере: в обзоре и в прогулке' },
@@ -4051,7 +4054,7 @@ function updateTip() {
 /* toolbar */
 function renderToolbar() {
   const on = isReady();
-  document.querySelectorAll('#toolbar [data-tool]').forEach(b => { b.disabled = !on; b.setAttribute('aria-pressed', String(b.dataset.tool === state.tool)); });
+  document.querySelectorAll('#toolbar [data-tool]').forEach(b => { b.disabled = !on; b.setAttribute('aria-pressed', String(b.dataset.tool === state.tool || (b.dataset.tool === 'pin' && state.tool === 'ref'))); });
   const sw = $('#swatches'); sw.textContent = '';
   allColors().forEach((c, i) => {
     const b = document.createElement('button'); b.type = 'button'; b.className = 'sw'; b.dataset.color = i; b.style.setProperty('--sw', c);
@@ -4345,6 +4348,21 @@ function secPointerMove(e) {
   const t = l2 > 16 ? (dx * d.v.x + dy * d.v.y) / l2 * d.L : -dy / Math.max(canvas.clientHeight, 1) * d.L * 10;
   sec.p.copy(snapOffset(d.p0.clone().addScaledVector(sec.n, t), sec.n)); renderSecUI();
 }
+/* призрак сечения: пока выбран инструмент, под курсором / прицелом видна рамка будущего разреза */
+var secGhost = (() => {
+  const g = new THREE.Group(), c = 0xc8372d;
+  g.add(new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ color: c, transparent: true, opacity: 0.13, side: THREE.DoubleSide, depthWrite: false })));
+  g.add(new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.PlaneGeometry(1, 1)), new THREE.LineBasicMaterial({ color: c, transparent: true, opacity: 0.85 })));
+  g.traverse(o => { o.raycast = () => {}; }); g.visible = false; g.renderOrder = 5; holder.add(toUI(g)); return g;
+})();
+const _gz = new V3(0, 0, 1);
+function secGhostAt(wr) {
+  if (state.tool !== 'section' || pd || !wr || !isReady()) { secGhost.visible = false; return; }
+  const h = hitScene(wr, { notes: false, ground: false }); if (!h) { secGhost.visible = false; return; }
+  const n = sec.on ? sec.n.clone() : new V3(0, -1, 0), z = sceneSize() || new V3(10, 4, 10);
+  const S = Math.min(Math.max(z.x, z.y, z.z, 1) * 0.7, 40);
+  secGhost.position.copy(snapOffset(h.local, n)); secGhost.quaternion.setFromUnitVectors(_gz, n.normalize()); secGhost.scale.set(S, S, 1); secGhost.visible = true;
+}
 function secClick(e) {
   const h = hitScene(rayFromEvent(e), { notes: false, ground: false }); if (!h) return;
   sec.p.copy(snapOffset(h.local, sec.n)); sec.on = true; renderSecUI();
@@ -4505,12 +4523,7 @@ $('#w-fire').addEventListener('pointerdown', e => {
   if (state.tool === 'nav') { const pk = pickSelectable(r, (6 / Math.max(canvas.clientHeight, 1)) * THREE.MathUtils.degToRad(camera.fov)); if (pk.kind === 'none' || (pk.kind !== 'note' && pk.h && pk.h.normal.y > 0.7)) clearSelection(); else selectPick(pk); return; }
   if (state.tool !== 'section') { toolDown(r); toolUp(r); }
 });
-$('#w-alt').addEventListener('pointerdown', e => {
-  e.preventDefault(); if (state.view !== 'walk') return;
-  if (state.tool === 'game') gameRight();
-  else if (state.tool !== 'nav') cancelTool();
-  else clearSelection();
-});
+$('#w-alt').addEventListener('pointerdown', e => { e.preventDefault(); if (state.view === 'walk') rightMode(); });
 
 /* panel toggle: drawer on landscape phones, collapse on larger screens */
 const compactMQ = matchMedia('(orientation:landscape) and (max-height:600px)');
@@ -4768,23 +4781,27 @@ const fineMouse = matchMedia('(pointer:fine)');
 document.addEventListener('pointerlockchange', () => { if (hardLocked()) freeLook = false; aimChanged(); });
 $('#view').addEventListener('pointerdown', e => {
   if (e.target !== canvas) return;
-  controls.enabled = state.view === 'orbit' && (state.tool === 'nav' || e.button !== 0) && !gizmoHot();
+  controls.enabled = state.view === 'orbit' && (state.tool === 'nav' || CLICK_TOOLS.has(state.tool) || e.button !== 0) && !gizmoHot();
 }, true);
 let pd = null;
+const CLICK_TOOLS = new Set(['pin', 'ref', 'measure']);   // обзор: у метки и рулетки зажал и тянешь — вращать камеру, просто клик — действие инструмента
 canvas.addEventListener('contextmenu', e => e.preventDefault());
 canvas.addEventListener('pointerdown', e => {
   if (!$('#dlg').hidden && locked()) { e.preventDefault(); if (e.button === 0) $('#dlg').requestSubmit(); else if (e.button === 2) closeDialog(null); return; }   // окно метки в прогулке: левая — сохранить, правая — отмена
   if (state.view === 'xr' || state.view === 'ar' || !$('#dlg').hidden || gizmoHot()) return;
   if (state.view === 'walk' && !cb.on && !locked() && e.pointerType === 'mouse' && e.button === 0) { startAim(); return; }   // first click: the mouse becomes the look   // first click: the mouse becomes the look
+  if (e.button === 2 && e.pointerType === 'mouse' && state.view === 'walk') { e.preventDefault(); rightMode(); return; }   // прогулка: правая — режим инструмента
   if (toy.on && state.tool === 'game' && (state.view === 'orbit' || locked() || e.pointerType !== 'mouse')) {
     if (e.button === 2) { gameRight(); return; }
     if (e.button === 0) { if (toy.mode === 'hook' && state.view === 'walk') hookPrimary(rayFromEvent(e)); else shoot(rayFromEvent(e)); return; }
   }
   if (state.tool === 'game') return;
-  const useTool = state.tool !== 'nav' && e.button === 0;
-  pd = { x: e.clientX, y: e.clientY, lx: e.clientX, ly: e.clientY, id: e.pointerId, moved: false, tool: useTool, look: state.view === 'walk' && !useTool && !locked() };
+  const clickOnly = state.view === 'orbit' && CLICK_TOOLS.has(state.tool) && e.button === 0;
+  const useTool = state.tool !== 'nav' && e.button === 0 && !clickOnly;
+  pd = { x: e.clientX, y: e.clientY, lx: e.clientX, ly: e.clientY, id: e.pointerId, moved: false, tool: useTool, click: clickOnly, look: state.view === 'walk' && !useTool && !locked() };
   try { canvas.setPointerCapture(e.pointerId); } catch {}
   if (useTool && state.tool === 'section') secPointerDown(e);
+  else if (useTool && state.tool === 'explode') pd.ex = expl.target;               // взрыв: зажал и тянешь вверх — сильнее, вниз — слабее
   else if (useTool) toolDown(rayFromEvent(e));
   else if (pd.look) updateCanvasCursor(true);
 });
@@ -4792,6 +4809,7 @@ canvas.addEventListener('pointermove', e => {
   if (state.view === 'xr' || state.view === 'ar') return;
   if (locked()) {
     if (!$('#dlg').hidden) return;                                                    // пока пишешь метку, взгляд стоит
+    if (pd?.ex !== undefined) { pd.vy = (pd.vy || 0) + e.movementY; explodeTo(Math.max(0, pd.ex - pd.vy * 0.006)); return; }
     if (state.tool === 'section' && pd?.tool && sec.drag) {                            // сечение в прогулке: зажал — мышь двигает плоскость, взгляд стоит
       pd.vx = (pd.vx || 0) + e.movementX; pd.vy = (pd.vy || 0) + e.movementY;
       if (!pd.moved && Math.hypot(pd.vx, pd.vy) > 5) pd.moved = true;
@@ -4803,6 +4821,7 @@ canvas.addEventListener('pointermove', e => {
     player.yaw -= e.movementX * k; player.pitch = THREE.MathUtils.clamp(player.pitch - e.movementY * k, -1.5, 1.5);
     if (state.tool === 'erase' && pd?.tool && tool.erasing) { eraseAt(centerRay()); return; }
     if (state.tool !== 'nav' && state.tool !== 'section') { const wr = centerRay(); toolMove(wr); hoverCursor(wr); }
+    if (state.tool === 'section') secGhostAt(centerRay());
     return;
   }
   if (pd && e.pointerId === pd.id) {
@@ -4815,7 +4834,9 @@ canvas.addEventListener('pointermove', e => {
       return;
     }
   }
-  if (state.tool === 'section' && pd?.tool) { if (pd.moved) secPointerMove(e); return; }
+  if (state.tool === 'section' && !pd) secGhostAt(rayAt(e.clientX, e.clientY));
+  if (state.tool === 'section' && pd?.tool) { secGhost.visible = false; if (pd.moved) secPointerMove(e); return; }
+  if (pd?.ex !== undefined && e.pointerId === pd.id) { explodeTo(Math.max(0, pd.ex - (e.clientY - pd.y) * 0.006)); return; }
   if (state.tool === 'erase' && pd?.tool && tool.erasing) {            // sweep every few pixels so fast strokes do not skip thin lines
     const steps = Math.max(1, Math.ceil(Math.hypot(e.clientX - pd.lx, e.clientY - pd.ly) / 3));
     for (let k = 1; k <= steps; k++) eraseAt(rayAt(pd.lx + (e.clientX - pd.lx) * k / steps, pd.ly + (e.clientY - pd.ly) * k / steps));
@@ -4827,6 +4848,8 @@ const endPointer = e => {
   if (!pd || e.pointerId !== pd.id) return;
   const p = pd; pd = null; updateCanvasCursor();
   if (p.tool && state.tool === 'section') { if (!p.moved) secClick(e); sec.drag = null; renderSecUI(); }
+  else if (p.ex !== undefined) { /* взрыв: отпустил — разлёт остаётся */ }
+  else if (p.click) { if (!p.moved) { const r = rayFromEvent(e); toolDown(r); toolUp(r); } }
   else if (p.tool) toolUp(rayFromEvent(e));
   else if (state.tool === 'nav' && !p.moved && e.button === 0 && isReady()) {
     /* select: click a part of the model or a markup object; in the walk, a click on a floor still takes you there */
@@ -4910,14 +4933,14 @@ $('#expl-f').addEventListener('input', e => explodeTo(+e.target.value / 100));
 $('#expl-reset').addEventListener('click', () => explodeReset());
 /* mouse wheel: with the tool on it explodes / collapses instead of zooming */
 let dlgWheelT = 0;
-window.addEventListener('wheel', e => {                                                   // прогулка: колесо листает цвета — в окне метки, у метки, рулетки и карандаша
-  if (!locked()) return;
+window.addEventListener('wheel', e => {                                                   // прогулка: колесо листает цвет (и в окне метки); в обзоре колесо — ближе / дальше, как было
   const inDlg = !$('#dlg').hidden;
-  if (!inDlg && !['pin', 'measure', 'pen'].includes(state.tool)) return;
+  if (!inDlg && (state.view !== 'walk' || (e.target !== canvas && !locked()))) return;
   e.preventDefault(); e.stopImmediatePropagation();
   const now = performance.now(); if (now - dlgWheelT < 120 || !e.deltaY) return; dlgWheelT = now;
-  if (!inDlg) { const n = allColors().length; setColor((state.color + (e.deltaY > 0 ? 1 : -1) + n) % n); return; }
-  const c = allColors(), i = Math.max(0, c.indexOf(dlgColor)); dlgColor = c[(i + (e.deltaY > 0 ? 1 : -1) + c.length) % c.length]; paintDlgColors();
+  const step = e.deltaY > 0 ? 1 : -1, c = allColors();
+  if (inDlg) { const i = Math.max(0, c.indexOf(dlgColor)); dlgColor = c[(i + step + c.length) % c.length]; paintDlgColors(); return; }
+  setColor((state.color + step + c.length) % c.length);
 }, { capture: true, passive: false });
 canvas.addEventListener('wheel', e => {
   if (state.tool !== 'explode' || !isReady()) return;
@@ -5097,8 +5120,8 @@ function mountGun() {
   else { toy.gun ||= makeGun(); camera.add(toy.gun); }
 }
 const GADGET_TIP = {
-  balls: 'Пушка: левый щелчок — шарик. Правый щелчок — выйти из игры: кляксы и сбитые части исчезнут. G — крюк.',
-  hook: 'Крюк: левый щелчок — выстрел, зацепился — сразу тянет, через невысокий край — перебрасывает наверх. Правый — отцепиться (летите по инерции), ещё правый — выйти из игры. Пробел на крюке — запрыгнуть. B — пушка.',
+  balls: 'Пушка: левый щелчок — шарик, колесо — цвет. В прогулке правый — крюк. Esc — выйти из игры: кляксы и сбитые части исчезнут.',
+  hook: 'Крюк: левый щелчок — выстрел, зацепился — сразу тянет, через невысокий край — перебрасывает наверх. Правый — отцепиться (летите по инерции), ещё правый — пушка. Пробел на крюке — запрыгнуть. Esc — выйти из игры.',
 };
 function setToy(on) {
   if (on === toy.on) return;
@@ -5110,6 +5133,28 @@ function setToy(on) {
   mountGun(); paintGadgets(); updateCanvasCursor();
 }
 /* right click in the game: on the hook — let go; otherwise leave the game for «Выделение» and give the cursor back */
+/* правая кнопка — режим инструмента по кругу (одно правило для всех инструментов, в обзоре и в прогулке) */
+const SEC_CYCLE = [['plan', 'план'], ['x', 'разрез X'], ['z', 'разрез Z']], EXPL_CYCLE = [['radial', 'из центра'], ['floors', 'этажами вверх'], ['side', 'в стороны']];
+function modeSay(t) { toast('Режим: ' + t); }
+function rightMode() {
+  if (!isReady()) return;
+  const t = state.tool;
+  if (tool.phase !== 'idle' || tool.pen) { cancelTool(); return; }                         // недоделанное — сперва отменить
+  if (t === 'pin' || t === 'ref') { setTool(t === 'pin' ? 'ref' : 'pin'); modeSay(state.tool === 'ref' ? 'репер (Р1, Р2…) — для привязки к месту' : 'метка с комментарием'); return; }
+  if (t === 'section') {
+    const cur = !sec.on ? -1 : Math.abs(sec.n.y) > 0.7 ? 0 : Math.abs(sec.n.x) > Math.abs(sec.n.z) ? 1 : 2;
+    const k = SEC_CYCLE[(cur + 1) % SEC_CYCLE.length]; secPreset(k[0]); renderSecUI(); modeSay(k[1]); return;
+  }
+  if (t === 'explode') {
+    const i = EXPL_CYCLE.findIndex(m => m[0] === expl.mode), k = EXPL_CYCLE[(i + 1) % EXPL_CYCLE.length];
+    expl.mode = k[0]; lsSet('vrtrip-explmode', k[0]); if (expl.cache) explApply(expl.cur); if (!expl.target) explodeTo(0.8); renderExplUI(); modeSay(k[1]); return;
+  }
+  if (t === 'game') {
+    if (toy.mode === 'hook' && hook.st !== 'idle') { hookRelease(); return; }
+    setGadget(toy.mode === 'hook' ? 'balls' : 'hook'); modeSay(toy.mode === 'hook' ? 'крюк' : 'пушка с краской'); return;
+  }
+  if (t === 'nav') { clearSelection(); return; }
+}
 function gameRight() {
   if (toy.mode === 'hook' && hook.st !== 'idle') { hookRelease(); return; }
   setTool('nav'); stopAim();
