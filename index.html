@@ -930,6 +930,7 @@ body:not(.gaming) #w-toy,body:not(.gaming) #w-hook{display:none!important}   /* 
     <h3 id="dlg-title">Метка</h3>
     <textarea id="dlg-text" rows="3" placeholder="Текст комментария" aria-label="Текст комментария"></textarea>
     <div class="dlg-colors" id="dlg-colors" role="group" aria-label="Цвет облачка"></div>
+    <small id="dlg-keys" hidden style="font-size:12px;opacity:.75">Текст — с клавиатуры · колесо — цвет · левая кнопка — сохранить · правая — отмена</small>
     <div class="dlg-actions">
       <button type="button" class="btn" id="dlg-cancel">Отмена</button>
       <button type="submit" class="btn primary">Сохранить</button>
@@ -1023,7 +1024,7 @@ const UP = new V3(0, 1, 0), DOWN = new V3(0, -1, 0);
 const UNITS = { mm: 0.001, cm: 0.01, m: 1, in: 0.0254, ft: 0.3048 };
 const TABLE_STEPS = [20, 50, 100, 200, 500, 1000];
 const EYE = 1.65, STEP = 0.45, RADIUS = 0.3, GRAV = 9.8;
-const APP_VERSION = '3.44';
+const APP_VERSION = '3.45';
 const BASE_COLORS = ['#f2efe8', '#d8a33f', '#e0604a', '#3f86c9'];
 const KINDS = { issue: { label: 'Замечание', color: '#e0604a' }, question: { label: 'Вопрос', color: '#d8a33f' }, idea: { label: 'Идея', color: '#4fae7f' } };
 const TOOLS = [['nav', 'Выделение'], ['pin', 'Метка'], ['measure', 'Рулетка'], ['pen', 'Карандаш'], ['erase', 'Ластик'], ['section', 'Сечение'], ['explode', 'Взрыв'], ['game', 'Игра'], ['ref', 'Репер']];   // 1–8 — клавиши в порядке панели; «Репер» — из «Привязки к месту», без клавиши
@@ -3518,7 +3519,7 @@ $('#dlg-colors').addEventListener('click', e => { const b = e.target.closest('[d
 function openNoteDialog(n, isNew) {
   $('#dlg-title').textContent = `${isNew ? 'Новая метка' : 'Метка'} ${n.num}`;
   $('#dlg-text').value = n.text || ''; dlgColor = pinColor(n); paintDlgColors();
-  $('#dlg').hidden = false; setTimeout(() => $('#dlg-text').focus(), 30);
+  $('#dlg-keys').hidden = !locked(); $('#dlg').hidden = false; setTimeout(() => $('#dlg-text').focus(), 30);
   return new Promise(r => { dlgResolve = r; });
 }
 function closeDialog(result) { $('#dlg').hidden = true; const r = dlgResolve; dlgResolve = null; r?.(result); canvas.focus({ preventScroll: true }); }
@@ -4772,6 +4773,7 @@ $('#view').addEventListener('pointerdown', e => {
 let pd = null;
 canvas.addEventListener('contextmenu', e => e.preventDefault());
 canvas.addEventListener('pointerdown', e => {
+  if (!$('#dlg').hidden && locked()) { e.preventDefault(); if (e.button === 0) $('#dlg').requestSubmit(); else if (e.button === 2) closeDialog(null); return; }   // окно метки в прогулке: левая — сохранить, правая — отмена
   if (state.view === 'xr' || state.view === 'ar' || !$('#dlg').hidden || gizmoHot()) return;
   if (state.view === 'walk' && !cb.on && !locked() && e.pointerType === 'mouse' && e.button === 0) { startAim(); return; }   // first click: the mouse becomes the look   // first click: the mouse becomes the look
   if (toy.on && state.tool === 'game' && (state.view === 'orbit' || locked() || e.pointerType !== 'mouse')) {
@@ -4789,6 +4791,7 @@ canvas.addEventListener('pointerdown', e => {
 canvas.addEventListener('pointermove', e => {
   if (state.view === 'xr' || state.view === 'ar') return;
   if (locked()) {
+    if (!$('#dlg').hidden) return;                                                    // пока пишешь метку, взгляд стоит
     if (freeLook) { const r = canvas.getBoundingClientRect(); aimEdge.x = (e.clientX - r.left) / r.width; aimEdge.y = (e.clientY - r.top) / r.height; }
     const k = 0.0022 * (lookSens || 1);
     player.yaw -= e.movementX * k; player.pitch = THREE.MathUtils.clamp(player.pitch - e.movementY * k, -1.5, 1.5);
@@ -4900,6 +4903,16 @@ $('#expl-mode').addEventListener('click', e => { const b = e.target.closest('[da
 $('#expl-f').addEventListener('input', e => explodeTo(+e.target.value / 100));
 $('#expl-reset').addEventListener('click', () => explodeReset());
 /* mouse wheel: with the tool on it explodes / collapses instead of zooming */
+let dlgWheelT = 0;
+window.addEventListener('wheel', e => {                                                   // прогулка: колесо листает цвета — в окне метки, у метки, рулетки и карандаша
+  if (!locked()) return;
+  const inDlg = !$('#dlg').hidden;
+  if (!inDlg && !['pin', 'measure', 'pen'].includes(state.tool)) return;
+  e.preventDefault(); e.stopImmediatePropagation();
+  const now = performance.now(); if (now - dlgWheelT < 120 || !e.deltaY) return; dlgWheelT = now;
+  if (!inDlg) { const n = allColors().length; setColor((state.color + (e.deltaY > 0 ? 1 : -1) + n) % n); return; }
+  const c = allColors(), i = Math.max(0, c.indexOf(dlgColor)); dlgColor = c[(i + (e.deltaY > 0 ? 1 : -1) + c.length) % c.length]; paintDlgColors();
+}, { capture: true, passive: false });
 canvas.addEventListener('wheel', e => {
   if (state.tool !== 'explode' || !isReady()) return;
   e.preventDefault(); e.stopImmediatePropagation();
