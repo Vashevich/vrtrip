@@ -481,6 +481,10 @@ input[type=range]{accent-color:var(--accent)}
 .toolbar,.mediabar{gap:0;padding:0}
 .tb{border-radius:0;color:var(--fg);font:600 11px/1 var(--f-display);letter-spacing:.12em;text-transform:uppercase}
 .tb+.tb{border-left:2px solid var(--line)}
+.tb{position:relative}.tn{position:absolute;top:3px;left:4px;font:600 9px/1 var(--f-display);font-style:normal;letter-spacing:0;opacity:.5;pointer-events:none}
+@media (pointer:coarse){.tn{display:none}}
+@media (hover:hover) and (pointer:fine){.floors{display:none!important}}   /* компьютер: выход — «Обзор», этажи — R / F (PageUp / PageDown), игра — инструмент 8 */
+body:not(.gaming) #w-toy,body:not(.gaming) #w-hook{display:none!important}   /* шарики и крюк — только с инструментом «Игра» */
 .tb:hover:not([aria-pressed="true"]):not(:disabled){background:var(--hover)}
 .tb[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
 .tb-sep{background:var(--line);width:2px;margin:0}
@@ -819,14 +823,14 @@ input[type=range]{accent-color:var(--accent)}
   <button type="button" class="panelbtn" id="panelbtn" aria-label="Показать или скрыть панель" aria-expanded="true" title="Панель: модели, масштаб, разметка"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
   </div>
   <div class="toolbar" id="toolbar" role="toolbar" aria-label="Инструменты">
-    <button type="button" class="tb" data-tool="nav" title="Выделение: клик по части модели или разметке, стрелки — передвинуть (1)"><svg viewBox="0 0 24 24"><path d="M5 3l14 7.5-6.2 1.8L10 19z"/></svg><span>Выделение</span></button>
-    <button type="button" class="tb" data-tool="pin" title="Метка с комментарием (2)"><svg viewBox="0 0 24 24"><path d="M12 21s-6-6.2-6-11a6 6 0 0 1 12 0c0 4.8-6 11-6 11z"/><circle cx="12" cy="10" r="2.2"/></svg><span>Метка</span></button>
-    <button type="button" class="tb" data-tool="measure" title="Рулетка (3)"><svg viewBox="0 0 24 24"><path d="M3 17L17 3l4 4L7 21z"/><path d="M7 13l2 2M10 10l2 2M13 7l2 2"/></svg><span>Рулетка</span></button>
-    <button type="button" class="tb" data-tool="pen" title="Карандаш (4)"><svg viewBox="0 0 24 24"><path d="M4 20l4-1 11-11-3-3L5 16z"/><path d="M14 6l3 3"/></svg><span>Карандаш</span></button>
-    <button type="button" class="tb" data-tool="erase" title="Ластик (5)"><svg viewBox="0 0 24 24"><path d="M8 20h12"/><path d="M4 15.5l9.5-9.5 6 6-7.5 7.5H8z"/></svg><span>Ластик</span></button>
-    <button type="button" class="tb" data-tool="section" title="Сечение (6)"><svg viewBox="0 0 24 24"><path d="M4 8l8-4 8 4v8l-8 4-8-4z"/><path d="M2.5 14.5L21.5 9.5" stroke-dasharray="2.2 1.6"/><path d="M12 12v8"/></svg><span>Сечение</span></button>
-    <button type="button" class="tb" data-tool="explode" title="Взрыв-схема: части модели разлетаются, колесо мыши — сильнее / слабее (8)"><svg viewBox="0 0 24 24"><rect x="9.5" y="9.5" width="5" height="5" rx="1"/><path d="M3 3l4 4M21 3l-4 4M3 21l4-4M21 21l-4-4"/><path d="M3 6.5V3h3.5M21 6.5V3h-3.5M3 17.5V21h3.5M21 17.5V21h-3.5"/></svg><span>Взрыв</span></button>
-    <button type="button" class="tb" data-tool="game" title="Игра: пушка с краской или крюк — в обзоре и в прогулке (9). Esc — выйти, всё на место"><svg viewBox="0 0 24 24"><path d="M7 8h10a4 4 0 0 1 4 4v3.5a2.5 2.5 0 0 1-4.6 1.4L15 15H9l-1.4 1.9A2.5 2.5 0 0 1 3 15.5V12a4 4 0 0 1 4-4z"/><path d="M8 10.5v3M6.5 12h3"/><circle cx="15.5" cy="11.2" r=".6"/><circle cx="17.3" cy="13" r=".6"/></svg><span>Игра</span></button>
+    <button type="button" class="tb" data-tool="nav" title="Выделение: клик по части модели или разметке, стрелки — передвинуть (1)"><i class="tn" aria-hidden="true">1</i><svg viewBox="0 0 24 24"><path d="M5 3l14 7.5-6.2 1.8L10 19z"/></svg><span>Выделение</span></button>
+    <button type="button" class="tb" data-tool="pin" title="Метка с комментарием (2)"><i class="tn" aria-hidden="true">2</i><svg viewBox="0 0 24 24"><path d="M12 21s-6-6.2-6-11a6 6 0 0 1 12 0c0 4.8-6 11-6 11z"/><circle cx="12" cy="10" r="2.2"/></svg><span>Метка</span></button>
+    <button type="button" class="tb" data-tool="measure" title="Рулетка (3)"><i class="tn" aria-hidden="true">3</i><svg viewBox="0 0 24 24"><path d="M3 17L17 3l4 4L7 21z"/><path d="M7 13l2 2M10 10l2 2M13 7l2 2"/></svg><span>Рулетка</span></button>
+    <button type="button" class="tb" data-tool="pen" title="Карандаш (4)"><i class="tn" aria-hidden="true">4</i><svg viewBox="0 0 24 24"><path d="M4 20l4-1 11-11-3-3L5 16z"/><path d="M14 6l3 3"/></svg><span>Карандаш</span></button>
+    <button type="button" class="tb" data-tool="erase" title="Ластик (5)"><i class="tn" aria-hidden="true">5</i><svg viewBox="0 0 24 24"><path d="M8 20h12"/><path d="M4 15.5l9.5-9.5 6 6-7.5 7.5H8z"/></svg><span>Ластик</span></button>
+    <button type="button" class="tb" data-tool="section" title="Сечение (6)"><i class="tn" aria-hidden="true">6</i><svg viewBox="0 0 24 24"><path d="M4 8l8-4 8 4v8l-8 4-8-4z"/><path d="M2.5 14.5L21.5 9.5" stroke-dasharray="2.2 1.6"/><path d="M12 12v8"/></svg><span>Сечение</span></button>
+    <button type="button" class="tb" data-tool="explode" title="Взрыв-схема: части модели разлетаются, колесо мыши — сильнее / слабее (7)"><i class="tn" aria-hidden="true">7</i><svg viewBox="0 0 24 24"><rect x="9.5" y="9.5" width="5" height="5" rx="1"/><path d="M3 3l4 4M21 3l-4 4M3 21l4-4M21 21l-4-4"/><path d="M3 6.5V3h3.5M21 6.5V3h-3.5M3 17.5V21h3.5M21 17.5V21h-3.5"/></svg><span>Взрыв</span></button>
+    <button type="button" class="tb" data-tool="game" title="Игра: пушка с краской или крюк — в обзоре и в прогулке (8). Esc — выйти, всё на место"><i class="tn" aria-hidden="true">8</i><svg viewBox="0 0 24 24"><path d="M7 8h10a4 4 0 0 1 4 4v3.5a2.5 2.5 0 0 1-4.6 1.4L15 15H9l-1.4 1.9A2.5 2.5 0 0 1 3 15.5V12a4 4 0 0 1 4-4z"/><path d="M8 10.5v3M6.5 12h3"/><circle cx="15.5" cy="11.2" r=".6"/><circle cx="17.3" cy="13" r=".6"/></svg><span>Игра</span></button>
     <span class="tb-sep"></span>
     <button type="button" class="tb" id="tb-undo" title="Отменить (Ctrl+Z)"><svg viewBox="0 0 24 24"><path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg><span>Отменить</span></button>
     <span class="tb-sep"></span>
@@ -1019,10 +1023,11 @@ const UP = new V3(0, 1, 0), DOWN = new V3(0, -1, 0);
 const UNITS = { mm: 0.001, cm: 0.01, m: 1, in: 0.0254, ft: 0.3048 };
 const TABLE_STEPS = [20, 50, 100, 200, 500, 1000];
 const EYE = 1.65, STEP = 0.45, RADIUS = 0.3, GRAV = 9.8;
-const APP_VERSION = '3.42';
+const APP_VERSION = '3.43';
 const BASE_COLORS = ['#f2efe8', '#d8a33f', '#e0604a', '#3f86c9'];
 const KINDS = { issue: { label: 'Замечание', color: '#e0604a' }, question: { label: 'Вопрос', color: '#d8a33f' }, idea: { label: 'Идея', color: '#4fae7f' } };
-const TOOLS = [['nav', 'Выделение'], ['pin', 'Метка'], ['measure', 'Рулетка'], ['pen', 'Карандаш'], ['erase', 'Ластик'], ['section', 'Сечение'], ['ref', 'Репер'], ['explode', 'Взрыв'], ['game', 'Игра']];   // «Куб» временно скрыт: код инструмента сохранён
+const TOOLS = [['nav', 'Выделение'], ['pin', 'Метка'], ['measure', 'Рулетка'], ['pen', 'Карандаш'], ['erase', 'Ластик'], ['section', 'Сечение'], ['explode', 'Взрыв'], ['game', 'Игра'], ['ref', 'Репер']];   // 1–8 — клавиши в порядке панели; «Репер» — из «Привязки к месту», без клавиши
+const KEY_TOOLS = TOOLS.filter(t => t[0] !== 'ref');   // «Куб» временно скрыт: код инструмента сохранён
 const AUTHOR = 'Сергей Дмитриев · Rock Parametric';
 const base = p => String(p).split(/[\\/]/).pop();
 const safeDecode = s => { try { return decodeURIComponent(s); } catch { return s; } };
@@ -3648,7 +3653,7 @@ function cancelTool() { if (tool.erasing) eraseEnd(); tool.phase = 'idle'; tool.
 function setTool(id) {
   if (!TOOLS.some(t => t[0] === id)) return;
   if (state.tool === 'section' && sec.mode !== 'fixed') sec.mode = 'fixed';
-  cancelTool(); setHot([]); if (id !== 'nav') clearSelection(); state.tool = id; marker.visible = false; hideCursor(); renderToolbar();
+  cancelTool(); setHot([]); if (id !== 'nav') clearSelection(); state.tool = id; marker.visible = false; hideCursor(); renderToolbar(); document.body.classList.toggle('gaming', id === 'game');
   setToy(id === 'game' && (state.view === 'orbit' || state.view === 'walk'));             // «Игра» is a tool: the gun only with it, any other tool is plain work
   if (id === 'section') { if (state.view === 'xr') { sec.on = true; sec.mode = 'live'; } else if (!sec.on) secPreset('plan'); }
   updateTip(); layoutPalette(); updateCanvasCursor(); drawToolTag(); renderSecUI(); renderExplUI();
@@ -4701,7 +4706,7 @@ window.addEventListener('keydown', e => {
   if (e.code === 'Escape' && !$('#dlg').hidden) { closeDialog(null); return; }
   if (e.code === 'Escape' && freeLook) { stopAim(); return; }
   if (e.code === 'Escape') { if (sel) clearSelection(); else if (tool.phase !== 'idle' || tool.pen) cancelTool(); else if (state.tool !== 'nav') setTool('nav'); return; }        // Esc never leaves the walk: switch modes with the mode buttons
-  if (/^Digit[1-9]$/.test(e.code) && isReady() && TOOLS[+e.code.slice(5) - 1]) { setTool(TOOLS[+e.code.slice(5) - 1][0]); return; }
+  if (/^Digit[1-9]$/.test(e.code) && isReady() && KEY_TOOLS[+e.code.slice(5) - 1]) { setTool(KEY_TOOLS[+e.code.slice(5) - 1][0]); return; }
   if ((e.code === 'Delete' || e.code === 'Backspace') && sel) { e.preventDefault(); deleteSelection(); return; }
   if (state.view === 'orbit' && isReady() && !e.repeat && (e.code === 'KeyB' || e.code === 'KeyG')) { setGadget(e.code === 'KeyB' ? 'balls' : 'hook'); return; }
   if (state.view === 'orbit') { if (!e.ctrlKey && !e.metaKey && /^(Key[WASDQE]|Arrow\w+|Shift\w+)$/.test(e.code)) { keys.add(e.code); if (/^Arrow/.test(e.code)) e.preventDefault(); } return; }
