@@ -1024,14 +1024,14 @@ const UP = new V3(0, 1, 0), DOWN = new V3(0, -1, 0);
 const UNITS = { mm: 0.001, cm: 0.01, m: 1, in: 0.0254, ft: 0.3048 };
 const TABLE_STEPS = [20, 50, 100, 200, 500, 1000];
 const EYE = 1.65, STEP = 0.45, RADIUS = 0.3, GRAV = 9.8;
-const APP_VERSION = '3.48';
+const APP_VERSION = '3.49';
 const BASE_COLORS = ['#f2efe8', '#d8a33f', '#e0604a', '#3f86c9'];
 const KINDS = { issue: { label: 'Замечание', color: '#e0604a' }, question: { label: 'Вопрос', color: '#d8a33f' }, idea: { label: 'Идея', color: '#4fae7f' } };
 const TOOLS = [['nav', 'Выделение'], ['pen', 'Карандаш'], ['measure', 'Рулетка'], ['pin', 'Метка'], ['section', 'Сечение'], ['explode', 'Взрыв'], ['game', 'Игра'], ['erase', 'Ластик'], ['ref', 'Репер']];   // 1–8 — клавиши в порядке панели; «Репер» — из «Привязки к месту», без клавиши
 const KEY_TOOLS = TOOLS.filter(t => t[0] !== 'ref');   // «Куб» временно скрыт: код инструмента сохранён
 const AUTHOR = 'Сергей Дмитриев · Rock Parametric';
 /* статистика — Яндекс Метрика. Номер счётчика вписать в YM_ID (0 — выключено). Цели: model, walk, vr, ar, cardboard, shot, video, game */
-const YM_ID = 0;
+const YM_ID = 113851179;
 if (YM_ID) {
   window.ym = window.ym || function () { (window.ym.a = window.ym.a || []).push(arguments); }; window.ym.l = Date.now();
   const sc = document.createElement('script'); sc.async = true; sc.src = 'https://mc.yandex.ru/metrika/tag.js'; document.head.append(sc);
