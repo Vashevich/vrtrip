@@ -1019,7 +1019,7 @@ const UP = new V3(0, 1, 0), DOWN = new V3(0, -1, 0);
 const UNITS = { mm: 0.001, cm: 0.01, m: 1, in: 0.0254, ft: 0.3048 };
 const TABLE_STEPS = [20, 50, 100, 200, 500, 1000];
 const EYE = 1.65, STEP = 0.45, RADIUS = 0.3, GRAV = 9.8;
-const APP_VERSION = '3.41';
+const APP_VERSION = '3.42';
 const BASE_COLORS = ['#f2efe8', '#d8a33f', '#e0604a', '#3f86c9'];
 const KINDS = { issue: { label: 'Замечание', color: '#e0604a' }, question: { label: 'Вопрос', color: '#d8a33f' }, idea: { label: 'Идея', color: '#4fae7f' } };
 const TOOLS = [['nav', 'Выделение'], ['pin', 'Метка'], ['measure', 'Рулетка'], ['pen', 'Карандаш'], ['erase', 'Ластик'], ['section', 'Сечение'], ['ref', 'Репер'], ['explode', 'Взрыв'], ['game', 'Игра']];   // «Куб» временно скрыт: код инструмента сохранён
@@ -1078,7 +1078,7 @@ const lsGet = k => { try { return localStorage.getItem(k); } catch { return null
 const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch {} };
 
 const SEASON_BY_MONTH = ['winter', 'winter', 'spring', 'spring', 'spring', 'summer', 'summer', 'summer', 'autumn', 'autumn', 'autumn', 'winter'];
-const prefs = { gravity: lsGet('vrtrip-gravity') !== '0', collide: lsGet('vrtrip-collide') !== '0', env: ({ graphite: 1, studio: 1, paper: 1, sky: 1 })[lsGet('vrtrip-env')] ? lsGet('vrtrip-env') : 'paper',   // the paper sheet matches the interface
+const prefs = { gravity: lsGet('vrtrip-gravity') !== '0', collide: lsGet('vrtrip-walls') === '1', env: ({ graphite: 1, studio: 1, paper: 1, sky: 1 })[lsGet('vrtrip-env')] ? lsGet('vrtrip-env') : 'paper',   // the paper sheet matches the interface
   plainEnv: ({ graphite: 1, studio: 1, paper: 1 })[lsGet('vrtrip-plainenv')] ? lsGet('vrtrip-plainenv') : 'paper',
   season: lsGet('vrtrip-season') || SEASON_BY_MONTH[new Date().getMonth()], clouds: lsGet('vrtrip-clouds') || 'cloudy', precip: lsGet('vrtrip-precip') || 'none', people: lsGet('vrtrip-people') || 'none', land: lsGet('vrtrip-land') || 'on' };
 let customColors = (() => { try { const a = JSON.parse(lsGet('vrtrip-colors') || '[]'); return Array.isArray(a) ? a.filter(c => /^#[0-9a-f]{6}$/i.test(c)).slice(-8) : []; } catch { return []; } })();
@@ -1090,7 +1090,7 @@ const VIS = (() => {
 })();
 VIS.envI = 0.55;
 function saveVis() { const { envI, ...v } = VIS; lsSet('vrtrip-vis', JSON.stringify(v)); }
-function savePrefs() { lsSet('vrtrip-gravity', prefs.gravity ? '1' : '0'); lsSet('vrtrip-collide', prefs.collide ? '1' : '0'); lsSet('vrtrip-env', prefs.env); lsSet('vrtrip-plainenv', prefs.plainEnv); lsSet('vrtrip-season', prefs.season); lsSet('vrtrip-clouds', prefs.clouds); lsSet('vrtrip-precip', prefs.precip); lsSet('vrtrip-people', prefs.people); lsSet('vrtrip-land', prefs.land); }
+function savePrefs() { lsSet('vrtrip-gravity', prefs.gravity ? '1' : '0'); lsSet('vrtrip-walls', prefs.collide ? '1' : '0'); lsSet('vrtrip-env', prefs.env); lsSet('vrtrip-plainenv', prefs.plainEnv); lsSet('vrtrip-season', prefs.season); lsSet('vrtrip-clouds', prefs.clouds); lsSet('vrtrip-precip', prefs.precip); lsSet('vrtrip-people', prefs.people); lsSet('vrtrip-land', prefs.land); }
 
 /* ================= renderer & scene ================= */
 const canvas = $('#c');
