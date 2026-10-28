@@ -1024,12 +1024,20 @@ const UP = new V3(0, 1, 0), DOWN = new V3(0, -1, 0);
 const UNITS = { mm: 0.001, cm: 0.01, m: 1, in: 0.0254, ft: 0.3048 };
 const TABLE_STEPS = [20, 50, 100, 200, 500, 1000];
 const EYE = 1.65, STEP = 0.45, RADIUS = 0.3, GRAV = 9.8;
-const APP_VERSION = '3.47';
+const APP_VERSION = '3.48';
 const BASE_COLORS = ['#f2efe8', '#d8a33f', '#e0604a', '#3f86c9'];
 const KINDS = { issue: { label: 'Замечание', color: '#e0604a' }, question: { label: 'Вопрос', color: '#d8a33f' }, idea: { label: 'Идея', color: '#4fae7f' } };
 const TOOLS = [['nav', 'Выделение'], ['pen', 'Карандаш'], ['measure', 'Рулетка'], ['pin', 'Метка'], ['section', 'Сечение'], ['explode', 'Взрыв'], ['game', 'Игра'], ['erase', 'Ластик'], ['ref', 'Репер']];   // 1–8 — клавиши в порядке панели; «Репер» — из «Привязки к месту», без клавиши
 const KEY_TOOLS = TOOLS.filter(t => t[0] !== 'ref');   // «Куб» временно скрыт: код инструмента сохранён
 const AUTHOR = 'Сергей Дмитриев · Rock Parametric';
+/* статистика — Яндекс Метрика. Номер счётчика вписать в YM_ID (0 — выключено). Цели: model, walk, vr, ar, cardboard, shot, video, game */
+const YM_ID = 0;
+if (YM_ID) {
+  window.ym = window.ym || function () { (window.ym.a = window.ym.a || []).push(arguments); }; window.ym.l = Date.now();
+  const sc = document.createElement('script'); sc.async = true; sc.src = 'https://mc.yandex.ru/metrika/tag.js'; document.head.append(sc);
+  window.ym(YM_ID, 'init', { clickmap: true, trackLinks: true, accurateTrackBounce: true, webvisor: false });
+}
+const goal = name => { try { if (YM_ID && window.ym) window.ym(YM_ID, 'reachGoal', name); } catch {} };
 const base = p => String(p).split(/[\\/]/).pop();
 const safeDecode = s => { try { return decodeURIComponent(s); } catch { return s; } };
 const pause = (ms = 30) => new Promise(r => setTimeout(r, ms));
@@ -2369,7 +2377,7 @@ async function buildModel(rec) {
   rec.notes = Array.isArray(rec.notes) ? rec.notes : [];
   rec.notesGroup = new THREE.Group(); rec.noteObjs = new Map();
   for (const n of rec.notes) mountNote(rec, n);
-  rec.built = true;
+  rec.built = true; goal('model');
   if (missing.length) {
     const u = [...new Set(missing)]; rec.hadMissing = true;
     toast(`Не найдены файлы: ${u.slice(0, 4).join(', ')}${u.length > 4 ? ` и ещё ${u.length - 4}` : ''}. Добавьте их вместе с OBJ или упакуйте всё в ZIP.`, 'warn');
@@ -3658,7 +3666,7 @@ function setTool(id) {
   if (!TOOLS.some(t => t[0] === id)) return;
   if (state.tool === 'section' && sec.mode !== 'fixed') sec.mode = 'fixed';
   cancelTool(); setHot([]); if (id !== 'nav') clearSelection(); if (secGhost) secGhost.visible = false; state.tool = id; marker.visible = false; hideCursor(); renderToolbar(); document.body.classList.toggle('gaming', id === 'game');
-  setToy(id === 'game' && (state.view === 'orbit' || state.view === 'walk'));             // «Игра» is a tool: the gun only with it, any other tool is plain work
+  setToy(id === 'game' && (state.view === 'orbit' || state.view === 'walk')); if (id === 'game') goal('game');             // «Игра» is a tool: the gun only with it, any other tool is plain work
   if (id === 'section') { if (state.view === 'xr') { sec.on = true; sec.mode = 'live'; } else if (!sec.on) secPreset('plan'); }
   updateTip(); layoutPalette(); updateCanvasCursor(); drawToolTag(); renderSecUI(); renderExplUI();
   if (id === 'explode' && !expl.target) explodeTo(0.8);
@@ -4083,6 +4091,7 @@ $('#swatches').addEventListener('contextmenu', e => {
 var vid = { mr: null, chunks: [], t0: 0, timer: 0 };
 function recMime() { for (const m of ['video/mp4;codecs=avc1', 'video/mp4', 'video/webm;codecs=vp9', 'video/webm']) if (window.MediaRecorder?.isTypeSupported?.(m)) return m; return ''; }
 function startRec() {
+  goal('video');
   if (!window.MediaRecorder || !canvas.captureStream) { toast('Этот браузер не умеет записывать видео. Попробуйте Chrome или Edge.', 'warn'); return; }
   const rec = activeRec(), mime = recMime(), stream = canvas.captureStream(30);
   let mr; try { mr = new MediaRecorder(stream, mime ? { mimeType: mime, videoBitsPerSecond: 10e6 } : undefined); } catch (e) { toast('Не удалось начать запись: ' + e.message, 'bad'); return; }
@@ -4129,6 +4138,7 @@ function flushVrShots() {
   toast(`Снимков из VR: ${n}. Они в папке «Загрузки» (Download) шлема — откройте приложение «Файлы».`, 'ok');
 }
 $('#tb-shot').addEventListener('click', () => {
+  goal('shot');
   const rec = activeRec(); if (!rec) return;
   updateLabels(); renderer.render(scene, camera);
   canvas.toBlob(b => { if (b) download(b, `VRtrip-${rec.name}-${stamp()}.png`); else toast('Не удалось сохранить снимок.', 'bad'); }, 'image/png');
@@ -4420,6 +4430,7 @@ function placeEntrance() {
   player.y = prefs.gravity ? floorBelow(player.x, z.y + 2, player.z) : 0;
 }
 function enterWalk() {
+  goal('walk');
   if (!isReady()) return;
   state.view = 'walk'; controls.enabled = false;
   document.body.classList.add('walking'); $('#walkui').hidden = false; updateCanvasCursor();
@@ -4636,6 +4647,7 @@ function cbRender() {
 }
 function cbShowBar() { $('#cb-bar').classList.remove('dim'); cb.barT = performance.now() + 4000; }
 async function enterCardboard() {
+  goal('cardboard');
   if (!isReady()) return;
   /* both requests must start inside the tap: iPhone asks for motion access, Android goes full screen */
   const perm = (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') ? DeviceOrientationEvent.requestPermission().catch(() => 'denied') : Promise.resolve('granted');
@@ -6314,7 +6326,7 @@ function handleRightPointer(pads) {
 async function enter(passthrough) {
   if (!isReady()) { toast('Сначала загрузите модель.', 'warn'); return; }
   if (!navigator.xr) return;
-  const mode = xrSupport.ar ? 'immersive-ar' : 'immersive-vr';
+  const mode = xrSupport.ar ? 'immersive-ar' : 'immersive-vr'; goal(passthrough ? 'vr_pass' : 'vr');
   if (state.view === 'walk') exitWalk();
   let session;
   try { session = await navigator.xr.requestSession(mode, { requiredFeatures: ['local-floor'], optionalFeatures: ['hand-tracking'] }); }
@@ -6407,7 +6419,7 @@ async function enterPhoneAR() {
   let session;
   try {
     ensureEstLight();
-    session = await navigator.xr.requestSession('immersive-ar', { requiredFeatures: ['hit-test'], optionalFeatures: ['dom-overlay', 'local-floor', 'light-estimation'], domOverlay: { root: $('#arui') } });
+    goal('ar'); session = await navigator.xr.requestSession('immersive-ar', { requiredFeatures: ['hit-test'], optionalFeatures: ['dom-overlay', 'local-floor', 'light-estimation'], domOverlay: { root: $('#arui') } });
   } catch (e) { toast('Не удалось запустить AR: ' + e.message, 'bad'); return; }
   renderer.xr.setReferenceSpaceType('local');
   await renderer.xr.setSession(session);
