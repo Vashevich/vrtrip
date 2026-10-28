@@ -1024,7 +1024,7 @@ const UP = new V3(0, 1, 0), DOWN = new V3(0, -1, 0);
 const UNITS = { mm: 0.001, cm: 0.01, m: 1, in: 0.0254, ft: 0.3048 };
 const TABLE_STEPS = [20, 50, 100, 200, 500, 1000];
 const EYE = 1.65, STEP = 0.45, RADIUS = 0.3, GRAV = 9.8;
-const APP_VERSION = '3.45';
+const APP_VERSION = '3.46';
 const BASE_COLORS = ['#f2efe8', '#d8a33f', '#e0604a', '#3f86c9'];
 const KINDS = { issue: { label: 'Замечание', color: '#e0604a' }, question: { label: 'Вопрос', color: '#d8a33f' }, idea: { label: 'Идея', color: '#4fae7f' } };
 const TOOLS = [['nav', 'Выделение'], ['pin', 'Метка'], ['measure', 'Рулетка'], ['pen', 'Карандаш'], ['erase', 'Ластик'], ['section', 'Сечение'], ['explode', 'Взрыв'], ['game', 'Игра'], ['ref', 'Репер']];   // 1–8 — клавиши в порядке панели; «Репер» — из «Привязки к месту», без клавиши
@@ -4792,6 +4792,12 @@ canvas.addEventListener('pointermove', e => {
   if (state.view === 'xr' || state.view === 'ar') return;
   if (locked()) {
     if (!$('#dlg').hidden) return;                                                    // пока пишешь метку, взгляд стоит
+    if (state.tool === 'section' && pd?.tool && sec.drag) {                            // сечение в прогулке: зажал — мышь двигает плоскость, взгляд стоит
+      pd.vx = (pd.vx || 0) + e.movementX; pd.vy = (pd.vy || 0) + e.movementY;
+      if (!pd.moved && Math.hypot(pd.vx, pd.vy) > 5) pd.moved = true;
+      if (pd.moved) secPointerMove({ clientX: sec.drag.x + pd.vx, clientY: sec.drag.y + pd.vy });
+      return;
+    }
     if (freeLook) { const r = canvas.getBoundingClientRect(); aimEdge.x = (e.clientX - r.left) / r.width; aimEdge.y = (e.clientY - r.top) / r.height; }
     const k = 0.0022 * (lookSens || 1);
     player.yaw -= e.movementX * k; player.pitch = THREE.MathUtils.clamp(player.pitch - e.movementY * k, -1.5, 1.5);
