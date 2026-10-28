@@ -1023,7 +1023,7 @@ const UP = new V3(0, 1, 0), DOWN = new V3(0, -1, 0);
 const UNITS = { mm: 0.001, cm: 0.01, m: 1, in: 0.0254, ft: 0.3048 };
 const TABLE_STEPS = [20, 50, 100, 200, 500, 1000];
 const EYE = 1.65, STEP = 0.45, RADIUS = 0.3, GRAV = 9.8;
-const APP_VERSION = '3.43';
+const APP_VERSION = '3.44';
 const BASE_COLORS = ['#f2efe8', '#d8a33f', '#e0604a', '#3f86c9'];
 const KINDS = { issue: { label: 'Замечание', color: '#e0604a' }, question: { label: 'Вопрос', color: '#d8a33f' }, idea: { label: 'Идея', color: '#4fae7f' } };
 const TOOLS = [['nav', 'Выделение'], ['pin', 'Метка'], ['measure', 'Рулетка'], ['pen', 'Карандаш'], ['erase', 'Ластик'], ['section', 'Сечение'], ['explode', 'Взрыв'], ['game', 'Игра'], ['ref', 'Репер']];   // 1–8 — клавиши в порядке панели; «Репер» — из «Привязки к месту», без клавиши
@@ -4743,9 +4743,10 @@ function rayAt(cx, cy) {
 let freeLook = false; const aimEdge = { x: 0.5, y: 0.5 };                                   // fallback when the browser refuses pointer lock (embedded browsers, quick re-lock after Esc)
 const hardLocked = () => document.pointerLockElement === canvas;
 const locked = () => hardLocked() || freeLook;
+{ const gp = gizmo._getPointer; gizmo._getPointer = e => (locked() ? { x: 0, y: 0, button: e.button } : gp(e)); }   // в прогулке стрелки гизмо берутся прицелом-крестиком: навёл, зажал, ведёшь взглядом
 function aimChanged() {
   const on = locked();
-  gizmo.enabled = !on; $('#xhair').hidden = !on; updateCanvasCursor(); updateTip();
+  $('#xhair').hidden = !on; updateCanvasCursor(); updateTip();
   if (!on) hideCursor();                                                                    // locking the mouse is just walking: a crosshair; the gun comes with the «Игра» tool
 }
 function startAim() {
