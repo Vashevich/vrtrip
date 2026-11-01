@@ -1025,7 +1025,7 @@ const UNITS = { mm: 0.001, cm: 0.01, m: 1, in: 0.0254, ft: 0.3048 };
 const TABLE_STEPS = [20, 50, 100, 200, 500, 1000];
 const EYE = 1.65, STEP = 0.45, RADIUS = 0.3, GRAV = 9.8;
 const APP_VERSION = '3.50';
-const BASE_COLORS = ['#f2efe8', '#d8a33f', '#e0604a', '#3f86c9', '#4fae7f'];
+const BASE_COLORS = ['#f2efe8', '#d8a33f', '#e0604a', '#3f86c9', '#4fae7f', '#9166cc'];
 const KINDS = { issue: { label: 'Замечание', color: '#e0604a' }, question: { label: 'Вопрос', color: '#d8a33f' }, idea: { label: 'Идея', color: '#4fae7f' } };
 const TOOLS = [['nav', 'Выделение'], ['pen', 'Карандаш'], ['measure', 'Рулетка'], ['pin', 'Метка'], ['section', 'Сечение'], ['explode', 'Взрыв'], ['game', 'Игра'], ['erase', 'Ластик'], ['ref', 'Репер']];   // 1–8 — клавиши в порядке панели; «Репер» — из «Привязки к месту», без клавиши
 const KEY_TOOLS = TOOLS.filter(t => t[0] !== 'ref');   // «Куб» временно скрыт: код инструмента сохранён
@@ -5566,7 +5566,8 @@ function layoutFace(f) {
   if (tab === 'tools') {
     [...TOOLS.filter(t => t[0] !== 'game'), ['undo', 'Отменить']].forEach(([id, label], i) => B.push({ id, label, x: 24 + (i % 3) * 330, y: Y + Math.floor(i / 3) * 112, w: 316, h: 100 }));
     const cols = allColors();
-    const shown = cols.length <= 8 ? cols.map((c, i) => i) : [...BASE_COLORS.map((c, i) => i), ...[3, 2, 1].map(k => cols.length - k)];
+    const tail = Math.max(0, 8 - BASE_COLORS.length);   // palette row holds 8 swatches: base colours + the newest custom ones
+    const shown = cols.length <= 8 ? cols.map((c, i) => i) : [...BASE_COLORS.map((c, i) => i), ...Array.from({ length: tail }, (_, k) => cols.length - tail + k)];
     shown.forEach((ci, k) => B.push({ id: 'c' + ci, label: '', color: cols[ci], x: 24 + k * 122, y: Y + 232, w: 110, h: 96 }));
     const cy = Y + 3 * 112;
     B.splice(B.findIndex(b => b.color), Infinity, ...B.filter(b => b.color).map(b => ({ ...b, y: cy })));
