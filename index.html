@@ -4166,8 +4166,8 @@ function applyPartMoves(rec) {
 }
 function addPartXform(rec, pid, D) {
   const mv = rec.settings.moves ||= {}, M = mv[pid] ? partMat(mv[pid]) : new THREE.Matrix4(); M.premultiply(D);
-  const e = M.elements, rotFree = Math.abs(e[0] - 1) + Math.abs(e[5] - 1) + Math.abs(e[10] - 1) + Math.abs(e[1]) + Math.abs(e[2]) + Math.abs(e[4]) + Math.abs(e[6]) + Math.abs(e[8]) + Math.abs(e[9]) < 1e-7;
-  if (rotFree) { if (Math.hypot(e[12], e[13], e[14]) < 1e-7) delete mv[pid]; else mv[pid] = [e[12], e[13], e[14]]; }
+  const e = M.elements, rotFree = Math.abs(e[0] - 1) + Math.abs(e[5] - 1) + Math.abs(e[10] - 1) + Math.abs(e[1]) + Math.abs(e[2]) + Math.abs(e[4]) + Math.abs(e[6]) + Math.abs(e[8]) + Math.abs(e[9]) < 1e-5;
+  if (rotFree) { if (Math.hypot(e[12], e[13], e[14]) < 1e-6) delete mv[pid]; else mv[pid] = [e[12], e[13], e[14]]; }
   else mv[pid] = e.map(x => Math.round(x * 1e7) / 1e7);
 }
 function addPartMove(rec, pid, df) { addPartXform(rec, pid, new THREE.Matrix4().makeTranslation(df.x, df.y, df.z)); }
@@ -4425,7 +4425,7 @@ const VR_TIPS = {
 function updateTip() {
   const tip = $('#tip'); if (state.view === 'xr') { drawPalette(); return; }
   let txt = '';
-  if (state.tool === 'nav' && sel) txt = sel.sub ? `${selName()}: тяните стрелки частей. Ещё один щелчок по предмету — обратно к гамболу. Esc — снять`
+  if (state.tool === 'nav' && sel) txt = sel.sub ? `Части: ${selName()}. Тяните стрелки частей. Ещё один щелчок по предмету — обратно к гамболу. Esc — снять`
     : `Выделена ${selName()}. Гамбол: стрелки — сдвиг (синяя — вверх-вниз), квадратики — по двум осям, жёлтая точка — по полу${sel.kind !== 'note' ? ', дуги — поворот через 15° (Shift — без шага)' : ''}${sel.kind === 'furn' ? ', кубики — размер; ещё щелчок по предмету — части. R — повернуть на 15°' : ''}. ${sel.kind !== 'part' ? 'Delete — удалить, ' : ''}Esc — снять`;
   else if (state.tool === 'nav') txt = state.view !== 'walk' ? '' : matchMedia('(pointer:coarse)').matches ? (matchMedia('(orientation:landscape) and (max-height:600px)').matches ? 'Левый стик — идти, правый — осмотреться, касание пола — перейти туда.' : 'Джойстик — идти, тянуть пальцем — осмотреться, касание пола — перейти туда.') : (locked() ? TIPS.nav.lock : TIPS.nav.walk);
   else txt = (state.tool === 'game' && matchMedia('(pointer:coarse)').matches && TIPS.game.touch) || TIPS[state.tool][tool.phase] || TIPS[state.tool].idle;
