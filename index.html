@@ -823,8 +823,8 @@ body:not(.gaming) #w-toy,body:not(.gaming) #w-hook{display:none!important}   /* 
     <dl>
       <dt>Мышь</dt><dd>В обзоре: левая кнопка — вращать, правая — двигать (лапка), колесо — ближе / дальше к курсору. С инструментом вращать — средней кнопкой. В прогулке: левая — действие (поставить, выделить, схватить и тащить), правая — режим инструмента по кругу, колесо — цвет.</dd>
       <dt>W A S D</dt><dd>В обзоре — плавный полёт по сцене, Shift — быстрее, Q / E — вниз / вверх. В прогулке — идти. На телефоне и в Quest — джойстик в углу.</dd>
-      <dt>Мебель</dt><dd>Вкладка «Мебель» в разделе «Модель»: болванки из Табуретки и комнаты. Нажмите на карточку — предмет встанет перед вами, или перетащите её в сцену. Щелчок по предмету — выделить, стрелки гизмо — передвинуть, R — повернуть на 15°, Delete — удалить. Галочка в экспозиции прячет и показывает.</dd>
-      <dt>Выделение</dt><dd>Клик по части модели или по разметке — выделить, стрелки гизмо — передвинуть (вверх-вниз — зелёная). Delete — удалить разметку, Esc — снять выделение.</dd>
+      <dt>Мебель</dt><dd>Вкладка «Мебель» в разделе «Модель»: болванки из Табуретки и комнаты. Нажмите на карточку — предмет встанет перед вами, или перетащите её в сцену. Щелчок по предмету — выделить и взять гамбол (как в Табуретке): стрелки и квадратики — передвинуть, жёлтая точка — по полу, дуги — повернуть и наклонить, кубики — размер. Ещё один щелчок по выделенному — ручки частей: сиденье, спинка, полки. R — повернуть на 15°, Delete — удалить. Галочка в экспозиции прячет и показывает.</dd>
+      <dt>Выделение</dt><dd>Клик по части модели или по разметке — выделить и взять гамбол: стрелки — передвинуть (вверх-вниз — синяя), квадратики — по двум осям, жёлтая точка — по полу; у части модели дуги — поворот через 15° (Shift — без шага). Delete — удалить разметку, Esc — снять выделение.</dd>
       <dt>Прогулка</dt><dd>Как в игре: щёлкните по сцене — мышь станет обзором. WASD — идти, Shift — бег, Пробел — прыжок (без гравитации — вверх), C — присесть (без гравитации — вниз), клик по полу — перейти туда, R / F — этаж, Esc — вернуть курсор. Инструменты работают по прицелу в центре. B — пинбольная пушка с краской: шарики сбивают мелкие части и всё заляпывают. G — крюк-кошка: левый щелчок — выстрел, крюк цепляется и сразу резко тянет к себе, ещё щелчок — новый выстрел на лету, правый — отцепиться и лететь по инерции, пробел на крюке — запрыгнуть наверх. Esc убирает кляксы и возвращает части на место. B — игрушечный шарикомёт: шарики отскакивают и сбивают части модели, Esc возвращает всё на место.</dd>
       <dt>VR очки</dt><dd>Телефон в очках Homido, Cardboard и похожих: смотрите головой. Взгляд на пол 1,5 с — переход туда. Касание экрана (кнопка очков) — перейти, удержание — идти вперёд. Bluetooth-джойстик: стик — идти, A — перейти. «Линзы» — пресет очков и подстройка, «По центру» — выровнять направление.</dd>
       <dt>R / F</dt><dd>Этаж выше / ниже. Q / E — вниз / вверх без гравитации.</dd>
@@ -1016,8 +1016,8 @@ body:not(.gaming) #w-toy,body:not(.gaming) #w-hook{display:none!important}   /* 
 <script type="module">
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { TransformControls } from 'three/addons/controls/TransformControls.js';
-import { CATALOG as FURN_CATALOG, CATS as FURN_CATS, CAT_COLOR as FURN_COLOR, EDGE as FURN_EDGE, fillBlank } from './furniture.js';
+import { CATALOG as FURN_CATALOG, CATS as FURN_CATS, CAT_COLOR as FURN_COLOR, EDGE as FURN_EDGE, fillBlank, partsOf } from './furniture.js';
+import { Gumball } from './gumball.js';
 import { OBJLoader } from 'three/addons/loaders/OBJLoader.js';
 import { MTLLoader } from 'three/addons/loaders/MTLLoader.js';
 import { XRControllerModelFactory } from 'three/addons/webxr/XRControllerModelFactory.js';
@@ -3378,7 +3378,7 @@ function undo() {
   const op = undoStack.pop(); const rec = op ? recById(op.recId) : null;
   if (!op || !rec?.built || !rec.shown) { flash('Отменять нечего'); return; }
   if (op.op === 'add') removeNote(op.id, false);
-  else if (op.op === 'movepart' || op.op === 'movenote') undoMove(op, rec);
+  else if (op.op === 'movepart' || op.op === 'movenote' || op.op === 'xformpart') undoMove(op, rec);
   else if (op.op === 'delmany') {
     for (const it of [...op.items].sort((a, b) => a.index - b.index)) { const r = recById(it.recId) || rec; if (!r.built) continue; addNote(it.note, false, r); const a = r.notes; a.splice(a.indexOf(it.note), 1); a.splice(Math.min(it.index, a.length), 0, it.note); }
     renderNotes(); schedulePersist(rec);
@@ -3963,12 +3963,28 @@ function furnBuild(it) {
   const g = new THREE.Group();
   if (isRoom(it.type)) roomBlank(g, it.type, it.w, it.d, it.h, it.color); else fillBlank(g, it.type, it.w, it.d, it.h, it.color, it.open, it.pose, it.p);
   g.traverse(o => { if (o.isMesh) { o.castShadow = !isRoom(it.type); o.receiveShadow = true; } else if (o.isLine) o.raycast = () => {}; });
-  g.position.set(it.x, it.y, it.z); g.rotation.y = it.rot || 0; g.visible = it.shown !== false; g.userData.furnId = it.id;
+  furnPose(it, g); g.visible = it.shown !== false; g.userData.furnId = it.id;
   return g;
 }
+/* положение предмета: x, y, z — середина низа, rot — поворот вокруг вертикали, q — наклон (как в Табуретке), вокруг середины предмета */
+function furnPose(it, o) {
+  const Q = new THREE.Quaternion().setFromAxisAngle(UP, it.rot || 0);
+  if (it.q) Q.multiply(new THREE.Quaternion(...it.q));
+  const half = new V3(0, it.h / 2, 0);
+  o.quaternion.copy(Q); o.position.set(it.x, it.y, it.z).add(half).sub(half.clone().applyQuaternion(Q));
+}
+const furnCenter = it => new V3(it.x, it.y + it.h / 2, it.z);
 function furnMount(it) {
   const old = furn.objs.get(it.id); if (old) { old.removeFromParent(); old.traverse(o => o.geometry?.dispose()); }
   const g = furnBuild(it); furn.objs.set(it.id, g); furn.g.add(g);
+  if (sel?.kind === 'furn' && sel.id === it.id) furnSelVis(it);
+}
+function furnSelVis(it) {                                 // рамка выделения — по осям самого предмета, как в Табуретке
+  const o = furn.objs.get(it.id); if (!o || !sel) return;
+  if (sel.vis) { sel.vis.removeFromParent(); sel.vis.geometry.dispose(); }
+  const bx = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(it.w + 0.012, it.h + 0.012, it.d + 0.012)), new THREE.LineBasicMaterial({ color: SEL_COLOR, depthTest: false, transparent: true }));
+  bx.position.y = it.h / 2; bx.renderOrder = 14; bx.raycast = () => {};
+  o.add(toUI(bx)); sel.vis = bx;
 }
 const furnSave = () => lsSet('vrtrip-furniture', JSON.stringify(furn.items));
 function furnLoad() {
@@ -4002,25 +4018,23 @@ function furnAdd(type, wr) {
   furn.items.push(it); furnMount(it); furnSave(); renderList(); shadowsDirty();
   if (state.tool !== 'nav') setTool('nav');
   furnSelect(it.id);
-  toast(`«${def.name}» в сцене. Тяните стрелки гизмо, R — повернуть`, 'ok');
+  toast(`«${def.name}» в сцене. Гамбол: стрелки — сдвиг, дуги — поворот, кубики — размер`, 'ok');
 }
 function furnSelect(id) {
-  const o = furn.objs.get(id); if (!o) return;
-  if (sel?.kind === 'furn' && sel.id === id) return;
+  const o = furn.objs.get(id), it = furnItem(id); if (!o || !it) return;
+  if (sel?.kind === 'furn' && sel.id === id) {            // второй клик по выделенной болванке: ручки частей (сиденье, спинка, полки) и обратно
+    if (partsOf(it).length) { sel.sub = !sel.sub; placeGizmo(true); updateTip(); }
+    return;
+  }
   clearSelection();
   sel = { kind: 'furn', id };
-  const bh = new THREE.BoxHelper(o, SEL_COLOR); bh.material.depthTest = false; bh.material.transparent = true; bh.renderOrder = 14;
-  scene.add(toUI(bh)); sel.vis = bh;
+  furnSelVis(it);
   placeGizmo(); updateTip();
-}
-function furnCommitPos(id) {
-  const it = furnItem(id), o = furn.objs.get(id); if (!it || !o) return;
-  it.x = r3(o.position.x); it.y = r3(o.position.y); it.z = r3(o.position.z); furnSave(); shadowsDirty();
 }
 function furnRotate(id, dir) {
   const it = furnItem(id), o = furn.objs.get(id); if (!it || !o) return;
-  it.rot = Math.round(((it.rot || 0) + dir * Math.PI / 12) * 1e4) / 1e4; o.rotation.y = it.rot;
-  sel?.vis?.update(); placeGizmo(); furnSave(); shadowsDirty();
+  it.rot = Math.round(((it.rot || 0) + dir * Math.PI / 12) * 1e4) / 1e4; furnPose(it, o);
+  placeGizmo(); furnSave(); shadowsDirty();
 }
 function furnToggle(id) {
   const it = furnItem(id), o = furn.objs.get(id); if (!it || !o) return;
@@ -4127,14 +4141,36 @@ function shiftPart(part, d, final = true) {
   }
   for (const m of touched) { if (final) refitMesh(m); else m.frustumCulled = false; }
 }
+/* поворот части гамболом: вершины и нормали переводятся матрицей D в координатах файла */
+function xformPart(part, D, final = true) {
+  const touched = new Set(), nm = new THREE.Matrix3().getNormalMatrix(D), v = new V3();
+  for (const [m, st, c] of part.ranges) {
+    const pa = m.geometry.attributes.position, na = m.geometry.attributes.normal;
+    for (let i = st; i < st + c; i++) {
+      v.fromBufferAttribute(pa, i).applyMatrix4(D); pa.setXYZ(i, v.x, v.y, v.z);
+      if (na) { v.fromBufferAttribute(na, i).applyMatrix3(nm).normalize(); na.setXYZ(i, v.x, v.y, v.z); }
+    }
+    pa.needsUpdate = true; if (na) na.needsUpdate = true; touched.add(m);
+  }
+  for (const m of touched) { if (final) refitMesh(m); else m.frustumCulled = false; }
+}
+/* сдвиг части хранится как [dx, dy, dz]; после поворота — как матрица 4×4 (16 чисел), всё в координатах файла */
+const partMat = d => (d.length === 16 ? new THREE.Matrix4().fromArray(d) : new THREE.Matrix4().makeTranslation(d[0], d[1], d[2]));
+function applyPartMove(p, d, undo = false) {
+  if (d.length === 16) { const M = partMat(d); xformPart(p, undo ? M.invert() : M); }
+  else shiftPart(p, undo ? vec(d).negate() : vec(d));
+}
 function applyPartMoves(rec) {
   const mv = rec.settings.moves; if (!mv) return;
-  for (const [pid, d] of Object.entries(mv)) { const p = rec.parts.get(+pid); if (p) shiftPart(p, vec(d)); }
+  for (const [pid, d] of Object.entries(mv)) { const p = rec.parts.get(+pid); if (p) applyPartMove(p, d); }
 }
-function addPartMove(rec, pid, df) {
-  const mv = rec.settings.moves ||= {}; const cur = mv[pid] ? vec(mv[pid]) : new V3(); cur.add(df);
-  if (cur.lengthSq() < 1e-14) delete mv[pid]; else mv[pid] = [cur.x, cur.y, cur.z];
+function addPartXform(rec, pid, D) {
+  const mv = rec.settings.moves ||= {}, M = mv[pid] ? partMat(mv[pid]) : new THREE.Matrix4(); M.premultiply(D);
+  const e = M.elements, rotFree = Math.abs(e[0] - 1) + Math.abs(e[5] - 1) + Math.abs(e[10] - 1) + Math.abs(e[1]) + Math.abs(e[2]) + Math.abs(e[4]) + Math.abs(e[6]) + Math.abs(e[8]) + Math.abs(e[9]) < 1e-7;
+  if (rotFree) { if (Math.hypot(e[12], e[13], e[14]) < 1e-7) delete mv[pid]; else mv[pid] = [e[12], e[13], e[14]]; }
+  else mv[pid] = e.map(x => Math.round(x * 1e7) / 1e7);
 }
+function addPartMove(rec, pid, df) { addPartXform(rec, pid, new THREE.Matrix4().makeTranslation(df.x, df.y, df.z)); }
 const toFileDelta = (rec, dl) => dl.clone().applyMatrix3(new THREE.Matrix3().setFromMatrix4(fileToLocal(rec).invert()));
 function translateNote(n, d) {
   const add = a => arr(vec(a).add(d));
@@ -4147,11 +4183,9 @@ function translateNote(n, d) {
 const SEL_COLOR = 0x3fb8ff;
 const SEL_MAT = new THREE.MeshBasicMaterial({ color: SEL_COLOR, transparent: true, opacity: 0.35, depthWrite: false, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
 let sel = null;
-const gizmo = new TransformControls(camera, canvas); gizmo.setMode('translate'); gizmo.setSpace('world'); gizmo.setSize(0.85); scene.add(gizmo);
-const selProxy = new THREE.Object3D(); scene.add(selProxy);
-gizmo.addEventListener('dragging-changed', e => { controls.enabled = !e.value && state.view === 'orbit'; if (e.value) selDragStart(selProxy.position); else selDragEnd(); });
-gizmo.addEventListener('objectChange', () => { if (sel?.drag) selDragTo(selProxy.position); });
-const gizmoHot = () => !!(gizmo.object && (gizmo.axis || gizmo.dragging));
+/* гамбол из Табуретки: стрелки, квадратики, точка-центр, дуги; у болванок ещё кубики размера и (второй клик) ручки частей */
+const gb = new Gumball(), gizmo = gb.group; scene.add(gizmo);
+const gizmoHot = () => !!(gb.hot || gb.drag);
 
 function selRec() { return sel ? state.models.find(r => r.id === sel.recId) : null; }
 function selName() {
@@ -4183,19 +4217,32 @@ function clearSelection() {
   if (!sel) return;
   if (sel.kind === 'note') tintNote(sel.id, false);
   if (sel.vis) { sel.vis.traverse(x => { if (x.geometry) x.geometry.dispose(); if (x.isLineSegments) x.material.dispose(); }); sel.vis.removeFromParent(); }
-  sel = null; gizmo.detach(); updateTip();
+  sel = null; gb.clear(); updateTip();
 }
 function selCenterWorld() {
-  if (sel?.kind === 'furn') { const o = furn.objs.get(sel.id); return o ? new THREE.Box3().setFromObject(o).getCenter(new V3()) : null; }
+  if (sel?.kind === 'furn') { const o = furn.objs.get(sel.id), it = furnItem(sel.id); if (!o || !it) return null; o.updateWorldMatrix(true, false); return o.localToWorld(new V3(0, it.h / 2, 0)); }
   const rec = selRec(); if (!rec) return null;
-  if (sel.kind === 'part') { rec.xf.updateMatrixWorld(); return rec.xf.localToWorld(sel.box.getCenter(new V3()).add(sel.vis.position)); }
+  if (sel.kind === 'part') { rec.xf.updateWorldMatrix(true, true); return sel.vis.localToWorld(sel.box.getCenter(new V3())); }
   const n = rec.notes.find(x => x.id === sel.id); if (!n) return null;
   holder.updateMatrixWorld(); return holder.localToWorld(noteCenter(n));
 }
-function placeGizmo() {
-  const c = selCenterWorld(); if (!c) return;
-  selProxy.position.copy(c); selProxy.updateMatrixWorld();
-  if (state.view === 'orbit' || state.view === 'walk') { if (gizmo.object !== selProxy) gizmo.attach(selProxy); } else gizmo.detach();
+function gbOpts() {                                      // какие ручки у выделенного: болванке — всё, части модели — сдвиг и поворот, разметке — сдвиг
+  if (sel.kind === 'furn') {
+    const it = furnItem(sel.id);
+    if (sel.sub && it && partsOf(it).length) return { key: 'sub', params: partsOf(it).map(ph => ({ ...ph, pos: [ph.pos[0], ph.pos[1] - it.h / 2, ph.pos[2]] })) };
+    return { key: 'furn', move: true, planes: true, hub: true, scale: true, rot: ['y', 'x', 'z'] };
+  }
+  if (sel.kind === 'part') return { key: 'part', move: true, planes: true, hub: true, rot: ['y', 'x', 'z'] };
+  return { key: 'note', move: true, planes: true, hub: true };
+}
+function placeGizmo(rebuild = false) {
+  const c = sel && selCenterWorld();
+  if (!c || !(state.view === 'orbit' || state.view === 'walk')) { if (!gb.drag) gb.clear(); return; }
+  const o = gbOpts();
+  if (rebuild || gb.opts?.key !== o.key || o.key === 'sub') gb.build(o);
+  const q = new THREE.Quaternion();
+  if (sel.kind === 'furn') furn.objs.get(sel.id)?.getWorldQuaternion(q); else holder.getWorldQuaternion(q);
+  gb.setPose(c, q); toUI(gizmo);
 }
 function selDragStart(pw) { if (!sel) return; sel.drag = { last: pw.clone(), acc: new V3() }; }
 function selDragTo(pw) {
@@ -4205,7 +4252,7 @@ function selDragTo(pw) {
   if (dl.lengthSq() > 0) moveSel(dl);
 }
 function moveSel(dl) {
-  if (sel.kind === 'furn') { const o = furn.objs.get(sel.id); if (o) { o.position.add(dl); sel.vis?.update(); shadowsDirty(); } sel.drag.acc.add(dl); return; }
+  if (sel.kind === 'furn') { const o = furn.objs.get(sel.id); if (o) { o.position.add(dl); shadowsDirty(); } sel.drag.acc.add(dl); return; }
   const rec = selRec(); if (!rec) return;
   sel.drag.acc.add(dl); shadowsDirty();
   if (sel.kind === 'part') { const df = toFileDelta(rec, dl); shiftPart(sel.part, df, false); sel.vis.position.add(df); }
@@ -4214,7 +4261,7 @@ function moveSel(dl) {
 function selDragEnd() {
   if (!sel?.drag) return;
   const rec = selRec(), d = sel.drag.acc; sel.drag = null;
-  if (sel.kind === 'furn') { furnCommitPos(sel.id); placeGizmo(); return; }
+  if (sel.kind === 'furn') { const it = furnItem(sel.id); if (it) { it.x = r3(it.x + d.x); it.y = r3(it.y + d.y); it.z = r3(it.z + d.z); furnPose(it, furn.objs.get(it.id)); furnSave(); shadowsDirty(); } placeGizmo(); return; }
   if (!rec || d.lengthSq() < 1e-12) return;
   if (sel.kind === 'part') {
     const df = toFileDelta(rec, d);
@@ -4231,7 +4278,13 @@ function selDragEnd() {
   placeGizmo();
 }
 function undoMove(op, rec) {
-  if (op.op === 'movepart') {
+  if (op.op === 'xformpart') {
+    const part = rec.parts.get(op.pid); if (!part) return;
+    const Di = new THREE.Matrix4().fromArray(op.D).invert(); xformPart(part, Di); addPartXform(rec, op.pid, Di); for (const [m] of part.ranges) refreshEdges(m); shadowsDirty();
+    if (sel?.part === part) sel.vis.applyMatrix4(Di);
+    if (expl.cache) explodeReset(true);
+    schedulePersist(rec); renderSettings();
+  } else if (op.op === 'movepart') {
     const part = rec.parts.get(op.pid); if (!part) return;
     const df = vec(op.d).negate(); shiftPart(part, df); addPartMove(rec, op.pid, df); for (const [m] of part.ranges) refreshEdges(m); shadowsDirty();
     if (sel?.part === part) sel.vis.position.add(df);
@@ -4246,10 +4299,81 @@ function resetPartMoves() {
   const recs = targetRecs().filter(r => Object.keys(r.settings.moves || {}).length); if (!recs.length) return;
   clearSelection();
   for (const rec of recs) {
-    for (const [pid, d] of Object.entries(rec.settings.moves)) { const p = rec.parts.get(+pid); if (p) shiftPart(p, vec(d).negate()); }
+    for (const [pid, d] of Object.entries(rec.settings.moves)) { const p = rec.parts.get(+pid); if (p) { applyPartMove(p, d, true); for (const [m] of p.ranges) refreshEdges(m); } }
     rec.settings.moves = {}; schedulePersist(rec);
   }
-  undoStack.splice(0, undoStack.length, ...undoStack.filter(o => o.op !== 'movepart')); renderSettings(); toast('Части модели вернулись на место.', 'ok');
+  undoStack.splice(0, undoStack.length, ...undoStack.filter(o => o.op !== 'movepart' && o.op !== 'xformpart')); renderSettings(); toast('Части модели вернулись на место.', 'ok');
+}
+/* протяжка гамболом. Сдвиг любого выделенного идёт через selDragStart/To/End (как у лазера в шлеме), поэтому сохранение и отмена прежние.
+   Поворот, размер и части болванки меняют саму болванку; поворот части модели — матрицей в координатах файла. */
+let gbOp = null;
+const furnQuat = it => { const Q = new THREE.Quaternion().setFromAxisAngle(UP, it.rot || 0); if (it.q) Q.multiply(new THREE.Quaternion(...it.q)); return Q; };
+const AXV = { x: new V3(1, 0, 0), y: new V3(0, 1, 0), z: new V3(0, 0, 1) };
+function gbBegin(wr) {
+  const h = gb.pick(wr); if (!h || !sel) return false;
+  const d = gb.begin(h, wr); if (!d) return false;
+  gbOp = { kind: d.kind, c0: gizmo.position.clone() };
+  if (d.kind === 'move' || d.kind === 'plane' || d.kind === 'hub') selDragStart(gbOp.c0);
+  else if (sel.kind === 'furn') { const it = furnItem(sel.id); if (!it) { gb.end(); gbOp = null; return false; } gbOp.it0 = JSON.parse(JSON.stringify(it)); }
+  else if (sel.kind === 'part' && d.kind === 'rot') { gbOp.last = 0; gbOp.acc = new THREE.Matrix4(); }
+  else { gb.end(); gbOp = null; return false; }
+  controls.enabled = false;
+  return true;
+}
+function gbMove(wr, free) {
+  if (!gbOp || !sel) return;
+  const v = gb.value(wr, { step: 0.01, rotStep: free ? 0 : Math.PI / 12 }); if (!v) return;
+  const k = gbOp.kind;
+  if (v.delta) { selDragTo(gbOp.c0.clone().add(v.delta)); gizmo.position.copy(gbOp.c0).add(v.delta); gizmo.updateMatrixWorld(true); return; }
+  if (sel.kind === 'part') {                                 // поворот части модели вокруг её середины
+    const rec = selRec(); if (!rec || v.angle === undefined) return;
+    const da = v.angle - gbOp.last; if (Math.abs(da) < 1e-9) return;
+    gbOp.last = v.angle;
+    const P = v.pivot, Dw = new THREE.Matrix4().makeTranslation(P.x, P.y, P.z).multiply(new THREE.Matrix4().makeRotationAxis(v.axisW, da)).multiply(new THREE.Matrix4().makeTranslation(-P.x, -P.y, -P.z));
+    rec.xf.updateWorldMatrix(true, false);
+    const W = rec.xf.matrixWorld, Df = W.clone().invert().multiply(Dw).multiply(W);
+    xformPart(sel.part, Df, false); sel.vis.applyMatrix4(Df); gbOp.acc.premultiply(Df); shadowsDirty();
+    return;
+  }
+  const it = furnItem(sel.id), o = furn.objs.get(sel.id), i0 = gbOp.it0; if (!it || !o) return;
+  const Q0 = furnQuat(i0), c0 = furnCenter(i0), dr = gb.drag;
+  if (k === 'rot') {
+    if (dr.axis === 'y') it.rot = Math.round(((i0.rot || 0) + v.angle) * 1e4) / 1e4;
+    else {                                                    // красная и зелёная дуги: наклон вокруг своей оси предмета
+      const q = (i0.q ? new THREE.Quaternion(...i0.q) : new THREE.Quaternion()).multiply(new THREE.Quaternion().setFromAxisAngle(AXV[dr.axis], v.angle));
+      if (Math.abs(q.w) > 0.99995) delete it.q; else it.q = q.toArray().map(x => Math.round(x * 1e4) / 1e4);
+    }
+    furnPose(it, o); placeGizmo(); shadowsDirty();
+    return;
+  }
+  if (k === 'scale') {                                       // кубик: тянется эта сторона, противоположная стоит
+    const key = { x: 'w', y: 'h', z: 'd' }[dr.axis], s0 = i0[key], ns = r3(Math.max(0.02, s0 + dr.sign * v.dl));
+    const c = c0.clone().addScaledVector(AXV[dr.axis].clone().applyQuaternion(Q0), dr.sign * (ns - s0) / 2);
+    it[key] = ns; it.x = r3(c.x); it.z = r3(c.z); it.y = r3(c.y - it.h / 2);
+  } else if (k === 'param') {                                // часть болванки: сиденье, подлокотники, спинка, полки, глубина
+    const ph = dr.ph, val = r3(THREE.MathUtils.clamp(ph.v + (ph.sign || 1) * v.dl, ph.lo, Math.max(ph.lo, ph.hi)));
+    if (ph.key === 'h') { it.h = val; it.y = i0.y; }
+    else if (ph.key === 'd') {                                // перёд едет, задняя стенка остаётся на месте
+      const c = c0.clone().addScaledVector(AXV.z.clone().applyQuaternion(Q0), (val - i0.d) / 2);
+      it.d = val; it.x = r3(c.x); it.z = r3(c.z);
+    } else it.p = { ...(i0.p || {}), [ph.key]: val };
+  } else return;
+  if (JSON.stringify([it.w, it.d, it.h, it.p, it.x, it.y, it.z]) === gbOp.lastSig) return;
+  gbOp.lastSig = JSON.stringify([it.w, it.d, it.h, it.p, it.x, it.y, it.z]);
+  furnMount(it); placeGizmo(k === 'param'); shadowsDirty();
+}
+function gbEnd() {
+  const op = gbOp; gbOp = null; gb.end();
+  controls.enabled = state.view === 'orbit';
+  if (!op || !sel) return;
+  if (op.kind === 'move' || op.kind === 'plane' || op.kind === 'hub') { selDragEnd(); return; }
+  if (sel.kind === 'furn') { furnSave(); renderList(); placeGizmo(true); return; }
+  const rec = selRec(); if (!rec || op.last === 0) return;
+  for (const [m] of sel.part.ranges) { refitMesh(m); refreshEdges(m); }
+  if (expl.cache) explodeReset(true);
+  addPartXform(rec, sel.part.pid, op.acc);
+  undoStack.push({ op: 'xformpart', recId: rec.id, pid: sel.part.pid, D: op.acc.toArray() });
+  schedulePersist(rec); renderSettings(); placeGizmo();
 }
 function deleteSelection() {
   if (!sel) return;
@@ -4301,7 +4425,8 @@ const VR_TIPS = {
 function updateTip() {
   const tip = $('#tip'); if (state.view === 'xr') { drawPalette(); return; }
   let txt = '';
-  if (state.tool === 'nav' && sel) txt = `Выделена ${selName()}. Тяните стрелку гизмо: зелёная — вверх-вниз. ${sel.kind === 'furn' ? 'R — повернуть на 15°, ' : ''}${sel.kind !== 'part' ? 'Delete — удалить, ' : ''}Esc — снять`;
+  if (state.tool === 'nav' && sel) txt = sel.sub ? `${selName()}: тяните стрелки частей. Ещё один щелчок по предмету — обратно к гамболу. Esc — снять`
+    : `Выделена ${selName()}. Гамбол: стрелки — сдвиг (синяя — вверх-вниз), квадратики — по двум осям, жёлтая точка — по полу${sel.kind !== 'note' ? ', дуги — поворот через 15° (Shift — без шага)' : ''}${sel.kind === 'furn' ? ', кубики — размер; ещё щелчок по предмету — части. R — повернуть на 15°' : ''}. ${sel.kind !== 'part' ? 'Delete — удалить, ' : ''}Esc — снять`;
   else if (state.tool === 'nav') txt = state.view !== 'walk' ? '' : matchMedia('(pointer:coarse)').matches ? (matchMedia('(orientation:landscape) and (max-height:600px)').matches ? 'Левый стик — идти, правый — осмотреться, касание пола — перейти туда.' : 'Джойстик — идти, тянуть пальцем — осмотреться, касание пола — перейти туда.') : (locked() ? TIPS.nav.lock : TIPS.nav.walk);
   else txt = (state.tool === 'game' && matchMedia('(pointer:coarse)').matches && TIPS.game.touch) || TIPS[state.tool][tool.phase] || TIPS[state.tool].idle;
   if (txt && state.view === 'orbit' && state.tool !== 'nav' && !matchMedia('(pointer:coarse)').matches) txt += state.tool === 'game' ? ' · средняя кнопка — вращать' : ' · средняя кнопка — вращать, правая — двигать';
@@ -5022,7 +5147,6 @@ function rayAt(cx, cy) {
 let freeLook = false; const aimEdge = { x: 0.5, y: 0.5 };                                   // fallback when the browser refuses pointer lock (embedded browsers, quick re-lock after Esc)
 const hardLocked = () => document.pointerLockElement === canvas;
 const locked = () => hardLocked() || freeLook;
-{ const gp = gizmo._getPointer; gizmo._getPointer = e => (locked() ? { x: 0, y: 0, button: e.button } : gp(e)); }   // в прогулке стрелки гизмо берутся прицелом-крестиком: навёл, зажал, ведёшь взглядом
 function aimChanged() {
   const on = locked();
   $('#xhair').hidden = !on; updateCanvasCursor(); updateTip();
@@ -5046,6 +5170,7 @@ const fineMouse = matchMedia('(pointer:fine)');
 document.addEventListener('pointerlockchange', () => { if (hardLocked()) freeLook = false; aimChanged(); });
 $('#view').addEventListener('pointerdown', e => {
   if (e.target !== canvas) return;
+  if (sel && state.tool === 'nav' && gizmo.visible && e.button === 0 && !gb.drag) gb.setHot(gb.pick(rayFromEvent(e)));
   controls.enabled = state.view === 'orbit' && (state.tool === 'nav' || CLICK_TOOLS.has(state.tool) || e.button !== 0) && !gizmoHot();
 }, true);
 let pd = null;
@@ -5053,7 +5178,11 @@ const CLICK_TOOLS = new Set(['pin', 'ref', 'measure']);   // обзор: у ме
 canvas.addEventListener('contextmenu', e => e.preventDefault());
 canvas.addEventListener('pointerdown', e => {
   if (!$('#dlg').hidden && locked()) { e.preventDefault(); if (e.button === 0) $('#dlg').requestSubmit(); else if (e.button === 2) closeDialog(null); return; }   // окно метки в прогулке: левая — сохранить, правая — отмена
-  if (state.view === 'xr' || state.view === 'ar' || !$('#dlg').hidden || gizmoHot()) return;
+  if (state.view === 'xr' || state.view === 'ar' || !$('#dlg').hidden) return;
+  if (gb.hot && e.button === 0 && state.tool === 'nav') {        // гамбол: зажал ручку и тянешь (в прогулке — прицелом)
+    if (gbBegin(rayFromEvent(e))) { pd = { x: e.clientX, y: e.clientY, id: e.pointerId, moved: false, gb: true }; try { canvas.setPointerCapture(e.pointerId); } catch {} }
+    return;
+  }
   if (state.view === 'walk' && !cb.on && !locked() && e.pointerType === 'mouse' && e.button === 0) { startAim(); return; }   // first click: the mouse becomes the look   // first click: the mouse becomes the look
   if (e.button === 2 && e.pointerType === 'mouse' && state.view === 'walk') { e.preventDefault(); rightMode(); return; }   // прогулка: правая — режим инструмента
   if (toy.on && state.tool === 'game' && (state.view === 'orbit' || locked() || e.pointerType !== 'mouse')) {
@@ -5084,11 +5213,15 @@ canvas.addEventListener('pointermove', e => {
     if (freeLook) { const r = canvas.getBoundingClientRect(); aimEdge.x = (e.clientX - r.left) / r.width; aimEdge.y = (e.clientY - r.top) / r.height; }
     const k = 0.0022 * (lookSens || 1);
     player.yaw -= e.movementX * k; player.pitch = THREE.MathUtils.clamp(player.pitch - e.movementY * k, -1.5, 1.5);
+    if (pd?.gb) { gbMove(centerRay(), e.shiftKey); return; }
+    if (!pd && state.tool === 'nav' && sel && gizmo.visible) gb.setHot(gb.pick(centerRay()));
     if (state.tool === 'erase' && pd?.tool && tool.erasing) { eraseAt(centerRay()); return; }
     if (state.tool !== 'nav' && state.tool !== 'section') { const wr = centerRay(); toolMove(wr); hoverCursor(wr); }
     if (state.tool === 'section') secGhostAt(centerRay());
     return;
   }
+  if (pd?.gb) { if (e.pointerId === pd.id) gbMove(rayAt(e.clientX, e.clientY), e.shiftKey); return; }
+  if (!pd && state.tool === 'nav' && sel && gizmo.visible && e.pointerType === 'mouse') gb.setHot(gb.pick(rayAt(e.clientX, e.clientY)));
   if (pd && e.pointerId === pd.id) {
     const dx = e.clientX - pd.x, dy = e.clientY - pd.y;
     if (!pd.moved && Math.hypot(dx, dy) > 5) pd.moved = true;
@@ -5112,6 +5245,7 @@ canvas.addEventListener('pointermove', e => {
 const endPointer = e => {
   if (!pd || e.pointerId !== pd.id) return;
   const p = pd; pd = null; updateCanvasCursor();
+  if (p.gb) { gbEnd(); return; }
   if (p.tool && state.tool === 'section') { if (!p.moved) secClick(e); sec.drag = null; renderSecUI(); }
   else if (p.ex !== undefined) { /* взрыв: отпустил — разлёт остаётся */ }
   else if (p.click) { if (!p.moved) { const r = rayFromEvent(e); toolDown(r); toolUp(r); } }
@@ -6850,6 +6984,7 @@ renderer.setAnimationLoop((t, xrFrame) => {
   else { flyUpdate(dt); controls.update(); if (toy.on || toy.balls.length || toy.flyers.length) toyUpdate(dt); }   // the game in the overview too
   explodeUpdate(dt);
   if (sky.visible) { sky.position.copy(camera.getWorldPosition(_v)); sky.scale.setScalar(Math.min(1, camera.far * 0.9 / 1000)); }
+  gb.update(camera);
   updateSection(); updateSectionCap(); updateBillboards(); updateLabels(); updateCursor(); updateLighting(); compassUpdate(); skyUpdate(dt); sunDiscUpdate(); weatherUpdate(dt); peopleUpdate(dt); landUpdate(dt);
   if (cb.on) cbRender(); else renderFrame();
 });
