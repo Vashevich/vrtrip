@@ -553,6 +553,17 @@ body:not(.gaming) #w-toy,body:not(.gaming) #w-hook{display:none!important}   /* 
 .themebtn:hover{background:var(--hover)}
 .themebtn svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 @media (max-width:1180px) and (min-width:821px){.mark{font-size:28px;letter-spacing:.15em}.mark::before{width:38px;height:38px;margin-right:10px}.themebtn span{display:none}.themebtn{padding:0 12px}}
+.srcseg{margin-bottom:12px}
+.pane{display:flex;flex-direction:column;gap:10px}
+.fcats{display:flex;flex-wrap:wrap;gap:4px}
+.fcats button{padding:5px 9px;border:2px solid var(--line);background:var(--raise);color:var(--muted);font:500 12px/1 var(--f-body);cursor:pointer}
+.fcats button[aria-pressed="true"]{background:var(--fg);color:var(--on-fg, var(--bg));border-color:var(--fg)}
+.fgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;max-height:330px;overflow:auto;padding-right:2px}
+.fcard{display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 4px 6px;border:2px solid var(--line);border-bottom-width:5px;background:var(--raise);color:var(--fg);cursor:grab;text-align:center;min-width:0}
+.fcard:hover{border-color:var(--line-strong)}
+.fcard img{width:100%;aspect-ratio:4/3;object-fit:contain;pointer-events:none}
+.fcard .fn{font-size:12px;line-height:1.15;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.fcard .fs{font:11px/1 var(--f-mono);color:var(--muted)}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script type="importmap">
@@ -581,6 +592,11 @@ body:not(.gaming) #w-toy,body:not(.gaming) #w-hook{display:none!important}   /* 
   <details class="sec" id="sec-load" open>
     <summary><h2><span class="step">01</span>Модель</h2></summary>
     <div class="sec-body">
+    <div class="seg srcseg" id="srcseg" role="group" aria-label="Что добавить">
+      <button type="button" data-pane="files" aria-pressed="true">Файлы</button>
+      <button type="button" data-pane="furn" aria-pressed="false">Мебель</button>
+    </div>
+    <div id="pane-files" class="pane">
     <label class="drop" id="drop" for="file">
       <input type="file" id="file" multiple class="sr">
       <span class="drop-title">Выбрать файлы</span>
@@ -591,6 +607,12 @@ body:not(.gaming) #w-toy,body:not(.gaming) #w-hook{display:none!important}   /* 
       <button type="submit" class="btn">Скачать</button>
     </form>
     <button class="link" id="sample" type="button">Добавить пример — двухэтажный павильон</button>
+    </div>
+    <div id="pane-furn" class="pane" hidden>
+      <div class="fcats" id="furn-cats" role="group" aria-label="Разделы мебели"></div>
+      <div class="fgrid" id="furn-grid"></div>
+      <p class="note">Нажмите на карточку — предмет встанет перед вами. Или перетащите карточку в сцену. Выделить — щелчок по предмету, R — повернуть, Delete — удалить.</p>
+    </div>
     <h3 class="sub">Экспозиция</h3>
     <p class="note">Щёлкните по модели, чтобы добавить её в сцену или убрать. В сцене может быть сколько угодно моделей сразу.</p>
     <ul id="models" class="models"></ul>
@@ -994,6 +1016,7 @@ body:not(.gaming) #w-toy,body:not(.gaming) #w-hook{display:none!important}   /* 
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { TransformControls } from 'three/addons/controls/TransformControls.js';
+import { CATALOG as FURN_CATALOG, CATS as FURN_CATS, CAT_COLOR as FURN_COLOR, EDGE as FURN_EDGE, fillBlank } from './furniture.js';
 import { OBJLoader } from 'three/addons/loaders/OBJLoader.js';
 import { MTLLoader } from 'three/addons/loaders/MTLLoader.js';
 import { XRControllerModelFactory } from 'three/addons/webxr/XRControllerModelFactory.js';
@@ -1024,7 +1047,7 @@ const UP = new V3(0, 1, 0), DOWN = new V3(0, -1, 0);
 const UNITS = { mm: 0.001, cm: 0.01, m: 1, in: 0.0254, ft: 0.3048 };
 const TABLE_STEPS = [20, 50, 100, 200, 500, 1000];
 const EYE = 1.65, STEP = 0.45, RADIUS = 0.3, GRAV = 9.8;
-const APP_VERSION = '3.50';
+const APP_VERSION = '3.51';
 const BASE_COLORS = ['#f2efe8', '#d8a33f', '#e0604a', '#3f86c9', '#4fae7f', '#9166cc'];
 const KINDS = { issue: { label: 'Замечание', color: '#e0604a' }, question: { label: 'Вопрос', color: '#d8a33f' }, idea: { label: 'Идея', color: '#4fae7f' } };
 const TOOLS = [['nav', 'Выделение'], ['pen', 'Карандаш'], ['measure', 'Рулетка'], ['pin', 'Метка'], ['section', 'Сечение'], ['explode', 'Взрыв'], ['game', 'Игра'], ['erase', 'Ластик'], ['ref', 'Репер']];   // 1–8 — клавиши в порядке панели; «Репер» — из «Привязки к месту», без клавиши
@@ -2084,6 +2107,9 @@ function updateGrid() {
 }
 
 const holder = new THREE.Group(); scene.add(holder);
+/* мебель из Табуретки: свой слой внутри holder, координаты — метры сцены (как у центрованных моделей) */
+const furn = { items: [], g: new THREE.Group(), objs: new Map(), thumbs: null, cat: 'all' };
+holder.add(furn.g);
 const previewGroup = new THREE.Group();
 
 const CLAY = new THREE.MeshStandardMaterial({ color: 0xf1ede5, roughness: 0.88, metalness: 0, side: THREE.DoubleSide, clipShadows: true });
@@ -2516,7 +2542,7 @@ async function ensureBuilt(rec) {
 function mountScene() {
   holder.clear();
   for (const r of shownRecs()) holder.add(r.root, r.notesGroup);
-  holder.add(previewGroup, secVis, secCap, compass, people.group);
+  holder.add(previewGroup, secVis, secCap, compass, people.group, furn.g);
   lsSet('vrtrip-shown', JSON.stringify(state.models.filter(r => r.shown).map(r => r.id)));
 }
 function afterSceneChange() { aa.input = performance.now(); explodeReset(true); shadowsDirty(); if (VIS.edges) applyEdges(); renderList(); renderSettings(); renderNotes(); renderToolbar(); updateModeButtons(); if (state.view === 'xr') layoutPalette(); }
@@ -2565,7 +2591,7 @@ async function removeModel(i) {
 function sizeText(s) { return s ? `${fmt(s[0])} × ${fmt(s[2])} × ${fmt(s[1])} м` : 'ещё не открывалась'; }
 function renderList() {
   const ul = $('#models'); ul.textContent = '';
-  if (!state.models.length) { const li = document.createElement('li'); li.innerHTML = '<p class="empty">Пока пусто. Загрузите OBJ или добавьте пример.</p>'; ul.append(li); return; }
+  if (!state.models.length && !furn.items.length) { const li = document.createElement('li'); li.innerHTML = '<p class="empty">Пока пусто. Загрузите OBJ, добавьте пример или мебель.</p>'; ul.append(li); return; }
   state.models.forEach((rec, i) => {
     const li = document.createElement('li');
     const pick = document.createElement('button'); pick.type = 'button'; pick.className = 'pick';
@@ -2587,6 +2613,26 @@ function renderList() {
     });
     li.append(pick, del); ul.append(li);
   });
+  for (const it of furn.items) {                                     // мебель — в том же списке, с той же галочкой
+    const li = document.createElement('li');
+    const pick = document.createElement('button'); pick.type = 'button'; pick.className = 'pick';
+    pick.setAttribute('aria-pressed', String(it.shown !== false)); pick.title = it.shown !== false ? 'В сцене — нажмите, чтобы убрать' : 'Нажмите, чтобы вернуть в сцену';
+    const box = document.createElement('span'); box.className = 'box'; box.setAttribute('aria-hidden', 'true');
+    const n = document.createElement('span'); n.className = 'name'; n.textContent = it.name;
+    const meta = document.createElement('span'); meta.className = 'meta';
+    meta.textContent = `мебель · ${Math.round(it.w * 100)} × ${Math.round(it.d * 100)} × ${Math.round(it.h * 100)} см`;
+    const txt = document.createElement('span'); txt.className = 'ptxt'; txt.append(n, meta);
+    pick.append(box, txt);
+    pick.addEventListener('click', () => furnToggle(it.id));
+    const del = document.createElement('button'); del.type = 'button'; del.className = 'del'; del.textContent = '×';
+    del.setAttribute('aria-label', `Удалить «${it.name}»`);
+    del.addEventListener('click', () => {
+      if (del.classList.contains('armed')) { furnRemove(it.id); return; }
+      del.classList.add('armed'); del.textContent = 'Удалить?';
+      setTimeout(() => { if (del.isConnected) { del.classList.remove('armed'); del.textContent = '×'; } }, 3000);
+    });
+    li.append(pick, del); ul.append(li);
+  }
 }
 
 function renderSettings() {
@@ -2671,11 +2717,13 @@ $('#file').addEventListener('change', e => { const f = [...e.target.files]; e.ta
 $('#urlform').addEventListener('submit', e => { e.preventDefault(); const v = $('#url').value.trim(); if (v) addFromUrl(v); });
 $('#sample').addEventListener('click', () => addSample());
 let dragDepth = 0;
-window.addEventListener('dragenter', e => { e.preventDefault(); dragDepth++; $('#drop').classList.add('over'); });
+window.addEventListener('dragenter', e => { e.preventDefault(); if (e.dataTransfer?.types?.includes('text/x-vrtrip-furn')) return; dragDepth++; $('#drop').classList.add('over'); });
 window.addEventListener('dragleave', () => { if (--dragDepth <= 0) { dragDepth = 0; $('#drop').classList.remove('over'); } });
 window.addEventListener('dragover', e => e.preventDefault());
 window.addEventListener('drop', e => {
   e.preventDefault(); dragDepth = 0; $('#drop').classList.remove('over');
+  const ft = e.dataTransfer?.getData('text/x-vrtrip-furn');
+  if (ft) { if (e.target === canvas) furnAdd(ft, rayAt(e.clientX, e.clientY)); return; }     // карточку мебели бросили в сцену
   const files = [...(e.dataTransfer?.files || [])];
   if (files.length && files.every(f => /\.json$/i.test(f.name))) importNotes(files[0]); else addFromFiles(files);
 });
@@ -3858,6 +3906,198 @@ function toolUp() {
   updateTip();
 }
 
+/* ================= мебель из Табуретки: каталог болванок, комнаты, расстановка ================= */
+const ROOMS = [
+  { type: 'room_rect', name: 'Прямоугольная', w: 4, d: 5, h: 2.7, color: '#f4f1ea', cat: 'rooms' },
+  { type: 'room_l', name: 'Буквой «Г»', w: 5, d: 5, h: 2.7, color: '#f4f1ea', cat: 'rooms' },
+  { type: 'room_attic', name: 'Мансарда', w: 4, d: 5, h: 2.7, color: '#f4f1ea', cat: 'rooms' },
+];
+const FURN_DEFS = [...FURN_CATALOG, ...ROOMS];
+const furnDef = t => FURN_DEFS.find(d => d.type === t);
+const furnItem = id => furn.items.find(i => i.id === id);
+const isRoom = t => t.startsWith('room_');
+/* Комната — оболочка: пол, стены, потолок, грани смотрят внутрь, поэтому снаружи ближние стены не мешают смотреть. */
+function roomBlank(g, type, w, d, h, color) {
+  const W = w / 2, D = d / 2;
+  const foot = type === 'room_l' ? [[-W, -D], [W, -D], [W, 0], [0, 0], [0, D], [-W, D]] : [[-W, -D], [W, -D], [W, D], [-W, D]];
+  const c = type === 'room_attic' ? w * 0.1 : Infinity, low = Math.min(h, 1.2);    // мансарда: от x = c потолок скатом опускается к стене
+  const H = x => (x <= c ? h : h - (h - low) * (x - c) / (W - c));
+  const inFoot = (x, z) => { let k = false; for (let i = 0, j = foot.length - 1; i < foot.length; j = i++) { const [xi, zi] = foot[i], [xj, zj] = foot[j]; if ((zi > z) !== (zj > z) && x < (xj - xi) * (z - zi) / (zj - zi) + xi) k = !k; } return k; };
+  const polys = [];                                                    // [точки, цвет]
+  polys.push([foot.map(([x, z]) => new V3(x, 0, z)), 'floor']);
+  for (let i = 0; i < foot.length; i++) {
+    const [ax, az] = foot[i], [bx, bz] = foot[(i + 1) % foot.length], top = [[bx, bz]];
+    if ((ax - c) * (bx - c) < 0) top.push([c, az + (bz - az) * (c - ax) / (bx - ax)]);
+    top.push([ax, az]);
+    const pts = [new V3(ax, 0, az), new V3(bx, 0, bz), ...top.map(([x, z]) => new V3(x, H(x), z))];
+    const nx = bz - az, nz = -(bx - ax), L = Math.hypot(nx, nz) || 1, mx = (ax + bx) / 2, mz = (az + bz) / 2;
+    if (!inFoot(mx + nx / L * 0.01, mz + nz / L * 0.01)) pts.reverse();   // нормаль стены — внутрь комнаты
+    polys.push([pts, 'wall']);
+  }
+  if (c < W) {                                                         // потолок мансарды: плоская часть и скат
+    polys.push([[[-W, -D], [c, -D], [c, D], [-W, D]].map(([x, z]) => new V3(x, h, z)), 'ceil']);
+    polys.push([[[c, -D], [W, -D], [W, D], [c, D]].map(([x, z]) => new V3(x, H(x), z)), 'ceil']);
+  } else polys.push([foot.map(([x, z]) => new V3(x, h, z)), 'ceil']);
+  const cols = { floor: new THREE.Color('#d9c7a8'), wall: new THREE.Color(color || '#f4f1ea'), ceil: new THREE.Color(color || '#f4f1ea').multiplyScalar(0.97) };
+  const pos = [], col = [], edges = [];
+  for (const [pts, kind] of polys) {
+    const n = new V3(); for (let i = 0; i < pts.length; i++) { const a = pts[i], b = pts[(i + 1) % pts.length]; n.x += (a.y - b.y) * (a.z + b.z); n.y += (a.z - b.z) * (a.x + b.x); n.z += (a.x - b.x) * (a.y + b.y); }
+    if ((kind === 'floor' && n.y < 0) || (kind === 'ceil' && n.y > 0)) { pts.reverse(); n.negate(); }
+    const ax = Math.abs(n.x) > Math.abs(n.y) && Math.abs(n.x) > Math.abs(n.z) ? 'x' : Math.abs(n.y) > Math.abs(n.z) ? 'y' : 'z';
+    const to2 = p => (ax === 'x' ? new V2(p.y, p.z) : ax === 'y' ? new V2(p.x, p.z) : new V2(p.x, p.y));
+    for (const [i, j, k] of THREE.ShapeUtils.triangulateShape(pts.map(to2), [])) {
+      let tri = [pts[i], pts[j], pts[k]];
+      if (new V3().subVectors(tri[1], tri[0]).cross(new V3().subVectors(tri[2], tri[0])).dot(n) < 0) tri = [tri[0], tri[2], tri[1]];
+      for (const p of tri) { pos.push(p.x, p.y, p.z); col.push(cols[kind].r, cols[kind].g, cols[kind].b); }
+    }
+    for (let i = 0; i < pts.length; i++) { const a = pts[i], b = pts[(i + 1) % pts.length]; edges.push(a.x, a.y, a.z, b.x, b.y, b.z); }
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); geo.setAttribute('color', new THREE.Float32BufferAttribute(col, 3)); geo.computeVertexNormals();
+  g.add(new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.95, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1 })));
+  g.add(new THREE.LineSegments(new THREE.BufferGeometry().setAttribute('position', new THREE.Float32BufferAttribute(edges, 3)), FURN_EDGE));
+  return g;
+}
+function furnBuild(it) {
+  const g = new THREE.Group();
+  if (isRoom(it.type)) roomBlank(g, it.type, it.w, it.d, it.h, it.color); else fillBlank(g, it.type, it.w, it.d, it.h, it.color, it.open, it.pose, it.p);
+  g.traverse(o => { if (o.isMesh) { o.castShadow = !isRoom(it.type); o.receiveShadow = true; } else if (o.isLine) o.raycast = () => {}; });
+  g.position.set(it.x, it.y, it.z); g.rotation.y = it.rot || 0; g.visible = it.shown !== false; g.userData.furnId = it.id;
+  return g;
+}
+function furnMount(it) {
+  const old = furn.objs.get(it.id); if (old) { old.removeFromParent(); old.traverse(o => o.geometry?.dispose()); }
+  const g = furnBuild(it); furn.objs.set(it.id, g); furn.g.add(g);
+}
+const furnSave = () => lsSet('vrtrip-furniture', JSON.stringify(furn.items));
+function furnLoad() {
+  let a = []; try { a = JSON.parse(lsGet('vrtrip-furniture') || '[]'); } catch {}
+  furn.items = (Array.isArray(a) ? a : []).filter(i => i && furnDef(i.type) && [i.x, i.y, i.z, i.w, i.d, i.h].every(Number.isFinite));
+  for (const it of furn.items) furnMount(it);
+  const pane = lsGet('vrtrip-src') === 'furn' ? 'furn' : 'files'; setSrcPane(pane);
+}
+/* куда встанет новый предмет: на горизонтальную поверхность модели под лучом, иначе на землю перед вами */
+function furnDropY(x, z, top) {
+  const r = new THREE.Ray(new V3(x, top, z), new V3(0, -1, 0)).applyMatrix4(holder.matrixWorld);
+  r.direction.normalize();
+  const h = shownRecs().length ? hitScene(r, { notes: false }) : null;
+  return h && h.normal.y > 0.5 ? h.local.y : 0;
+}
+function furnPlace(wr, def) {
+  holder.updateMatrixWorld();
+  const lr = localRay(wr), h = shownRecs().length ? hitScene(wr, { notes: false }) : null;
+  let p;
+  if (h && h.normal.y > 0.5) p = h.local.clone();
+  else if (h && !h.ground) { p = h.local.clone().addScaledVector(h.normal, Math.min(def.w, def.d) / 2 + 0.05); p.y = furnDropY(p.x, p.z, h.local.y + 0.3); }
+  else if (lr.direction.y < -1e-4 && -lr.origin.y / lr.direction.y < 60) p = lr.origin.clone().addScaledVector(lr.direction, -lr.origin.y / lr.direction.y);
+  else { p = lr.origin.clone().addScaledVector(lr.direction.clone().setY(0).normalize(), 3); p.y = 0; }
+  const rot = Math.round(Math.atan2(-lr.direction.x, -lr.direction.z) / (Math.PI / 12)) * (Math.PI / 12);   // лицом к зрителю, шаг 15°
+  return { x: r3(p.x), y: r3(p.y), z: r3(p.z), rot };
+}
+function furnAdd(type, wr) {
+  const def = furnDef(type); if (!def) return;
+  if (!wr) { wr = new THREE.Ray(); camera.getWorldPosition(wr.origin); camera.getWorldDirection(wr.direction); }
+  const it = { id: uid(), type, name: def.name, w: def.w, d: def.d, h: def.h, color: def.color, shown: true, ...furnPlace(wr, def) };
+  furn.items.push(it); furnMount(it); furnSave(); renderList(); shadowsDirty();
+  if (state.tool !== 'nav') setTool('nav');
+  furnSelect(it.id);
+  toast(`«${def.name}» в сцене. Тяните стрелки гизмо, R — повернуть`, 'ok');
+}
+function furnSelect(id) {
+  const o = furn.objs.get(id); if (!o) return;
+  if (sel?.kind === 'furn' && sel.id === id) return;
+  clearSelection();
+  sel = { kind: 'furn', id };
+  const bh = new THREE.BoxHelper(o, SEL_COLOR); bh.material.depthTest = false; bh.material.transparent = true; bh.renderOrder = 14;
+  scene.add(toUI(bh)); sel.vis = bh;
+  placeGizmo(); updateTip();
+}
+function furnCommitPos(id) {
+  const it = furnItem(id), o = furn.objs.get(id); if (!it || !o) return;
+  it.x = r3(o.position.x); it.y = r3(o.position.y); it.z = r3(o.position.z); furnSave(); shadowsDirty();
+}
+function furnRotate(id, dir) {
+  const it = furnItem(id), o = furn.objs.get(id); if (!it || !o) return;
+  it.rot = Math.round(((it.rot || 0) + dir * Math.PI / 12) * 1e4) / 1e4; o.rotation.y = it.rot;
+  sel?.vis?.update(); placeGizmo(); furnSave(); shadowsDirty();
+}
+function furnToggle(id) {
+  const it = furnItem(id), o = furn.objs.get(id); if (!it || !o) return;
+  it.shown = it.shown === false; o.visible = it.shown;
+  if (!it.shown && sel?.kind === 'furn' && sel.id === id) clearSelection();
+  furnSave(); renderList(); shadowsDirty();
+}
+function furnRemove(id) {
+  if (sel?.kind === 'furn' && sel.id === id) clearSelection();
+  const o = furn.objs.get(id); if (o) { o.removeFromParent(); o.traverse(x => x.geometry?.dispose()); furn.objs.delete(id); }
+  furn.items = furn.items.filter(i => i.id !== id); furnSave(); renderList(); shadowsDirty();
+}
+function pickFurn(wr) {                                   // мебель под лучом (линии рёбер не ловятся)
+  if (!furn.items.length) return null;
+  holder.updateMatrixWorld();
+  raycaster.set(wr.origin, wr.direction); raycaster.far = 400;
+  for (const h of raycaster.intersectObject(furn.g, true)) {
+    let o = h.object; while (o && !o.userData.furnId) o = o.parent;
+    if (!o || !o.visible) continue;
+    if (state.view === 'walk' && isRoom(furnItem(o.userData.furnId)?.type || '')) continue;    // по комнате в прогулке ходят
+    holderInv.copy(holder.matrixWorld).invert();
+    const n = h.face ? h.face.normal.clone().transformDirection(h.object.matrixWorld).transformDirection(holderInv).normalize() : UP.clone();
+    return { kind: 'furn', id: o.userData.furnId, dist: h.distance, h: { world: h.point.clone(), local: h.point.clone().applyMatrix4(holderInv), normal: n, dist: h.distance } };
+  }
+  return null;
+}
+/* каталог: разделы, карточки с картинками; картинки рисуются один раз, при первом открытии вкладки */
+function furnThumbs() {
+  const out = {};
+  try {
+    const r = new THREE.WebGLRenderer({ antialias: true, alpha: true }); r.setSize(160, 120);
+    const sc = new THREE.Scene(); sc.add(new THREE.HemisphereLight(0xffffff, 0xb0a898, 1.3));
+    const dl = new THREE.DirectionalLight(0xffffff, 1.4); dl.position.set(2, 4, 3); sc.add(dl);
+    const c = new THREE.PerspectiveCamera(28, 4 / 3, 0.05, 120);
+    for (const def of FURN_DEFS) {
+      const g = furnBuild({ ...def, x: 0, y: 0, z: 0, rot: 0 }); sc.add(g);
+      const center = new V3(0, def.h / 2, 0), rad = Math.hypot(def.w, def.d, def.h) / 2;
+      c.position.copy(center).addScaledVector(new V3(0.75, isRoom(def.type) ? 1.1 : 0.6, 1).normalize(), (rad / Math.sin(THREE.MathUtils.degToRad(14))) * 0.98);
+      c.lookAt(center); r.render(sc, c); out[def.type] = r.domElement.toDataURL('image/png');
+      sc.remove(g); g.traverse(o => o.geometry?.dispose());
+    }
+    r.dispose(); r.forceContextLoss();
+  } catch (e) { console.warn('furniture thumbs', e); }
+  return out;
+}
+function renderFurnCatalog() {
+  if (!furn.thumbs) furn.thumbs = furnThumbs();
+  const cats = [...FURN_CATS, ['rooms', 'Комнаты']], bar = $('#furn-cats'), grid = $('#furn-grid');
+  bar.textContent = '';
+  for (const [id, label] of cats) {
+    const b = document.createElement('button'); b.type = 'button'; b.textContent = label;
+    b.setAttribute('aria-pressed', String(furn.cat === id));
+    if (FURN_COLOR[id]) b.style.boxShadow = `inset 0 -4px 0 ${FURN_COLOR[id]}`;
+    b.addEventListener('click', () => { furn.cat = id; renderFurnCatalog(); });
+    bar.append(b);
+  }
+  grid.textContent = '';
+  for (const def of FURN_DEFS.filter(d => furn.cat === 'all' || d.cat === furn.cat)) {
+    const b = document.createElement('button'); b.type = 'button'; b.className = 'fcard'; b.draggable = true;
+    b.style.borderBottomColor = FURN_COLOR[def.cat] || 'var(--line-strong)';
+    b.title = `${def.name}: нажмите — встанет перед вами, или перетащите в сцену`;
+    if (furn.thumbs[def.type]) { const img = new Image(); img.src = furn.thumbs[def.type]; img.alt = ''; b.append(img); }
+    const n = document.createElement('span'); n.className = 'fn'; n.textContent = def.name;
+    const z = document.createElement('span'); z.className = 'fs'; z.textContent = `${Math.round(def.w * 100)}×${Math.round(def.d * 100)}×${Math.round(def.h * 100)}`;
+    b.append(n, z);
+    b.addEventListener('click', () => furnAdd(def.type));
+    b.addEventListener('dragstart', e => { e.dataTransfer.setData('text/x-vrtrip-furn', def.type); e.dataTransfer.effectAllowed = 'copy'; });
+    grid.append(b);
+  }
+}
+function setSrcPane(p) {
+  for (const b of document.querySelectorAll('#srcseg button')) b.setAttribute('aria-pressed', String(b.dataset.pane === p));
+  $('#pane-files').hidden = p !== 'files'; $('#pane-furn').hidden = p !== 'furn';
+  lsSet('vrtrip-src', p);
+  if (p === 'furn') renderFurnCatalog();
+}
+document.querySelectorAll('#srcseg button').forEach(b => b.addEventListener('click', () => setSrcPane(b.dataset.pane)));
+
 /* ================= selection: parts of the model and markup, moved with a gizmo (desktop) or the laser (VR) ================= */
 /* Parts survive merging as vertex ranges, so a moved part is just its vertices shifted (stored per model in file coordinates). */
 function indexParts(rec, names) {
@@ -3915,11 +4155,13 @@ const gizmoHot = () => !!(gizmo.object && (gizmo.axis || gizmo.dragging));
 function selRec() { return sel ? state.models.find(r => r.id === sel.recId) : null; }
 function selName() {
   if (!sel) return '';
+  if (sel.kind === 'furn') return `мебель «${furnItem(sel.id)?.name || ''}»`;
   if (sel.kind === 'part') return sel.part.name ? `часть «${sel.part.name}»` : 'часть модели';
   const n = selRec()?.notes.find(x => x.id === sel.id);
   return { pin: 'метка', measure: 'рулетка', line: 'линия карандаша', box: 'куб', ref: `репер Р${n?.num}` }[n?.type] || 'разметка';
 }
 function selectPick(pk) {
+  if (pk?.kind === 'furn') { furnSelect(pk.id); return; }
   const rec = pk?.rec; if (!rec?.built || !pk || pk.kind === 'none') { clearSelection(); return; }
   if (sel && ((pk.kind === 'part' && sel.part === pk.part) || (pk.kind === 'note' && sel.id === pk.id))) return;
   clearSelection();
@@ -3943,6 +4185,7 @@ function clearSelection() {
   sel = null; gizmo.detach(); updateTip();
 }
 function selCenterWorld() {
+  if (sel?.kind === 'furn') { const o = furn.objs.get(sel.id); return o ? new THREE.Box3().setFromObject(o).getCenter(new V3()) : null; }
   const rec = selRec(); if (!rec) return null;
   if (sel.kind === 'part') { rec.xf.updateMatrixWorld(); return rec.xf.localToWorld(sel.box.getCenter(new V3()).add(sel.vis.position)); }
   const n = rec.notes.find(x => x.id === sel.id); if (!n) return null;
@@ -3961,6 +4204,7 @@ function selDragTo(pw) {
   if (dl.lengthSq() > 0) moveSel(dl);
 }
 function moveSel(dl) {
+  if (sel.kind === 'furn') { const o = furn.objs.get(sel.id); if (o) { o.position.add(dl); sel.vis?.update(); shadowsDirty(); } sel.drag.acc.add(dl); return; }
   const rec = selRec(); if (!rec) return;
   sel.drag.acc.add(dl); shadowsDirty();
   if (sel.kind === 'part') { const df = toFileDelta(rec, dl); shiftPart(sel.part, df, false); sel.vis.position.add(df); }
@@ -3969,6 +4213,7 @@ function moveSel(dl) {
 function selDragEnd() {
   if (!sel?.drag) return;
   const rec = selRec(), d = sel.drag.acc; sel.drag = null;
+  if (sel.kind === 'furn') { furnCommitPos(sel.id); placeGizmo(); return; }
   if (!rec || d.lengthSq() < 1e-12) return;
   if (sel.kind === 'part') {
     const df = toFileDelta(rec, d);
@@ -4007,11 +4252,17 @@ function resetPartMoves() {
 }
 function deleteSelection() {
   if (!sel) return;
+  if (sel.kind === 'furn') { const id = sel.id; clearSelection(); furnRemove(id); flash('Мебель удалена'); return; }
   if (sel.kind === 'note') { const id = sel.id; clearSelection(); removeNote(id); flash('Удалено. Отменить — Ctrl+Z'); }
   else flash('Части модели не удаляются — их можно двигать');
 }
 /* what is under the pointer: a markup object (thin lines get a little cone of tolerance) or a part of the model */
-function pickSelectable(wr, tol = 0) {
+function pickSelectable(wr, tol = 0) {             // мебель, если она ближе всего под лучом; иначе — модели и разметка
+  const base = pickModelPart(wr, tol), pf = pickFurn(wr);
+  if (pf && (base.kind === 'none' ? !base.h || pf.dist <= base.h.dist + 1e-3 : pf.dist <= (base.dist ?? Infinity) + 1e-3)) return pf;
+  return base;
+}
+function pickModelPart(wr, tol = 0) {
   if (!shownRecs().length) return { kind: 'none' };
   let pn = null; for (const r of tol ? coneRays(wr, tol) : [wr]) { const p = pickNote(r); if (p && (!pn || p.dist < pn.dist)) pn = p; }
   const h = hitScene(wr);
@@ -4049,7 +4300,7 @@ const VR_TIPS = {
 function updateTip() {
   const tip = $('#tip'); if (state.view === 'xr') { drawPalette(); return; }
   let txt = '';
-  if (state.tool === 'nav' && sel) txt = `Выделена ${selName()}. Тяните стрелку гизмо: зелёная — вверх-вниз. ${sel.kind === 'note' ? 'Delete — удалить, ' : ''}Esc — снять`;
+  if (state.tool === 'nav' && sel) txt = `Выделена ${selName()}. Тяните стрелку гизмо: зелёная — вверх-вниз. ${sel.kind === 'furn' ? 'R — повернуть на 15°, ' : ''}${sel.kind !== 'part' ? 'Delete — удалить, ' : ''}Esc — снять`;
   else if (state.tool === 'nav') txt = state.view !== 'walk' ? '' : matchMedia('(pointer:coarse)').matches ? (matchMedia('(orientation:landscape) and (max-height:600px)').matches ? 'Левый стик — идти, правый — осмотреться, касание пола — перейти туда.' : 'Джойстик — идти, тянуть пальцем — осмотреться, касание пола — перейти туда.') : (locked() ? TIPS.nav.lock : TIPS.nav.walk);
   else txt = (state.tool === 'game' && matchMedia('(pointer:coarse)').matches && TIPS.game.touch) || TIPS[state.tool][tool.phase] || TIPS[state.tool].idle;
   if (txt && state.view === 'orbit' && state.tool !== 'nav' && !matchMedia('(pointer:coarse)').matches) txt += state.tool === 'game' ? ' · средняя кнопка — вращать' : ' · средняя кнопка — вращать, правая — двигать';
@@ -4735,6 +4986,7 @@ window.addEventListener('keydown', e => {
   if (/^Digit[1-9]$/.test(e.code) && isReady() && KEY_TOOLS[+e.code.slice(5) - 1]) { setTool(KEY_TOOLS[+e.code.slice(5) - 1][0]); return; }
   if ((e.code === 'Delete' || e.code === 'Backspace') && sel) { e.preventDefault(); deleteSelection(); return; }
   if (state.view === 'orbit' && isReady() && !e.repeat && (e.code === 'KeyB' || e.code === 'KeyG')) { setGadget(e.code === 'KeyB' ? 'balls' : 'hook'); return; }
+  if (state.view === 'orbit' && sel?.kind === 'furn' && e.code === 'KeyR' && !e.ctrlKey && !e.metaKey) { furnRotate(sel.id, e.shiftKey ? -1 : 1); return; }
   if (state.view === 'orbit') { if (!e.ctrlKey && !e.metaKey && /^(Key[WASDQE]|Arrow\w+|Shift\w+)$/.test(e.code)) { keys.add(e.code); if (/^Arrow/.test(e.code)) e.preventDefault(); } return; }
   if (state.view !== 'walk') return;
   if (e.code === 'KeyR' || e.code === 'PageUp') { walkFloor(true); e.preventDefault(); return; }
@@ -4863,7 +5115,7 @@ const endPointer = e => {
   else if (p.ex !== undefined) { /* взрыв: отпустил — разлёт остаётся */ }
   else if (p.click) { if (!p.moved) { const r = rayFromEvent(e); toolDown(r); toolUp(r); } }
   else if (p.tool) toolUp(rayFromEvent(e));
-  else if (state.tool === 'nav' && !p.moved && e.button === 0 && isReady()) {
+  else if (state.tool === 'nav' && !p.moved && e.button === 0 && (isReady() || furn.items.length)) {
     /* select: click a part of the model or a markup object; in the walk, a click on a floor still takes you there */
     const wr = rayFromEvent(e), pk = pickSelectable(wr, (6 / Math.max(canvas.clientHeight, 1)) * THREE.MathUtils.degToRad(camera.fov));
     const floor = state.view === 'walk' && !locked() && pk.kind !== 'note' && pk.h && pk.h.normal.y > 0.7;
@@ -6611,6 +6863,7 @@ renderer.setAnimationLoop((t, xrFrame) => {
   checkXR(); $('#ver').textContent = APP_VERSION; checkForUpdate(); setInterval(checkForUpdate, 10 * 60 * 1000);
   if (document.fonts?.ready) document.fonts.ready.then(() => { drawPalette(); drawKeyboard(); });
   const recs = (await loadAll()) || [];
+  furnLoad();
   recs.sort((a, b) => (a.order || 0) - (b.order || 0));
   state.models = recs.filter(r => r.id !== 'sample-pavilion').map(r => ({ ...r, built: false }));
   for (const r of recs) if (r.id === 'sample-pavilion') unpersist(r.id);
