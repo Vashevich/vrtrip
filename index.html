@@ -3047,7 +3047,10 @@ function renderFrame() {
   updateGrid(); placeBars();
   const gn = $('#gridnote'), gnOff = state.view !== 'orbit' || isReal() || !(previewGrid.visible || ground.visible) || !shownRecs().length; if (gn.hidden !== gnOff) gn.hidden = gnOff;
   const crease = VIS.edges && !outlineActive();                  // 1-px crease lines only where the outline pass does not run (headset, glasses)
-  if (crease !== lineState) { lineState = crease; for (const r of shownRecs()) for (const m of r.meshes || []) if (m.userData.edges) m.userData.edges.visible = crease; }
+  if (crease !== lineState) {
+    lineState = crease; for (const r of shownRecs()) for (const m of r.meshes || []) if (m.userData.edges) m.userData.edges.visible = crease;
+    furn.g.traverse(o => { if (o.userData.furnEdge) o.visible = crease; });   // болванки: рёбра включены — контур есть, выключены — нет; на экране контур рисует общий проход обводки
+  }
   if (aoActive() || outlineActive() || (screenView() && !COARSE)) {          // computers always go through the composer: SMAA + still-frame AA
     ensureComposer(); gtao.enabled = aoActive(); outlinePass.enabled = outlineActive();
     const still = aaStill(); if (still && !taa.enabled) { taa.accumulateIndex = -1; aa.restart = performance.now(); } renderPass.enabled = !still; taa.enabled = still;
@@ -3956,13 +3959,14 @@ function roomBlank(g, type, w, d, h, color) {
   const geo = new THREE.BufferGeometry();
   geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); geo.setAttribute('color', new THREE.Float32BufferAttribute(col, 3)); geo.computeVertexNormals();
   g.add(new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.95, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1 })));
-  g.add(new THREE.LineSegments(new THREE.BufferGeometry().setAttribute('position', new THREE.Float32BufferAttribute(edges, 3)), FURN_EDGE));
+  const ln = new THREE.LineSegments(new THREE.BufferGeometry().setAttribute('position', new THREE.Float32BufferAttribute(edges, 3)), FURN_EDGE);
+  g.add(ln);
   return g;
 }
 function furnBuild(it) {
   const g = new THREE.Group();
   if (isRoom(it.type)) roomBlank(g, it.type, it.w, it.d, it.h, it.color); else fillBlank(g, it.type, it.w, it.d, it.h, it.color, it.open, it.pose, it.p);
-  g.traverse(o => { if (o.isMesh) { o.castShadow = !isRoom(it.type); o.receiveShadow = true; } else if (o.isLine) o.raycast = () => {}; });
+  g.traverse(o => { if (o.isMesh) { o.castShadow = !isRoom(it.type); o.receiveShadow = true; } else if (o.isLine) { o.raycast = () => {}; o.userData.furnEdge = true; o.visible = !!lineState; } });   // контур болванки — по галочке «Линии рёбер», как у моделей
   furnPose(it, g); g.visible = it.shown !== false; g.userData.furnId = it.id;
   return g;
 }
