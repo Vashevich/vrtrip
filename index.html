@@ -2614,22 +2614,26 @@ function renderList() {
     });
     li.append(pick, del); ul.append(li);
   });
-  for (const it of furn.items) {                                     // мебель — в том же списке, с той же галочкой
+  // мебель — по группам каталога (Сергей, 17.11.2026): одна галочка на все стулья, все столы, все комнаты
+  const CAT_NAME = Object.fromEntries([...FURN_CATS, ['rooms', 'Комнаты']]), groups = new Map();
+  for (const it of furn.items) { const c = furnDef(it.type)?.cat || 'decor'; if (!groups.has(c)) groups.set(c, []); groups.get(c).push(it); }
+  for (const [c, items] of [...groups].sort((x, y) => (x[0] === 'rooms') - (y[0] === 'rooms'))) {   // комнаты — последними
+    const on = items.filter(i => i.shown !== false).length, label = CAT_NAME[c] || 'Мебель';
     const li = document.createElement('li');
     const pick = document.createElement('button'); pick.type = 'button'; pick.className = 'pick';
-    pick.setAttribute('aria-pressed', String(it.shown !== false)); pick.title = it.shown !== false ? 'В сцене — нажмите, чтобы убрать' : 'Нажмите, чтобы вернуть в сцену';
+    pick.setAttribute('aria-pressed', String(on > 0)); pick.title = on ? 'В сцене — нажмите, чтобы убрать всю группу' : 'Нажмите, чтобы вернуть группу в сцену';
     const box = document.createElement('span'); box.className = 'box'; box.setAttribute('aria-hidden', 'true');
-    const n = document.createElement('span'); n.className = 'name'; n.textContent = it.name;
+    const n = document.createElement('span'); n.className = 'name'; n.textContent = label;
     const meta = document.createElement('span'); meta.className = 'meta';
-    meta.textContent = `мебель · ${Math.round(it.w * 100)} × ${Math.round(it.d * 100)} × ${Math.round(it.h * 100)} см`;
+    meta.textContent = `мебель · ${items.length} шт.` + (on && on < items.length ? ` · видно ${on}` : '');
     const txt = document.createElement('span'); txt.className = 'ptxt'; txt.append(n, meta);
     pick.append(box, txt);
-    pick.addEventListener('click', () => furnToggle(it.id));
+    pick.addEventListener('click', () => furnToggleGroup(items.map(i => i.id), !on));
     const del = document.createElement('button'); del.type = 'button'; del.className = 'del'; del.textContent = '×';
-    del.setAttribute('aria-label', `Удалить «${it.name}»`);
+    del.setAttribute('aria-label', `Удалить группу «${label}»`);
     del.addEventListener('click', () => {
-      if (del.classList.contains('armed')) { furnRemove(it.id); return; }
-      del.classList.add('armed'); del.textContent = 'Удалить?';
+      if (del.classList.contains('armed')) { furnRemoveGroup(items.map(i => i.id)); return; }
+      del.classList.add('armed'); del.textContent = `Удалить все ${items.length}?`;
       setTimeout(() => { if (del.isConnected) { del.classList.remove('armed'); del.textContent = '×'; } }, 3000);
     });
     li.append(pick, del); ul.append(li);
@@ -2879,8 +2883,10 @@ const COARSE = matchMedia('(pointer:coarse)').matches;
 function screenView() { return (state.view === 'orbit' || state.view === 'walk') && !cb.on && !renderer.xr.isPresenting; }
 function aoActive() { return VIS.ao && screenView(); }
 function outlineActive() { return VIS.edges && screenView(); }
-/* screen-space outline: edges from a normal + depth pass, ~2 px thick and smooth — catches the silhouettes of round things
-   (columns, pipes) that crease lines miss, and does not shimmer like 1-px lines */
+/* screen-space outline: edges from a normal + depth pass, ~1.5 px thick and smooth — catches the silhouettes of round things
+   (columns, pipes) that crease lines miss, and does not shimmer like 1-px lines.
+   On a computer screen with 1 pixel per point the normal + depth pass is drawn at twice the size (4 samples per pixel),
+   so slanted lines come out smooth, without stair-steps (Сергей, 17.11.2026: «тоньше и без лесенки») */
 class ModelOutlinePass extends Pass {
   constructor() {
     super();
@@ -2917,14 +2923,14 @@ class ModelOutlinePass extends Pass {
     // pass 2: edges from the cleaned buffer, drawn over the colour
     this.mat = new THREE.ShaderMaterial({
       defines: { TAPS: matchMedia('(pointer:coarse)').matches ? 1 : 4 },          // phones: one tap, SMAA smooths the rest
-      uniforms: { tDiffuse: { value: null }, tClean: { value: null }, tNormal: { value: null }, tDepth: { value: null }, res: { value: new THREE.Vector2(1, 1) }, near: { value: 0.1 }, far: { value: 1000 }, thick: { value: 1 }, ink: { value: new THREE.Color(0x1f2327) }, strength: { value: 0.9 } },
+      uniforms: { tDiffuse: { value: null }, tClean: { value: null }, tNormal: { value: null }, tDepth: { value: null }, res: { value: new THREE.Vector2(1, 1) }, near: { value: 0.1 }, far: { value: 1000 }, thick: { value: 1 }, tap: { value: 0.45 }, ink: { value: new THREE.Color(0x1f2327) }, strength: { value: 0.9 } },
       vertexShader: VS,
       fragmentShader: LIN + `
-        uniform sampler2D tDiffuse, tClean; uniform float thick, strength; uniform vec3 ink; varying vec2 vUv;
+        uniform sampler2D tDiffuse, tClean; uniform float thick, tap, strength; uniform vec3 ink; varying vec2 vUv;
         vec4 C(vec2 uv){ return texture2D(tClean, uv); }
-        float edgeAt(vec2 uv){
+        float edgeT(vec2 uv, float t){
           vec4 c0 = C(uv); float d0 = c0.a; vec3 n0 = c0.xyz; float e = 0.0;
-          vec2 px = thick / res;
+          vec2 px = t / res;
           vec2 o[4]; o[0] = vec2(px.x, 0.0); o[1] = vec2(0.0, px.y); o[2] = vec2(px.x, px.y); o[3] = vec2(px.x, -px.y);
           for (int i = 0; i < 4; i++) {
             vec4 A = C(uv + o[i]), B = C(uv - o[i]);
@@ -2934,10 +2940,15 @@ class ModelOutlinePass extends Pass {
           }
           return e;
         }
+        float edgeAt(vec2 uv){                                  // fractional thickness: mix of the two whole-texel widths around it
+          float lo = max(1.0, floor(thick)), f = clamp(thick - lo, 0.0, 1.0);
+          float e = edgeT(uv, lo);
+          return f > 0.01 ? mix(e, edgeT(uv, lo + 1.0), f) : e;
+        }
         void main(){
           vec4 c = texture2D(tDiffuse, fill(vUv));                // the crack pixel takes its neighbour's colour too
           #if TAPS > 1
-          vec2 h = 0.45 / res;                                  // 4 sub-pixel taps → the line gets real coverage, no stair-steps
+          vec2 h = tap / res;                                   // 4 sub-pixel taps (with the double-size pass — one per texel) → the line gets real coverage
           float e = 0.25 * (edgeAt(vUv + vec2(-h.x, -h.y * 0.3)) + edgeAt(vUv + vec2(h.x, h.y * 0.3)) + edgeAt(vUv + vec2(h.x * 0.3, -h.y)) + edgeAt(vUv + vec2(-h.x * 0.3, h.y)));
           #else
           float e = edgeAt(vUv);
@@ -2947,7 +2958,14 @@ class ModelOutlinePass extends Pass {
     });
     this.quad = new FullScreenQuad(this.mat); this.cleanQuad = new FullScreenQuad(this.cleanMat);
   }
-  setSize(w, h) { this.rt.setSize(w, h); this.clean.setSize(w, h); this.mat.uniforms.res.value.set(w, h); this.cleanMat.uniforms.res.value.set(w, h); }
+  setSize(w, h) {
+    const pr = renderer.getPixelRatio();
+    this.ss = !COARSE && pr < 1.5 ? 2 : 1;                   // 1 pixel per point: draw normals + depth at double size
+    const W = Math.round(w * this.ss), H = Math.round(h * this.ss);
+    this.rt.setSize(W, H); this.clean.setSize(W, H); this.mat.uniforms.res.value.set(W, H); this.cleanMat.uniforms.res.value.set(W, H);
+    this.mat.uniforms.thick.value = 0.75 * pr * this.ss;     // ≈1.5 points wide on any screen
+    this.mat.uniforms.tap.value = this.ss === 2 ? 0.5 : 0.45;
+  }
   render(renderer, writeBuffer, readBuffer) {
     const hide = [sky, sunDisc, ground, previewGrid, catcher, gizmo, secVis, compass, land.group, ...splatInst, dropInst, ...toy.splats].filter(o => o.visible);   // paint never gets outlined
     const lines = []; for (const r of shownRecs()) for (const m of r.meshes || []) if (m.userData.edges?.visible) lines.push(m.userData.edges);
@@ -2966,7 +2984,7 @@ class ModelOutlinePass extends Pass {
     renderer.setRenderTarget(this.clean); this.cleanQuad.render(renderer);
     const u = this.mat.uniforms;
     u.tDiffuse.value = readBuffer.texture; u.tClean.value = this.clean.texture; u.tNormal.value = this.rt.texture; u.tDepth.value = this.rt.depthTexture;
-    u.near.value = camera.near; u.far.value = camera.far; u.thick.value = Math.max(1, renderer.getPixelRatio());
+    u.near.value = camera.near; u.far.value = camera.far;
     renderer.setRenderTarget(this.renderToScreen ? null : writeBuffer); this.quad.render(renderer);
   }
 }
@@ -4045,6 +4063,16 @@ function furnToggle(id) {
   it.shown = it.shown === false; o.visible = it.shown;
   if (!it.shown && sel?.kind === 'furn' && sel.id === id) clearSelection();
   furnSave(); renderList(); shadowsDirty();
+}
+function furnToggleGroup(ids, show) {                       // галочка группы: показать или убрать все предметы группы
+  for (const id of ids) { const it = furnItem(id), o = furn.objs.get(id); if (!it || !o) continue; it.shown = show; o.visible = show; }
+  if (!show && sel?.kind === 'furn' && ids.includes(sel.id)) clearSelection();
+  furnSave(); renderList(); shadowsDirty();
+}
+function furnRemoveGroup(ids) {
+  if (sel?.kind === 'furn' && ids.includes(sel.id)) clearSelection();
+  for (const id of ids) { const o = furn.objs.get(id); if (o) { o.removeFromParent(); o.traverse(x => x.geometry?.dispose()); furn.objs.delete(id); } }
+  furn.items = furn.items.filter(i => !ids.includes(i.id)); furnSave(); renderList(); shadowsDirty();
 }
 function furnRemove(id) {
   if (sel?.kind === 'furn' && sel.id === id) clearSelection();
