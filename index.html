@@ -1029,7 +1029,6 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { GTAOPass } from 'three/addons/postprocessing/GTAOPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { SMAAPass } from 'three/addons/postprocessing/SMAAPass.js';
-import { TAARenderPass } from 'three/addons/postprocessing/TAARenderPass.js';
 import { LineSegments2 } from 'three/addons/lines/LineSegments2.js';
 import { LineSegmentsGeometry } from 'three/addons/lines/LineSegmentsGeometry.js';
 import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
@@ -3038,6 +3037,38 @@ class ModelOutlinePass extends Pass {
   }
 }
 let outlinePass = null;
+/* сглаживание неподвижного кадра (вместо TAARenderPass из three.js, Сергей, 19.11.2026: «мигает, когда не двигаю мышь»):
+   каждый кадр сцена снимается со сдвигом камеры на долю пикселя и усредняется: acc = mix(acc, кадр, 1/(n+1)).
+   Среднее всегда нормировано, поэтому кадр не может потемнеть или посветлеть, как бы ни шли кадры; через 32 кадра накопление стоит */
+class StillAAPass extends Pass {
+  constructor() {
+    super(); this.accumulateIndex = -1;
+    const o = { type: THREE.HalfFloatType };
+    this.sample = new THREE.WebGLRenderTarget(1, 1, { ...o, samples: 4 }); this.acc = [new THREE.WebGLRenderTarget(1, 1, o), new THREE.WebGLRenderTarget(1, 1, o)]; this.cur = 0;
+    const VS = 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }';
+    this.mixQ = new FullScreenQuad(new THREE.ShaderMaterial({ uniforms: { tNew: { value: null }, tPrev: { value: null }, w: { value: 1 } }, vertexShader: VS, depthTest: false, depthWrite: false,
+      fragmentShader: 'uniform sampler2D tNew, tPrev; uniform float w; varying vec2 vUv; void main(){ gl_FragColor = mix(texture2D(tPrev, vUv), texture2D(tNew, vUv), w); }' }));
+    this.copyQ = new FullScreenQuad(new THREE.ShaderMaterial({ uniforms: { t: { value: null } }, vertexShader: VS, depthTest: false, depthWrite: false,
+      fragmentShader: 'uniform sampler2D t; varying vec2 vUv; void main(){ gl_FragColor = texture2D(t, vUv); }' }));
+    const halton = (i, b) => { let f = 1, r = 0; for (; i > 0; i = Math.floor(i / b)) { f /= b; r += f * (i % b); } return r; };
+    this.jit = Array.from({ length: 32 }, (_, i) => (i ? [halton(i, 2) - 0.5, halton(i, 3) - 0.5] : [0, 0]));
+  }
+  setSize(w, h) { this.sample.setSize(w, h); this.acc[0].setSize(w, h); this.acc[1].setSize(w, h); this.accumulateIndex = -1; }
+  render(renderer, writeBuffer, readBuffer) {
+    if (this.accumulateIndex < 0) this.accumulateIndex = 0;
+    const n = this.accumulateIndex;
+    if (n < 32) {
+      const W = this.sample.width, H = this.sample.height, [jx, jy] = this.jit[n];
+      if (n) camera.setViewOffset(W, H, jx, jy, W, H);
+      try { renderer.setRenderTarget(this.sample); renderer.clear(); renderer.render(scene, camera); } finally { if (n) camera.clearViewOffset(); }
+      const u = this.mixQ.material.uniforms, src = this.acc[this.cur], dst = this.acc[1 - this.cur];
+      u.tNew.value = this.sample.texture; u.tPrev.value = src.texture; u.w.value = 1 / (n + 1);
+      renderer.setRenderTarget(dst); this.mixQ.render(renderer); this.cur = 1 - this.cur; this.accumulateIndex = n + 1;
+    }
+    this.copyQ.material.uniforms.t.value = this.acc[this.cur].texture;
+    renderer.setRenderTarget(this.renderToScreen ? null : readBuffer); this.copyQ.render(renderer);
+  }
+}
 function ensureComposer() {
   if (composer) return composer;
   const sz = renderer.getDrawingBufferSize(new THREE.Vector2());
@@ -3046,7 +3077,7 @@ function ensureComposer() {
   renderPass = new RenderPass(scene, camera); composer.addPass(renderPass);
   // when nothing moves, the picture is refined over a few frames from 32 jittered samples — edges come out smooth
   // as on a render, and a still frame costs no more than a moving one
-  taa = new TAARenderPass(scene, camera, 0x000000, 0); taa.sampleLevel = 1; taa.accumulate = true; taa.enabled = false;
+  taa = new StillAAPass(); taa.needsSwap = false; taa.enabled = false;
   composer.addPass(taa);
   gtao = new GTAOPass(scene, camera, sz.x, sz.y);
   { const r0 = gtao.render.bind(gtao); gtao.render = (...a) => { const v = sunDisc.visible; sunDisc.visible = false; try { r0(...a); } finally { sunDisc.visible = v; } }; }
@@ -3072,7 +3103,7 @@ function ensureComposer() {
 }
 function resizeComposer() {
   if (!composer) return; const v = $('#view'); composer.setPixelRatio(renderer.getPixelRatio()); composer.setSize(v.clientWidth, v.clientHeight);
-  const pr = renderer.getPixelRatio(); taa.holdRenderTarget?.setSize(Math.floor(v.clientWidth * pr), Math.floor(v.clientHeight * pr)); taa.accumulateIndex = -1;
+  const pr = renderer.getPixelRatio(); taa.accumulateIndex = -1;
 }
 /* still-frame detection for TAA: anything that changes the picture (camera, model, sun, explode, balls, input) restarts it */
 for (const ev of ['pointermove', 'pointerdown', 'wheel', 'keydown']) addEventListener(ev, () => { aa.input = performance.now(); }, { passive: true, capture: true });
@@ -3091,7 +3122,7 @@ function aaStill() {
   if (weather.on || people.list.length || (sky.visible && CLOAD() > 0)) { aa.still = 0; return false; }
   if (h !== aa.sig || now - aa.input < 200 || toy.flyers.length || drops.length || expl.cur !== expl.target) { aa.sig = h; aa.still = 0; return false; }
   if (++aa.still < 3) return false;
-  if (taa.accumulateIndex >= 32 && now - aa.restart > 2000) { taa.accumulateIndex = -1; aa.restart = now; }   // safety net: refresh every 2 s
+  if (taa.accumulateIndex >= 32 && now - aa.restart > 2000) { taa.accumulateIndex = 8; aa.restart = now; }   // safety net: every 2 s fresh frames blend in gently (weight 1/9 → 1/32), no visible jump
   return true;
 }
 /* UI objects (labels, markers, strokes, previews, gizmo) live on their own layer: with AO on they are drawn after the
