@@ -3060,6 +3060,13 @@ function ensureComposer() {
   composer.addPass(gtao); composer.addPass(outlinePass);
   composer.addPass(fn(() => { capLines.visible = cap.lines; weather.group.visible = weather.on; }));
   composer.addPass(new OutputPass());
+  // экран всегда непрозрачный (Сергей, 19.11.2026: «мигает, как будто перекрашивается»): если хоть один проход оставил
+  // прозрачность в кадре, браузер подмешивал к сцене фон страницы — кадр светлел или желтел. Шлем и AR сюда не попадают
+  composer.addPass(Object.assign(new Pass(), { needsSwap: true, quad: new FullScreenQuad(new THREE.ShaderMaterial({
+    uniforms: { tDiffuse: { value: null } }, depthTest: false, depthWrite: false,
+    vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }',
+    fragmentShader: 'uniform sampler2D tDiffuse; varying vec2 vUv; void main(){ gl_FragColor = vec4(texture2D(tDiffuse, vUv).rgb, 1.0); }' })),
+    render(r, w, rb) { this.quad.material.uniforms.tDiffuse.value = rb.texture; r.setRenderTarget(this.renderToScreen ? null : w); this.quad.render(r); } }));
   composer.addPass(new SMAAPass(sz.x, sz.y));      // post passes work per pixel — smooth the stair-steps on outlines and edges
   resizeComposer(); return composer;
 }
