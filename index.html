@@ -7063,6 +7063,8 @@ async function checkForUpdate() {
 }
 $('#upd-btn').addEventListener('click', () => location.replace(location.pathname + '?v=' + Date.now()));
 /* ================= loop & startup ================= */
+// ?debug в адресе — служебный доступ для разбора ошибок (кадр, сглаживание, обводка); обычным пользователям не виден
+if (new URLSearchParams(location.search).has('debug')) window.__vr = { renderer, scene, camera, state, VIS, prefs, aa, get taa() { return taa; }, get composer() { return composer; }, get outlinePass() { return outlinePass; }, get renderPass() { return renderPass; }, get gtao() { return gtao; } };
 const clock = new THREE.Clock();
 renderer.setAnimationLoop((t, xrFrame) => {
   const dt = Math.min(clock.getDelta(), 0.1);
