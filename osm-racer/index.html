@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>OSM Racer — гонки по улицам твоего города</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;overflow:hidden;background:#10162c;color:#fff;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;touch-action:none;user-select:none;-webkit-user-select:none}
+#c{position:fixed;inset:0;width:100%;height:100%;display:block}
+.hidden{display:none!important}
+.panel{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:min(440px,92vw);max-height:92vh;overflow:auto;padding:22px;border-radius:20px;background:rgba(14,19,40,.88);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(120,150,255,.25);box-shadow:0 20px 60px rgba(0,0,0,.5);z-index:10}
+.panel h1{margin:0 0 4px;font-size:26px}
+.sub{margin:0 0 14px;color:#a9b4d8;font-size:14px;line-height:1.4}
+#addr{width:100%;padding:13px 14px;border-radius:12px;border:1px solid #3a4680;background:#0b1024;color:#fff;font-size:16px;outline:none;user-select:text;-webkit-user-select:text}
+#addr:focus{border-color:#5f7bff}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}
+.chips button,.row button,.row select{font:inherit;font-size:13px;color:#cfd8ff;background:#1b2350;border:1px solid #33407f;border-radius:999px;padding:7px 12px;cursor:pointer}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
+.row select{border-radius:10px}
+label{display:flex;gap:8px;align-items:center;font-size:14px;color:#cfd8ff;margin-bottom:14px}
+.primary{width:100%;padding:14px;border:0;border-radius:12px;font-size:17px;font-weight:700;color:#fff;background:linear-gradient(135deg,#ff4d4d,#ff8a3d);cursor:pointer}
+.secondary{width:100%;margin-top:8px;padding:12px;border-radius:12px;font-size:15px;color:#cfd8ff;background:#1b2350;border:1px solid #33407f;cursor:pointer}
+#status{min-height:20px;margin-top:10px;font-size:13px;color:#ffd27a}
+.help{margin-top:12px;font-size:12px;color:#8b97c4;line-height:1.5}
+#hud{position:fixed;inset:0;pointer-events:none;z-index:5}
+#topl{position:absolute;left:12px;top:12px;font-size:20px;line-height:1.5;text-shadow:0 2px 6px #000}
+#topl b{font-size:26px}
+#mm{position:absolute;right:12px;top:12px;width:140px;height:140px;border-radius:50%;border:2px solid rgba(160,180,255,.5);box-shadow:0 4px 18px rgba(0,0,0,.5)}
+#arrowbox{position:absolute;left:50%;top:10px;transform:translateX(-50%);text-align:center;text-shadow:0 2px 6px #000;font-size:15px}
+#arrow{width:38px;height:38px;fill:#37e6ff;filter:drop-shadow(0 0 6px #37e6ff)}
+#bottom{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);text-align:center;text-shadow:0 2px 8px #000}
+#spd{font-size:54px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums}
+#bottom small{display:block;color:#b9c4ee;margin-top:2px}
+#nbar{width:140px;height:8px;border-radius:5px;background:rgba(255,255,255,.18);margin:6px auto 0;overflow:hidden}
+#nfill{display:block;height:100%;width:100%;background:linear-gradient(90deg,#37e6ff,#6b8bff)}
+.ib{position:absolute;pointer-events:auto;width:38px;height:38px;border-radius:50%;border:1px solid rgba(160,180,255,.45);background:rgba(14,19,40,.6);color:#fff;font-size:18px;cursor:pointer}
+#toast{position:fixed;left:50%;top:26%;transform:translateX(-50%);font-size:30px;font-weight:800;text-shadow:0 3px 12px #000;opacity:0;pointer-events:none;z-index:6;text-align:center;white-space:nowrap}
+#toast.show{animation:pop 1.6s ease-out}
+@keyframes pop{0%{opacity:0;transform:translateX(-50%) scale(.7)}12%{opacity:1;transform:translateX(-50%) scale(1.1)}70%{opacity:1}100%{opacity:0;transform:translateX(-50%) translateY(-24px) scale(1)}}
+#touch{position:fixed;left:0;right:0;bottom:0;padding:12px;display:flex;justify-content:space-between;align-items:flex-end;z-index:7;pointer-events:none}
+#touch .g{display:flex;gap:10px;align-items:flex-end;pointer-events:auto}
+.tb{width:70px;height:70px;border-radius:18px;background:rgba(30,40,90,.55);border:1px solid rgba(160,180,255,.45);display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:700;color:#fff}
+.tb.big{width:96px;height:96px;background:rgba(255,90,60,.55);font-size:20px}
+.tb.sm{width:54px;height:54px;font-size:18px}
+.tb.on{background:rgba(120,150,255,.75)}
+#foot{position:fixed;left:8px;bottom:4px;font-size:10px;color:rgba(200,210,255,.45);z-index:4}
+#foot a{color:inherit}
+#over h2{margin:0 0 6px;font-size:28px}
+#over p{margin:0 0 16px;color:#cfd8ff;font-size:17px}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+
+<div id="menu" class="panel">
+  <h1>🏎️ OSM Racer</h1>
+  <p class="sub">Гонки по настоящим улицам любого города. Дороги и здания берутся из OpenStreetMap прямо при запуске.</p>
+  <input id="addr" placeholder="Адрес или координаты «55.7539, 37.6208»" autocomplete="off" enterkeyhint="go">
+  <div class="chips" id="chips">
+    <button data-q="Красная площадь, Москва">Красная площадь</button>
+    <button data-q="Невский проспект, Санкт-Петербург">Невский</button>
+    <button data-q="Times Square, New York">Нью-Йорк</button>
+    <button data-q="Shibuya Crossing, Tokyo">Токио</button>
+  </div>
+  <div class="row">
+    <button id="geo">📍 Где я</button>
+    <select id="size">
+      <option value="700">Компактно (быстро грузится)</option>
+      <option value="1100" selected>Стандарт</option>
+      <option value="1800">Большой район</option>
+    </select>
+  </div>
+  <label><input type="checkbox" id="free"> Свободная езда без таймера</label>
+  <button id="go" class="primary">Поехали</button>
+  <button id="resume" class="secondary hidden">Продолжить</button>
+  <div id="status"></div>
+  <div class="help">Клавиатура: W/A/S/D или стрелки, Shift — нитро, Пробел — ручник (дрифт). На телефоне — кнопки на экране.<br>Цель: проезжай голубые кольца, за каждое добавляется время.</div>
+</div>
+
+<div id="hud" class="hidden">
+  <div id="topl">⏱ <b id="tm">60</b><br>🏁 <b id="sc">0</b></div>
+  <canvas id="mm" width="280" height="280"></canvas>
+  <div id="arrowbox"><svg id="arrow" viewBox="0 0 24 24"><path d="M12 2 L21 21 L12 16 L3 21Z"/></svg><div id="cd">0 м</div></div>
+  <div id="bottom"><div id="spd">0</div><small>км/ч</small><div id="nbar"><i id="nfill"></i></div></div>
+  <button class="ib" id="menuBtn" style="left:12px;top:100px">☰</button>
+  <button class="ib" id="muteBtn" style="left:58px;top:100px">🔊</button>
+</div>
+
+<div id="toast"></div>
+
+<div id="touch" class="hidden">
+  <div class="g"><div class="tb" data-k="left">◀</div><div class="tb" data-k="right">▶</div></div>
+  <div class="g">
+    <div class="tb sm" data-k="hb">⟲</div>
+    <div class="tb sm" data-k="nitro">N</div>
+    <div class="tb" data-k="down">■</div>
+    <div class="tb big" data-k="up">ГАЗ</div>
+  </div>
+</div>
+
+<div id="over" class="panel hidden">
+  <h2>Время вышло!</h2>
+  <p id="overTxt"></p>
+  <button id="again" class="primary">Ещё раз здесь</button>
+  <button id="newplace" class="secondary">Другое место</button>
+</div>
+
+<div id="foot">Карта © участники <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+'use strict';
+/* ================= утилиты ================= */
+const $ = id => document.getElementById(id);
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const wrap = a => { while (a > Math.PI) a -= 2 * Math.PI; while (a < -Math.PI) a += 2 * Math.PI; return a; };
+
+/* ================= сцена ================= */
+const SKY = 0x10162c;
+const renderer = new THREE.WebGLRenderer({ canvas: $('c'), antialias: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(SKY);
+scene.fog = new THREE.Fog(SKY, 140, 700);
+const camera = new THREE.PerspectiveCamera(65, 1, 0.5, 1600);
+function resize() {
+  const w = window.innerWidth, h = window.innerHeight;
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+}
+window.addEventListener('resize', resize); resize();
+
+scene.add(new THREE.HemisphereLight(0xaab4e8, 0x2a2e3a, 0.85));
+const moon = new THREE.DirectionalLight(0xc8d0ff, 0.55);
+moon.position.set(-200, 300, 100);
+scene.add(moon);
+
+// звёзды
+const stars = (() => {
+  const p = [];
+  for (let i = 0; i < 600; i++) {
+    const a = Math.random() * Math.PI * 2, e = 0.08 + Math.random() * 1.3, r = 1300;
+    p.push(r * Math.cos(e) * Math.cos(a), r * Math.sin(e), r * Math.cos(e) * Math.sin(a));
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(p, 3));
+  const m = new THREE.Points(g, new THREE.PointsMaterial({ color: 0xffffff, size: 2, sizeAttenuation: false, fog: false }));
+  m.frustumCulled = false;
+  scene.add(m);
+  return m;
+})();
+
+// земля
+const ground = new THREE.Mesh(
+  new THREE.PlaneGeometry(9000, 9000),
+  new THREE.MeshLambertMaterial({ color: 0x232a33 })
+);
+ground.rotation.x = -Math.PI / 2;
+scene.add(ground);
+
+// текстуры окон (стены + светящиеся окна)
+function makeWindowTextures() {
+  const N = 4, S = 32;
+  const pattern = [];
+  for (let i = 0; i < N * N; i++) pattern.push(Math.random() < 0.38 ? (Math.random() < 0.5 ? '#ffd88a' : '#bcd7ff') : null);
+  const mk = emissive => {
+    const c = document.createElement('canvas'); c.width = c.height = N * S;
+    const g = c.getContext('2d');
+    g.fillStyle = emissive ? '#000' : '#9aa3b8'; g.fillRect(0, 0, c.width, c.height);
+    for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) {
+      const lit = pattern[i * N + j];
+      g.fillStyle = emissive ? (lit || '#000') : (lit ? '#ffe9b0' : '#1d2438');
+      g.fillRect(i * S + 7, j * S + 8, 18, 15);
+    }
+    const t = new THREE.CanvasTexture(c);
+    t.wrapS = t.wrapT = THREE.RepeatWrapping;
+    t.anisotropy = 4;
+    return t;
+  };
+  return { map: mk(false), emi: mk(true) };
+}
+const WT = makeWindowTextures();
+const wallMat = new THREE.MeshLambertMaterial({ map: WT.map, emissiveMap: WT.emi, emissive: 0xffffff, emissiveIntensity: 0.85, vertexColors: true, side: THREE.DoubleSide });
+const roofMat = new THREE.MeshLambertMaterial({ color: 0x343a4a, side: THREE.DoubleSide });
+const roadMat = new THREE.MeshLambertMaterial({ color: 0x6a7283, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
+const lineMat = new THREE.MeshBasicMaterial({ color: 0xc9b86a, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4 });
+
+/* ================= машина ================= */
+const carBodyMat = new THREE.MeshLambertMaterial({ color: 0xe23b3b });
+const tailMat = new THREE.MeshBasicMaterial({ color: 0x992020 });
+const carGroup = new THREE.Group();
+let carBody;
+(function () {
+  carBody = new THREE.Group();
+  const body = new THREE.Mesh(new THREE.BoxGeometry(1.9, 0.6, 4.4), carBodyMat); body.position.y = 0.68;
+  const cab = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.5, 2.1), new THREE.MeshLambertMaterial({ color: 0x1a2030 })); cab.position.set(0, 1.22, -0.25);
+  const spoiler = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.08, 0.4), carBodyMat); spoiler.position.set(0, 1.15, -2.1);
+  carBody.add(body, cab, spoiler);
+  const wm = new THREE.MeshLambertMaterial({ color: 0x111111 });
+  [[-0.95, 1.4], [0.95, 1.4], [-0.95, -1.4], [0.95, -1.4]].forEach(([x, z]) => {
+    const w = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.4, 0.32, 14), wm);
+    w.rotation.z = Math.PI / 2; w.position.set(x, 0.4, z); carBody.add(w);
+  });
+  const hm = new THREE.MeshBasicMaterial({ color: 0xfff3c0 });
+  [-0.65, 0.65].forEach(x => {
+    const h = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.2, 0.06), hm); h.position.set(x, 0.75, 2.2); carBody.add(h);
+    const t = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.2, 0.06), tailMat); t.position.set(x, 0.75, -2.2); carBody.add(t);
+  });
+  carGroup.add(carBody);
+  const spot = new THREE.SpotLight(0xfff0d0, 1.6, 110, 0.55, 0.5, 1);
+  spot.position.set(0, 0.9, 2);
+  spot.target.position.set(0, 0, 28);
+  carGroup.add(spot, spot.target);
+})();
+scene.add(carGroup);
+
+/* ================= контрольные точки ================= */
+const cpGroup = new THREE.Group();
+const cpRing = new THREE.Mesh(new THREE.TorusGeometry(6, 0.5, 8, 32), new THREE.MeshBasicMaterial({ color: 0x37e6ff, fog: false }));
+cpRing.position.y = 6.5;
+const cpBeam = new THREE.Mesh(
+  new THREE.CylinderGeometry(4.5, 4.5, 140, 24, 1, true),
+  new THREE.MeshBasicMaterial({ color: 0x37e6ff, transparent: true, opacity: 0.22, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, fog: false })
+);
+cpBeam.position.y = 70;
+const cpBase = new THREE.Mesh(new THREE.RingGeometry(7, 10, 32), new THREE.MeshBasicMaterial({ color: 0x37e6ff, transparent: true, opacity: 0.6, side: THREE.DoubleSide }));
+cpBase.rotation.x = -Math.PI / 2; cpBase.position.y = 0.15;
+cpGroup.add(cpRing, cpBeam, cpBase);
+cpGroup.visible = false;
+scene.add(cpGroup);
+
+/* ================= город из OSM ================= */
+const ROAD = { motorway: 14, motorway_link: 8, trunk: 13, trunk_link: 8, primary: 12, primary_link: 8, secondary: 10, secondary_link: 7, tertiary: 9, tertiary_link: 7, unclassified: 7.5, residential: 7.5, living_street: 6, service: 4.5 };
+const RC = 40, BC = 40;
+const gkey = (cx, cz) => (cx + 10000) * 20000 + (cz + 10000);
+function gridAdd(map, cell, minx, minz, maxx, maxz, item) {
+  const i0 = Math.floor(minx / cell), i1 = Math.floor(maxx / cell), j0 = Math.floor(minz / cell), j1 = Math.floor(maxz / cell);
+  for (let i = i0; i <= i1; i++) for (let j = j0; j <= j1; j++) {
+    const k = gkey(i, j); let l = map.get(k);
+    if (!l) { l = []; map.set(k, l); }
+    l.push(item);
+  }
+}
+function addQuad(pos, idx, ax, az, bx, bz, cx, cz, ex, ez) {
+  const b = pos.length / 3;
+  pos.push(ax, 0, az, bx, 0, bz, cx, 0, cz, ex, 0, ez);
+  idx.push(b, b + 1, b + 2, b, b + 2, b + 3);
+}
+function pip(p, x, z) {
+  let inside = false;
+  for (let i = 0, j = p.length - 2; i < p.length; j = i, i += 2) {
+    const xi = p[i], zi = p[i + 1], xj = p[j], zj = p[j + 1];
+    if ((zi > z) !== (zj > z) && x < (xj - xi) * (z - zi) / (zj - zi) + xi) inside = !inside;
+  }
+  return inside;
+}
+function distSeg(px, pz, s) {
+  const dx = s.x1 - s.x0, dz = s.z1 - s.z0;
+  const l2 = dx * dx + dz * dz;
+  let t = l2 > 0 ? ((px - s.x0) * dx + (pz - s.z0) * dz) / l2 : 0;
+  t = clamp(t, 0, 1);
+  return Math.hypot(px - (s.x0 + t * dx), pz - (s.z0 + t * dz));
+}
+
+let city = null;
+function disposeCity() {
+  if (!city) return;
+  scene.remove(city.group);
+  city.group.traverse(o => { if (o.geometry) o.geometry.dispose(); });
+  city = null;
+}
+
+function buildCity(elements, lat0, lon0) {
+  const kx = 111320 * Math.cos(lat0 * Math.PI / 180), kz = 110574;
+  const P = g => g.map(n => [(n.lon - lon0) * kx, -(n.lat - lat0) * kz]);
+  const group = new THREE.Group();
+  const segs = [], rGrid = new Map(), bGrid = new Map(), cpPts = [];
+  const rp = [], ri = [], lp = [], li = [];
+  const wp = [], wuv = [], wcol = [], rfp = [];
+  const col = new THREE.Color();
+  let nb = 0, nr = 0;
+
+  for (const el of elements) {
+    if (el.type !== 'way' || !el.geometry || el.geometry.length < 2 || !el.tags) continue;
+    const t = el.tags;
+
+    if (t.highway && ROAD[t.highway] !== undefined && t.area !== 'yes') {
+      const hw = ROAD[t.highway] / 2, pts = P(el.geometry);
+      nr++;
+      for (let i = 0; i < pts.length - 1; i++) {
+        const x0 = pts[i][0], z0 = pts[i][1], x1 = pts[i + 1][0], z1 = pts[i + 1][1];
+        const dx = x1 - x0, dz = z1 - z0, len = Math.hypot(dx, dz);
+        if (len < 0.3) continue;
+        const ux = dx / len, uz = dz / len, nx = -uz, nz = ux;
+        const ext = Math.min(hw * 0.7, len * 0.5);
+        addQuad(rp, ri,
+          x0 - ux * ext + nx * hw, z0 - uz * ext + nz * hw,
+          x0 - ux * ext - nx * hw, z0 - uz * ext - nz * hw,
+          x1 + ux * ext - nx * hw, z1 + uz * ext - nz * hw,
+          x1 + ux * ext + nx * hw, z1 + uz * ext + nz * hw);
+        if (hw >= 3.5) {
+          const lw = 0.13, e2 = 0.06;
+          addQuad(lp, li,
+            x0 - ux * e2 + nx * lw, z0 - uz * e2 + nz * lw,
+            x0 - ux * e2 - nx * lw, z0 - uz * e2 - nz * lw,
+            x1 + ux * e2 - nx * lw, z1 + uz * e2 - nz * lw,
+            x1 + ux * e2 + nx * lw, z1 + uz * e2 + nz * lw);
+        }
+        const s = { x0, z0, x1, z1, hw, f: 0 };
+        segs.push(s);
+        gridAdd(rGrid, RC, Math.min(x0, x1), Math.min(z0, z1), Math.max(x0, x1), Math.max(z0, z1), s);
+      }
+      if (hw >= 3.5) for (let i = 0; i < pts.length; i++) cpPts.push(pts[i]);
+
+    } else if (t.building && nb < 3000) {
+      let pts = P(el.geometry);
+      const f = pts[0], l = pts[pts.length - 1];
+      if (Math.abs(f[0] - l[0]) < 0.01 && Math.abs(f[1] - l[1]) < 0.01) pts.pop();
+      if (pts.length < 3) continue;
+      let area = 0;
+      for (let i = 0; i < pts.length; i++) { const a = pts[i], b = pts[(i + 1) % pts.length]; area += a[0] * b[1] - b[0] * a[1]; }
+      if (Math.abs(area) < 30) continue;
+      let h = parseFloat(t.height);
+      if (!(h > 0)) h = parseFloat(t['building:levels']) * 3.2;
+      if (!(h > 0)) h = 8 + (((el.id * 7919) % 10007) / 10007) ** 2 * 22;
+      h = clamp(h, 3, 140);
+      nb++;
+      col.setHSL(0.6, 0.12, 0.5 + (((el.id * 31) % 97) / 97) * 0.3);
+      // стены
+      let s = 0;
+      for (let i = 0; i < pts.length; i++) {
+        const a = pts[i], b = pts[(i + 1) % pts.length];
+        const el2 = Math.hypot(b[0] - a[0], b[1] - a[1]);
+        const u0 = s / 14, u1 = (s + el2) / 14, v = h / 12.8;
+        wp.push(a[0], 0, a[1], b[0], 0, b[1], b[0], h, b[1], a[0], 0, a[1], b[0], h, b[1], a[0], h, a[1]);
+        wuv.push(u0, 0, u1, 0, u1, v, u0, 0, u1, v, u0, v);
+        for (let k = 0; k < 6; k++) wcol.push(col.r, col.g, col.b);
+        s += el2;
+      }
+      // крыша
+      let tri = [];
+      try { tri = THREE.ShapeUtils.triangulateShape(pts.map(p => new THREE.Vector2(p[0], p[1])), []); } catch (err) { tri = []; }
+      for (const f3 of tri) for (let k = 0; k < 3; k++) rfp.push(pts[f3[k]][0], h, pts[f3[k]][1]);
+      // коллизии
+      const flat = []; let minx = 1e9, maxx = -1e9, minz = 1e9, maxz = -1e9;
+      for (const p of pts) { flat.push(p[0], p[1]); minx = Math.min(minx, p[0]); maxx = Math.max(maxx, p[0]); minz = Math.min(minz, p[1]); maxz = Math.max(maxz, p[1]); }
+      gridAdd(bGrid, BC, minx, minz, maxx, maxz, { p: flat, minx, maxx, minz, maxz });
+    }
+  }
+  if (!nr) throw new Error('В этом месте OSM не вернул дорог. Попробуй другой адрес.');
+
+  const mkGeo = (pos, idx, uv, colr) => {
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    if (uv) g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+    if (colr) g.setAttribute('color', new THREE.Float32BufferAttribute(colr, 3));
+    if (idx) g.setIndex(idx);
+    g.computeVertexNormals();
+    return g;
+  };
+  group.add(new THREE.Mesh(mkGeo(rp, ri), roadMat));
+  if (lp.length) group.add(new THREE.Mesh(mkGeo(lp, li), lineMat));
+  if (wp.length) {
+    group.add(new THREE.Mesh(mkGeo(wp, null, wuv, wcol), wallMat));
+    group.add(new THREE.Mesh(mkGeo(rfp, null), roofMat));
+  }
+  group.traverse(o => { if (o.isMesh) o.frustumCulled = false; });
+  scene.add(group);
+
+  // старт: ближайшая к центру нормальная дорога
+  let best = null, bd = 1e9;
+  for (const s of segs) {
+    if (s.hw < 3) continue;
+    const d = distSeg(0, 0, s);
+    if (d < bd) { bd = d; best = s; }
+  }
+  if (!best) best = segs[0];
+  const dx = best.x1 - best.x0, dz = best.z1 - best.z0, l2 = dx * dx + dz * dz;
+  const tt = clamp(((0 - best.x0) * dx + (0 - best.z0) * dz) / l2, 0, 1);
+  const spawn = { x: best.x0 + tt * dx, z: best.z0 + tt * dz, h: Math.atan2(dx, dz) };
+
+  return { group, segs, rGrid, bGrid, cpPts, spawn, nb, nr };
+}
+
+function roadDist(x, z) { // расстояние до края ближайшей дороги (<=0 — на дороге)
+  let best = 1e9;
+  const cx = Math.floor(x / RC), cz = Math.floor(z / RC);
+  for (let i = -1; i <= 1; i++) for (let j = -1; j <= 1; j++) {
+    const l = city.rGrid.get(gkey(cx + i, cz + j));
+    if (!l) continue;
+    for (const s of l) { const d = distSeg(x, z, s) - s.hw; if (d < best) best = d; }
+  }
+  return best;
+}
+function inBuilding(x, z) {
+  const l = city.bGrid.get(gkey(Math.floor(x / BC), Math.floor(z / BC)));
+  if (!l) return false;
+  for (const b of l) {
+    if (x < b.minx || x > b.maxx || z < b.minz || z > b.maxz) continue;
+    if (pip(b.p, x, z)) return true;
+  }
+  return false;
+}
+const CAR_PTS = [[0, 0], [0.95, 2.2], [-0.95, 2.2], [0.95, -2.2], [-0.95, -2.2], [0, 2.2], [0, -2.2], [0.95, 0], [-0.95, 0]];
+function hitsBuilding(x, z, h) {
+  const fx = Math.sin(h), fz = Math.cos(h), rx = -fz, rz = fx;
+  for (const [a, b] of CAR_PTS) if (inBuilding(x + rx * a + fx * b, z + rz * a + fz * b)) return true;
+  return false;
+}
+
+/* ================= Overpass / геокодер ================= */
+const OVERPASS = [
+  'https://overpass-api.de/api/interpreter',
+  'https://overpass.kumi.systems/api/interpreter',
+  'https://maps.mail.ru/osm/tools/overpass/api/interpreter'
+];
+function fetchTimeout(url, opt, ms) {
+  // без AbortController: во встроенных просмотрщиках сигнал нельзя передать (DataCloneError)
+  return Promise.race([
+    fetch(url, opt),
+    new Promise((_, rej) => setTimeout(() => rej(new Error('Сервер не отвечает')), ms))
+  ]);
+}
+async function geocode(q) {
+  const m = q.match(/^\s*(-?\d+(?:[.,]\d+)?)\s*[,;\s]\s*(-?\d+(?:[.,]\d+)?)\s*$/);
+  if (m) return { lat: parseFloat(m[1].replace(',', '.')), lon: parseFloat(m[2].replace(',', '.')), name: 'точка ' + q.trim() };
+  const r = await fetchTimeout('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&accept-language=ru&q=' + encodeURIComponent(q), {}, 15000);
+  if (!r.ok) throw new Error('Геокодер недоступен (' + r.status + ')');
+  const j = await r.json();
+  if (!j.length) throw new Error('Адрес не найден. Попробуй уточнить или ввести координаты.');
+  return { lat: parseFloat(j[0].lat), lon: parseFloat(j[0].lon), name: j[0].display_name.split(',').slice(0, 2).join(',') };
+}
+async function loadOSM(lat, lon, R) {
+  const B = Math.min(R, 500);
+  const hw = 'motorway|motorway_link|trunk|trunk_link|primary|primary_link|secondary|secondary_link|tertiary|tertiary_link|unclassified|residential|living_street|service';
+  const q = `[out:json][timeout:40];(way["highway"~"^(${hw})$"](around:${R},${lat},${lon});way["building"](around:${B},${lat},${lon}););out geom qt;`;
+  let lastErr;
+  for (const url of OVERPASS) {
+    try {
+      setStatus('Загружаю дороги и дома…');
+      const r = await fetchTimeout(url, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: 'data=' + encodeURIComponent(q) }, 45000);
+      if (!r.ok) throw new Error('Overpass ' + r.status);
+      const j = await r.json();
+      if (!j.elements) throw new Error('Пустой ответ');
+      return j.elements;
+    } catch (e) { lastErr = e; setStatus('Сервер занят, пробую другой…'); }
+  }
+  throw new Error('Не удалось загрузить карту: ' + (lastErr && lastErr.message));
+}
+
+/* ================= состояние игры ================= */
+const keys = { left: false, right: false, up: false, down: false, nitro: false, hb: false };
+let state = 'menu';
+let lastPlace = null;
+const car = { x: 0, z: 0, h: 0, vx: 0, vz: 0, steer: 0 };
+let camH = 0, shake = 0, nitro = 100, timeLeft = 60, score = 0, started = false, freeMode = false;
+let cp = null, cpDist = 0, legDist = 300;
+
+function setStatus(s) { $('status').textContent = s || ''; }
+function toast(msg, color) {
+  const t = $('toast'); t.textContent = msg; t.style.color = color || '#fff';
+  t.classList.remove('show'); void t.offsetWidth; t.classList.add('show');
+}
+
+function nextCheckpoint(fromX, fromZ) {
+  const pts = city.cpPts;
+  let cand = pts.filter(p => { const d = Math.hypot(p[0] - fromX, p[1] - fromZ); return d > 180 && d < 460; });
+  if (!cand.length) cand = pts.filter(p => Math.hypot(p[0] - fromX, p[1] - fromZ) > 100);
+  if (!cand.length) cand = pts;
+  const p = cand[Math.floor(Math.random() * cand.length)];
+  cp = { x: p[0], z: p[1] };
+  legDist = Math.hypot(p[0] - fromX, p[1] - fromZ);
+  cpGroup.position.set(cp.x, 0, cp.z);
+  cpGroup.visible = true;
+}
+
+function resetRun() {
+  const s = city.spawn;
+  Object.assign(car, { x: s.x, z: s.z, h: s.h, vx: 0, vz: 0, steer: 0 });
+  camH = s.h; nitro = 100; score = 0; shake = 0;
+  timeLeft = 60; started = false;
+  $('sc').textContent = '0';
+  $('tm').textContent = freeMode ? '∞' : '60';
+  nextCheckpoint(s.x, s.z);
+  state = 'play';
+  $('over').classList.add('hidden');
+  toast('Жми газ!', '#37e6ff');
+}
+
+async function startGame() {
+  const q = $('addr').value.trim();
+  if (!q) { setStatus('Введи адрес или нажми «Где я».'); return; }
+  freeMode = $('free').checked;
+  $('go').disabled = true;
+  initAudio();
+  try {
+    setStatus('Ищу место…');
+    const place = await geocode(q);
+    const R = parseInt($('size').value, 10);
+    const els = await loadOSM(place.lat, place.lon, R);
+    setStatus('Строю город…');
+    await new Promise(r => setTimeout(r, 30));
+    disposeCity();
+    city = buildCity(els, place.lat, place.lon);
+    lastPlace = place;
+    setStatus('');
+    showPlay();
+    resetRun();
+    toast(place.name, '#ffd27a');
+  } catch (e) {
+    console.error(e);
+    setStatus('⚠ ' + (e.message || e));
+  } finally { $('go').disabled = false; }
+}
+function showPlay() {
+  if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+  $('menu').classList.add('hidden');
+  $('over').classList.add('hidden');
+  $('hud').classList.remove('hidden');
+  if (matchMedia('(pointer:coarse)').matches || 'ontouchstart' in window) $('touch').classList.remove('hidden');
+}
+function showMenu() {
+  const wasOver = state === 'over';
+  state = 'menu';
+  $('menu').classList.remove('hidden');
+  $('hud').classList.add('hidden');
+  $('touch').classList.add('hidden');
+  $('resume').classList.toggle('hidden', !city || wasOver);
+  for (const k in keys) keys[k] = false;
+  document.querySelectorAll('.tb').forEach(e => e.classList.remove('on'));
+}
+function gameOver() {
+  state = 'over';
+  for (const k in keys) keys[k] = false;
+  $('overTxt').textContent = 'Пройдено пунктов: ' + score;
+  $('over').classList.remove('hidden');
+  $('touch').classList.add('hidden');
+}
+
+/* ================= звук ================= */
+let actx = null, osc = null, gain = null, filt = null, muted = false;
+function initAudio() {
+  if (actx) { if (actx.state === 'suspended') actx.resume(); return; }
+  try {
+    actx = new (window.AudioContext || window.webkitAudioContext)();
+    osc = actx.createOscillator(); osc.type = 'sawtooth';
+    filt = actx.createBiquadFilter(); filt.type = 'lowpass'; filt.frequency.value = 500;
+    gain = actx.createGain(); gain.gain.value = 0;
+    osc.connect(filt); filt.connect(gain); gain.connect(actx.destination);
+    osc.start();
+  } catch (e) { actx = null; }
+}
+function updateAudio(speed, throttle) {
+  if (!actx) return;
+  const t = actx.currentTime;
+  osc.frequency.setTargetAtTime(38 + speed * 3.1, t, 0.06);
+  filt.frequency.setTargetAtTime(380 + speed * 18, t, 0.06);
+  gain.gain.setTargetAtTime(state === 'play' && !muted ? 0.035 + throttle * 0.03 : 0, t, 0.08);
+}
+
+/* ================= физика ================= */
+function step(dt) {
+  const up = keys.up, down = keys.down;
+  if (!started && up) { started = true; }
+
+  // руль
+  const target = (keys.right ? 1 : 0) - (keys.left ? 1 : 0);
+  car.steer += (target - car.steer) * Math.min(1, dt * (target === 0 ? 9 : 5.5));
+
+  // скорость вдоль кузова до поворота
+  let fx = Math.sin(car.h), fz = Math.cos(car.h);
+  let vf = car.vx * fx + car.vz * fz;
+
+  // поворот
+  const sp = Math.abs(vf);
+  let yaw = car.steer * 2.2 * Math.min(1, sp / 5) / (1 + sp / 22);
+  if (keys.hb) yaw *= 1.5;
+  if (vf < 0) yaw = -yaw;
+  car.h -= yaw * dt;
+
+  // новый базис, раскладываем мировую скорость
+  fx = Math.sin(car.h); fz = Math.cos(car.h);
+  const rx = -fz, rz = fx;
+  vf = car.vx * fx + car.vz * fz;
+  let vl = car.vx * rx + car.vz * rz;
+
+  const onRoad = roadDist(car.x, car.z) <= 0.5;
+  const boost = keys.nitro && up && nitro > 1;
+  const vmax = (boost ? 58 : 42) * (onRoad ? 1 : 0.38);
+
+  if (up) vf += 20 * (boost ? 2.2 : 1) * clamp(1 - vf / vmax, 0, 1) * dt;
+  if (down) { if (vf > 0.5) vf -= 40 * dt; else vf = Math.max(vf - 12 * dt, -12); }
+  if (!up && !down) vf -= Math.sign(vf) * Math.min(Math.abs(vf), 3 * dt);
+  vf -= vf * 0.03 * dt;
+  if (!onRoad) vf -= vf * 1.2 * dt;
+  if (keys.hb) vf *= 1 - 0.5 * dt;
+  vl *= Math.exp(-(keys.hb ? 1.0 : 7.5) * dt);
+
+  car.vx = fx * vf + rx * vl;
+  car.vz = fz * vf + rz * vl;
+
+  // нитро
+  if (boost) nitro = Math.max(0, nitro - 38 * dt); else nitro = Math.min(100, nitro + 10 * dt);
+
+  // движение + столкновения
+  const was = hitsBuilding(car.x, car.z, car.h);
+  const nx = car.x + car.vx * dt;
+  if (!was && hitsBuilding(nx, car.z, car.h)) { shake = Math.max(shake, Math.abs(car.vx) * 0.04); car.vx *= -0.25; car.vz *= 0.85; }
+  else car.x = nx;
+  const nz = car.z + car.vz * dt;
+  if (!was && hitsBuilding(car.x, nz, car.h)) { shake = Math.max(shake, Math.abs(car.vz) * 0.04); car.vz *= -0.25; car.vx *= 0.85; }
+  else car.z = nz;
+
+  // таймер
+  if (started && !freeMode) {
+    timeLeft -= dt;
+    if (timeLeft <= 0) { timeLeft = 0; gameOver(); }
+  }
+
+  // чекпоинт
+  cpDist = Math.hypot(cp.x - car.x, cp.z - car.z);
+  if (cpDist < 11) {
+    score++;
+    const bonus = Math.round(clamp(legDist / 9.5, 18, 45));
+    if (!freeMode) timeLeft += bonus;
+    toast(freeMode ? 'Пункт ' + score : '+' + bonus + ' c', '#37e6ff');
+    nextCheckpoint(car.x, car.z);
+  }
+
+  shake *= Math.exp(-6 * dt);
+  const speed = Math.hypot(car.vx, car.vz);
+  updateAudio(speed, up ? 1 : 0);
+  return { speed, boost, braking: down && vf > 0.5 };
+}
+
+/* ================= отрисовка ================= */
+const mm = $('mm'), mctx = mm.getContext('2d');
+let mmT = 0, frameNo = 0;
+function drawMinimap() {
+  const W = mm.width, S = 0.7; // px на метр (экран 2x)
+  const c = Math.cos(car.h), s = Math.sin(car.h);
+  const a = -S * c, b = -S * s, cc = S * s, d = -S * c;
+  mctx.setTransform(1, 0, 0, 1, 0, 0);
+  mctx.clearRect(0, 0, W, W);
+  mctx.save();
+  mctx.beginPath(); mctx.arc(W / 2, W / 2, W / 2, 0, Math.PI * 2); mctx.clip();
+  mctx.fillStyle = 'rgba(10,14,32,.82)'; mctx.fillRect(0, 0, W, W);
+  const e = W / 2 - a * car.x - cc * car.z, f = W / 2 - b * car.x - d * car.z;
+  mctx.setTransform(a, b, cc, d, e, f);
+  mctx.strokeStyle = '#7f8aa8'; mctx.lineWidth = 7; mctx.lineCap = 'round';
+  mctx.beginPath();
+  const ccx = Math.floor(car.x / RC), ccz = Math.floor(car.z / RC), n = Math.ceil(210 / RC);
+  frameNo++;
+  for (let i = -n; i <= n; i++) for (let j = -n; j <= n; j++) {
+    const l = city.rGrid.get(gkey(ccx + i, ccz + j));
+    if (!l) continue;
+    for (const sg of l) { if (sg.f === frameNo) continue; sg.f = frameNo; mctx.moveTo(sg.x0, sg.z0); mctx.lineTo(sg.x1, sg.z1); }
+  }
+  mctx.stroke();
+  // пункт назначения
+  let dx = cp.x - car.x, dz = cp.z - car.z;
+  const dd = Math.hypot(dx, dz), maxR = (W / 2 - 14) / S;
+  let px = cp.x, pz = cp.z;
+  if (dd > maxR) { px = car.x + dx / dd * maxR; pz = car.z + dz / dd * maxR; }
+  mctx.fillStyle = '#37e6ff';
+  mctx.beginPath(); mctx.arc(px, pz, 11 / S, 0, Math.PI * 2); mctx.fill();
+  mctx.setTransform(1, 0, 0, 1, 0, 0);
+  // машина
+  mctx.fillStyle = '#ff4d4d';
+  mctx.beginPath(); mctx.moveTo(W / 2, W / 2 - 14); mctx.lineTo(W / 2 + 9, W / 2 + 11); mctx.lineTo(W / 2 - 9, W / 2 + 11); mctx.closePath(); mctx.fill();
+  mctx.restore();
+}
+
+let lastFov = 0;
+function render(dt, info) {
+  stars.position.copy(camera.position);
+  if (city && state !== 'menu') {
+    const speed = info ? info.speed : Math.hypot(car.vx, car.vz);
+    ground.position.set(car.x, 0, car.z);
+    carGroup.position.set(car.x, 0, car.z);
+    carGroup.rotation.y = car.h;
+    carBody.rotation.z = -car.steer * Math.min(1, speed / 25) * 0.06;
+    tailMat.color.setHex(info && info.braking ? 0xff2a2a : 0x992020);
+
+    camH += wrap(car.h - camH) * (1 - Math.exp(-5 * dt));
+    const dist = 8.6 + Math.min(speed, 50) * 0.04;
+    const sh = shake;
+    camera.position.set(
+      car.x - Math.sin(camH) * dist + (Math.random() - 0.5) * sh,
+      3.7 + speed * 0.012 + (Math.random() - 0.5) * sh,
+      car.z - Math.cos(camH) * dist + (Math.random() - 0.5) * sh);
+    camera.lookAt(car.x + Math.sin(camH) * 7, 1.5, car.z + Math.cos(camH) * 7);
+    const fov = 64 + Math.min(speed / 58, 1) * 12 + (info && info.boost ? 6 : 0);
+    if (Math.abs(fov - lastFov) > 0.2) { camera.fov = fov; camera.updateProjectionMatrix(); lastFov = fov; }
+
+    // чекпоинт-анимация
+    const tm = performance.now() / 1000;
+    cpRing.rotation.y = tm * 2;
+    cpBeam.material.opacity = 0.18 + Math.sin(tm * 3) * 0.06;
+
+    if (state === 'play') {
+      // HUD
+      $('spd').textContent = Math.round(speed * 3.6);
+      $('tm').textContent = freeMode ? '∞' : Math.ceil(timeLeft);
+      $('sc').textContent = score;
+      $('nfill').style.width = nitro + '%';
+      $('cd').textContent = Math.round(cpDist) + ' м';
+      const fx = Math.sin(car.h), fz = Math.cos(car.h);
+      const ddx = cp.x - car.x, ddz = cp.z - car.z;
+      const ang = Math.atan2(ddx * -fz + ddz * fx, ddx * fx + ddz * fz);
+      $('arrow').style.transform = 'rotate(' + (ang * 180 / Math.PI) + 'deg)';
+      mmT += dt;
+      if (mmT > 0.04) { mmT = 0; drawMinimap(); }
+    }
+  }
+  renderer.render(scene, camera);
+}
+
+let last = performance.now(), info = null;
+function frame(t) {
+  requestAnimationFrame(frame);
+  const dt = Math.min(0.05, (t - last) / 1000); last = t;
+  if (state === 'play') info = step(dt);
+  render(dt, info);
+}
+requestAnimationFrame(frame);
+
+/* ================= ввод ================= */
+const KEYMAP = { ArrowLeft: 'left', KeyA: 'left', ArrowRight: 'right', KeyD: 'right', ArrowUp: 'up', KeyW: 'up', ArrowDown: 'down', KeyS: 'down', ShiftLeft: 'nitro', ShiftRight: 'nitro', Space: 'hb' };
+window.addEventListener('keydown', e => {
+  if (e.target && e.target.tagName === 'INPUT' && e.target.type === 'text') { if (e.key === 'Enter') startGame(); return; }
+  const k = KEYMAP[e.code];
+  if (k) { keys[k] = true; if (state === 'play') e.preventDefault(); }
+  if (e.code === 'Escape' && state === 'play') showMenu();
+});
+window.addEventListener('keyup', e => { const k = KEYMAP[e.code]; if (k) keys[k] = false; });
+window.addEventListener('blur', () => { for (const k in keys) keys[k] = false; });
+
+document.querySelectorAll('.tb').forEach(el => {
+  const k = el.dataset.k;
+  const on = e => { e.preventDefault(); keys[k] = true; el.classList.add('on'); initAudio(); };
+  const off = e => { e.preventDefault(); keys[k] = false; el.classList.remove('on'); };
+  el.addEventListener('pointerdown', on);
+  ['pointerup', 'pointercancel', 'pointerleave'].forEach(ev => el.addEventListener(ev, off));
+  el.addEventListener('contextmenu', e => e.preventDefault());
+});
+
+$('go').addEventListener('click', startGame);
+$('resume').addEventListener('click', () => { showPlay(); state = 'play'; last = performance.now(); });
+$('menuBtn').addEventListener('click', showMenu);
+$('muteBtn').addEventListener('click', () => { muted = !muted; $('muteBtn').textContent = muted ? '🔇' : '🔊'; });
+$('again').addEventListener('click', () => { showPlay(); resetRun(); });
+$('newplace').addEventListener('click', showMenu);
+$('chips').addEventListener('click', e => { const q = e.target.dataset && e.target.dataset.q; if (q) { $('addr').value = q; startGame(); } });
+$('geo').addEventListener('click', () => {
+  if (!navigator.geolocation) { setStatus('Геолокация недоступна в этом браузере.'); return; }
+  setStatus('Определяю местоположение…');
+  navigator.geolocation.getCurrentPosition(
+    p => { $('addr').value = p.coords.latitude.toFixed(5) + ', ' + p.coords.longitude.toFixed(5); startGame(); },
+    () => setStatus('Не удалось определить место. Введи адрес вручную.'),
+    { enableHighAccuracy: false, timeout: 10000 });
+});
+</script>
+</body>
+</html>
