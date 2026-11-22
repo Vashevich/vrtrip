@@ -2142,6 +2142,14 @@ function sceneSize() {
   return shownRecs().length ? v : null;
 }
 const isReady = () => !!activeRec()?.built;
+/* AR работает и с одной мебелью, без загруженной модели (Сергей, 22.11.2026) */
+const furnShown = () => furn.items.some(i => i.shown !== false);
+const arReady = () => isReady() || furnShown();
+function arSize() {                                         // размер всего, что в сцене: модели и мебель
+  const v = sceneSize() || new V3();
+  if (furnShown()) { const b = new THREE.Box3(); for (const it of furn.items) if (it.shown !== false) { const r = Math.hypot(it.w, it.d) / 2; b.expandByPoint(new V3(it.x - r, it.y, it.z - r)); b.expandByPoint(new V3(it.x + r, it.y + it.h, it.z + r)); } v.max(b.getSize(new V3())); }
+  return v.lengthSq() ? v : new V3(1, 1, 1);
+}
 
 /* ================= geometry pipeline ================= */
 const plainAttr = a => {
@@ -4095,7 +4103,7 @@ function furnSelVis(it) {                                 // рамка выде
   bx.position.y = it.h / 2; bx.renderOrder = 14; bx.raycast = () => {};
   o.add(toUI(bx)); sel.vis = bx;
 }
-const furnSave = () => lsSet('vrtrip-furniture', JSON.stringify(furn.items));
+const furnSave = () => { lsSet('vrtrip-furniture', JSON.stringify(furn.items)); updateModeButtons(); };   // кнопки режимов знают, есть ли в сцене мебель
 function furnLoad() {
   let a = []; try { a = JSON.parse(lsGet('vrtrip-furniture') || '[]'); } catch {}
   furn.items = (Array.isArray(a) ? a : []).filter(i => i && furnDef(i.type) && [i.x, i.y, i.z, i.w, i.d, i.h].every(Number.isFinite));
@@ -6887,6 +6895,7 @@ function updateModeButtons() {
   $('#m-phone').title = k === 'webxr' ? 'Через камеру: поставьте модель на пол или стол, переключите 1:1 и ходите по зданию.'
     : k === 'quicklook' ? 'Через камеру iPhone/iPad: модель откроется в AR от Apple — поставьте её на пол и обойдите.'
     : 'AR через камеру телефона: Android (Chrome) и iPhone/iPad.';
+  $('#m-phone').disabled = !arReady();
 }
 /* a dimmed (unavailable) mode only explains itself; capture phase so the real handler does not run */
 $('#modebar').addEventListener('click', e => {
@@ -6918,7 +6927,7 @@ reticle.matrixAutoUpdate = false; reticle.visible = false; scene.add(reticle);
 function arHint(t) { const el = $('#ar-hint'); if (el.textContent !== t) el.textContent = t; }
 function arScaleText() { $('#ar-scale').textContent = ar.placed ? (holder.scale.x > 0.995 ? '1:1' : `1:${Math.round(1 / holder.scale.x)}`) : ''; }
 async function enterPhoneAR() {
-  if (!isReady()) return;
+  if (!arReady()) return;
   const kind = phoneARKind();
   if (kind === 'quicklook') return openQuickLook();
   if (kind !== 'webxr') return;
@@ -6958,7 +6967,7 @@ function arUpdate(xrFrame) {
   const pose = hits.length ? hits[0].getPose(ref) : null;
   if (pose) { reticle.visible = true; reticle.matrix.fromArray(pose.transform.matrix); }
   else reticle.visible = false;
-  const free = !ar.placed && !state.align && !state.alignRel && activeRec()?.built;
+  const free = !ar.placed && !state.align && !state.alignRel && arReady();
   if (free) {                                     // not placed yet: a see-through model rides on the ring, looking for a spot
     if (reticle.visible) {
       const p = new V3().setFromMatrixPosition(reticle.matrix), c = camera.getWorldPosition(new V3());
@@ -6970,7 +6979,7 @@ function arUpdate(xrFrame) {
 }
 /* a round maquette scale 1:N so the whole model fits on screen at this distance */
 function arFitScale(p, c) {
-  const z = sceneSize() || activeRec().size, maxDim = Math.max(z.x, z.y, z.z), fit = Math.max(0.15, c.distanceTo(p) * 0.55);
+  const z = arSize(), maxDim = Math.max(z.x, z.y, z.z), fit = Math.max(0.15, c.distanceTo(p) * 0.55);
   const N = maxDim <= fit ? 1 : ([10, 20, 25, 50, 100, 200, 250, 500, 1000, 2000, 5000, 10000].find(n => maxDim / n <= fit) || 10000);
   return 1 / N;
 }
@@ -6979,7 +6988,7 @@ function arPose(p, c, mode, s) {
   holder.rotation.set(0, Math.atan2(dir.x, dir.z), 0);
   if (mode === 'full') {                          // 1:1 — the front edge of the building lands on the point, the building extends away from you
     holder.scale.setScalar(1);
-    holder.position.copy(p).addScaledVector(dir, -(sceneSize() || activeRec().size).z / 2);
+    holder.position.copy(p).addScaledVector(dir, -arSize().z / 2);
   } else { holder.scale.setScalar(s); holder.position.copy(p); }
 }
 /* see-through preview while the model is still looking for a place */
@@ -7010,7 +7019,7 @@ function arReplace() {
 }
 function arPlacedHint() { arHint(ar.mode === 'full' ? 'Здание стоит в натуральную величину — идите внутрь. Касание — переставить' : 'Два пальца — масштаб и поворот. Касание — переставить'); }
 function placeAtReticle() {
-  const rec = activeRec(); if (!rec?.built) return;
+  if (!arReady()) return;
   if (state.align) return;
   if (state.alignRel) { arHint('Модель привязана по реперам. Чтобы переставить вручную — «Реперы» → «Отмена» или выйдите из AR.'); return; }
   if (!reticle.visible) { arHint('Поверхность ещё не найдена — поводите телефоном над полом'); return; }
@@ -7057,7 +7066,7 @@ arTouch.addEventListener('touchend', e => {
 /* iPhone / iPad: USDZ for AR Quick Look */
 async function openQuickLook() {
   explodeReset(true);
-  const rec = activeRec(); if (!rec?.built) return;
+  if (!arReady()) return;
   busy('Готовлю модель для AR на iPhone…'); await pause();
   try {
     const root = new THREE.Group(); const mats = new Map();
@@ -7069,9 +7078,20 @@ async function openQuickLook() {
         const mesh = new THREE.Mesh(m.geometry, mats.get(src)); mesh.applyMatrix4(M); root.add(mesh);
       }
     }
+    holder.updateMatrixWorld(true);                 // мебель — тоже в AR, в тех же осях, что модели
+    const toHolder = holder.matrixWorld.clone().invert();
+    for (const it of furn.items) {
+      const o = furn.objs.get(it.id); if (!o || it.shown === false) continue;
+      o.traverse(m => {
+        if (!m.isMesh || !m.visible) return;
+        const src = Array.isArray(m.material) ? m.material[0] : m.material;
+        if (!mats.has(src)) mats.set(src, new THREE.MeshStandardMaterial({ color: src.color ? src.color.clone() : new THREE.Color(0xdddddd), roughness: 0.85, metalness: 0 }));
+        const mesh = new THREE.Mesh(m.geometry, mats.get(src)); mesh.applyMatrix4(toHolder.clone().multiply(m.matrixWorld)); root.add(mesh);
+      });
+    }
     /* Quick Look opens the file at 100 %, so a building would be life-size and fill the whole screen.
        Export it as a maquette at a round scale (1:N) that fits about half a metre — it lands on the floor fully visible. */
-    const z = sceneSize() || rec.size, maxDim = Math.max(z.x, z.y, z.z);
+    const z = arSize(), maxDim = Math.max(z.x, z.y, z.z);
     const N = maxDim <= 0.6 ? 1 : ([10, 20, 25, 50, 100, 200, 250, 500, 1000, 2000, 5000, 10000].find(n => maxDim / n <= 0.5) || 10000);
     root.scale.setScalar(1 / N); root.updateMatrixWorld(true);
     const data = await new USDZExporter().parse(root, { quickLookCompatible: true });
