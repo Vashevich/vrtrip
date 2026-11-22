@@ -58,7 +58,24 @@ body.touch #arrowbox{top:20px}
 #foot a{color:inherit}
 #over h2{margin:0 0 6px;font-size:28px}
 #over p{margin:0 0 16px;color:#cfd8ff;font-size:17px}
+.or{margin:14px 0 10px;text-align:center;font-size:13px;color:#8b97c4}
+.route{background:linear-gradient(135deg,#1e88ff,#37c8ff)}
+.primary:disabled{opacity:.45}
+#mapScreen{position:fixed;inset:0;z-index:20;background:#10162c}
+#map{position:absolute;inset:0;background:#1a2036}
+#mapTop{position:absolute;left:10px;right:10px;top:10px;z-index:1100;display:flex;gap:8px}
+#mapQ{flex:1;min-width:0;padding:12px 14px;border-radius:12px;border:1px solid #3a4680;background:rgba(11,16,36,.94);color:#fff;font-size:16px;outline:none;user-select:text;-webkit-user-select:text}
+#mapTop button{font:inherit;font-size:15px;color:#fff;background:rgba(27,35,80,.96);border:1px solid #33407f;border-radius:12px;padding:0 14px;cursor:pointer}
+#mapBottom{position:absolute;left:10px;right:10px;bottom:10px;z-index:1100;padding:12px;border-radius:16px;background:rgba(14,19,40,.94);border:1px solid rgba(120,150,255,.25)}
+#mapHint{font-size:15px;line-height:1.35;margin-bottom:10px}
+#mapBtns{display:flex;gap:8px}
+#mapBtns button{margin:0;width:auto;flex:1;padding:12px;font-size:15px}
+#mapBtns .primary{flex:1.5}
+#mapAttr{margin-top:8px;font-size:10px;color:rgba(200,210,255,.5)}
+#mapAttr a{color:inherit}
+.pin{width:30px;height:30px;border-radius:50%;border:3px solid #fff;color:#fff;font:800 14px system-ui,sans-serif;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.5)}
 </style>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 </head>
 <body>
 <canvas id="c"></canvas>
@@ -66,6 +83,8 @@ body.touch #arrowbox{top:20px}
 <div id="menu" class="panel">
   <h1>🏎️ OSM Racer</h1>
   <p class="sub">Гонки по настоящим улицам любого города. Дороги и здания берутся из OpenStreetMap прямо при запуске.</p>
+  <button id="routeBtn" class="primary route">🗺 Выбрать маршрут на карте</button>
+  <div class="or">или свободная езда по району</div>
   <input id="addr" placeholder="Адрес или координаты «55.7539, 37.6208»" autocomplete="off" enterkeyhint="go">
   <div class="chips" id="chips">
     <button data-q="Красная площадь, Москва">Красная площадь</button>
@@ -109,15 +128,26 @@ body.touch #arrowbox{top:20px}
 </div>
 
 <div id="over" class="panel hidden">
-  <h2>Время вышло!</h2>
+  <h2 id="overTitle">Время вышло!</h2>
   <p id="overTxt"></p>
   <button id="again" class="primary">Ещё раз здесь</button>
   <button id="newplace" class="secondary">Другое место</button>
 </div>
 
+<div id="mapScreen" class="hidden">
+  <div id="map"></div>
+  <div id="mapTop"><input id="mapQ" placeholder="Найти адрес…" autocomplete="off" enterkeyhint="search"><button id="mapFind">Найти</button><button id="mapGeo">📍</button></div>
+  <div id="mapBottom">
+    <div id="mapHint"></div>
+    <div id="mapBtns"><button id="mapBack" class="secondary">Назад</button><button id="mapReset" class="secondary">Сбросить</button><button id="mapGo" class="primary" disabled>Поехали</button></div>
+    <div id="mapAttr">Карта © участники <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> · маршрут: OSRM</div>
+  </div>
+</div>
+
 <div id="foot">Карта © участники <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 'use strict';
 /* ================= утилиты ================= */
@@ -196,6 +226,7 @@ const WT = makeWindowTextures();
 const wallMat = new THREE.MeshLambertMaterial({ map: WT.map, emissiveMap: WT.emi, emissive: 0xffffff, emissiveIntensity: 0.85, vertexColors: true, side: THREE.DoubleSide });
 const roofMat = new THREE.MeshLambertMaterial({ color: 0x343a4a, side: THREE.DoubleSide });
 const roadMat = new THREE.MeshLambertMaterial({ color: 0x6a7283, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
+const routeMat = new THREE.MeshBasicMaterial({ color: 0x37e6ff, transparent: true, opacity: 0.5, side: THREE.DoubleSide, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -6, polygonOffsetUnits: -6 });
 const lineMat = new THREE.MeshBasicMaterial({ color: 0xc9b86a, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4 });
 
 /* ================= машина ================= */
@@ -301,6 +332,7 @@ function buildCity(elements, lat0, lon0, R) {
   const segs = [], rGrid = new Map(), cpPts = [];
   const rp = [], ri = [], lp = [], li = [];
   let nr = 0;
+  const roadTiles = new Set(); // участки, где есть дороги, — только там грузим дома
 
   for (const el of elements) {
     if (el.type !== 'way' || !el.geometry || el.geometry.length < 2 || !el.tags) continue;
@@ -330,6 +362,7 @@ function buildCity(elements, lat0, lon0, R) {
       }
       const s = { x0, z0, x1, z1, hw, f: 0 };
       segs.push(s);
+      for (const ox of [-120, 120]) for (const oz of [-120, 120]) roadTiles.add(Math.floor((x1 + ox) / TILE) + ',' + Math.floor((z1 + oz) / TILE));
       gridAdd(rGrid, RC, Math.min(x0, x1), Math.min(z0, z1), Math.max(x0, x1), Math.max(z0, z1), s);
     }
     if (hw >= 3.5) for (let i = 0; i < pts.length; i++) cpPts.push(pts[i]);
@@ -359,7 +392,7 @@ function buildCity(elements, lat0, lon0, R) {
   const spawn = { x: best.x0 + tt * dx, z: best.z0 + tt * dz, h: Math.atan2(dx, dz) };
   if (!cpPts.length) for (const s of segs) cpPts.push([s.x0, s.z0]);
 
-  return { group, segs, rGrid, cpPts, spawn, nr, R, lat0, lon0, kx, kz,
+  return { group, segs, rGrid, cpPts, spawn, nr, R, lat0, lon0, kx, kz, roadTiles, route: null,
     nb: 0, bGrid: new Map(), tiles: new Map(), seen: new Set() };
 }
 
@@ -566,9 +599,9 @@ async function overpass(q, label, ms) {
   }
   throw new Error('Серверы карты сейчас перегружены (' + (lastErr && lastErr.message) + '). Нажми «Поехали» ещё раз через минуту или выбери «Компактно».');
 }
+const HW = 'motorway|motorway_link|trunk|trunk_link|primary|primary_link|secondary|secondary_link|tertiary|tertiary_link|unclassified|residential|living_street|service';
 function loadRoads(lat, lon, R) {
-  const hw = 'motorway|motorway_link|trunk|trunk_link|primary|primary_link|secondary|secondary_link|tertiary|tertiary_link|unclassified|residential|living_street|service';
-  return overpass(`[out:json][timeout:40];way["highway"~"^(${hw})$"](around:${R},${lat},${lon});out geom qt;`, 'Загружаю дороги…', 45000);
+  return overpass(`[out:json][timeout:40];way["highway"~"^(${HW})$"](around:${R},${lat},${lon});out geom qt;`, 'Загружаю дороги…', 45000);
 }
 
 /* ---------- плитки домов: грузятся вокруг машины по мере езды ---------- */
@@ -613,7 +646,7 @@ function pumpTiles() {
   for (let i = ci - 2; i <= ci + 2; i++) for (let j = cj - 2; j <= cj + 2; j++) {
     const mx = (i + 0.5) * TILE, mz = (j + 0.5) * TILE;
     if (Math.hypot(mx - car.x, mz - car.z) > 650) continue;
-    if (Math.hypot(mx, mz) > c.R + TILE) continue; // за краем района дорог нет
+    if (!c.roadTiles.has(tkey(i, j))) continue; // там нет дорог
     const t = c.tiles.get(tkey(i, j));
     if (t && (t.state !== 'fail' || now < t.retryAt)) continue;
     const d = Math.hypot(mx - ax, mz - az);
@@ -638,9 +671,12 @@ let state = 'menu';
 let lastPlace = null;
 const car = { x: 0, z: 0, h: 0, vx: 0, vz: 0, steer: 0 };
 let camH = 0, shake = 0, nitro = 100, timeLeft = 60, score = 0, started = false, freeMode = false;
-let cp = null, cpDist = 0, legDist = 300;
+let cp = null, cpDist = 0, legDist = 300, routeI = 0, runTime = 0;
 
-function setStatus(s) { $('status').textContent = s || ''; }
+function setStatus(s) {
+  $('status').textContent = s || '';
+  if (s && !$('mapScreen').classList.contains('hidden')) mapHint(s);
+}
 function toast(msg, color) {
   const t = $('toast'); t.textContent = msg; t.style.color = color || '#fff';
   t.classList.remove('show'); void t.offsetWidth; t.classList.add('show');
@@ -653,6 +689,7 @@ function nextCheckpoint(fromX, fromZ) {
   if (!cand.length) cand = pts;
   const p = cand[Math.floor(Math.random() * cand.length)];
   cp = { x: p[0], z: p[1] };
+  for (const m of [cpRing, cpBeam, cpBase]) m.material.color.setHex(0x37e6ff);
   legDist = Math.hypot(p[0] - fromX, p[1] - fromZ);
   cpGroup.position.set(cp.x, 0, cp.z);
   cpGroup.visible = true;
@@ -662,13 +699,12 @@ function resetRun() {
   const s = city.spawn;
   Object.assign(car, { x: s.x, z: s.z, h: s.h, vx: 0, vz: 0, steer: 0 });
   camH = s.h; nitro = 100; score = 0; shake = 0;
-  timeLeft = 60; started = false;
-  $('sc').textContent = '0';
-  $('tm').textContent = freeMode ? '∞' : '60';
-  nextCheckpoint(s.x, s.z);
+  timeLeft = 60; started = false; routeI = 0; runTime = 0;
+  const rt = city.route;
+  if (rt) setRouteCp(); else nextCheckpoint(s.x, s.z);
   state = 'play';
   $('over').classList.add('hidden');
-  toast('Жми газ!', '#37e6ff');
+  toast(rt ? 'До финиша ' + (rt.len / 1000).toFixed(1) + ' км — жми газ!' : 'Жми газ!', '#37e6ff');
 }
 
 async function startGame() {
@@ -714,6 +750,7 @@ function showPlay() {
 function showMenu() {
   const wasOver = state === 'over';
   state = 'menu';
+  closeMap();
   $('menu').classList.remove('hidden');
   $('hud').classList.add('hidden');
   $('touch').classList.add('hidden');
@@ -724,7 +761,212 @@ function showMenu() {
 function gameOver() {
   state = 'over';
   for (const k in keys) keys[k] = false;
+  $('overTitle').textContent = 'Время вышло!';
   $('overTxt').textContent = 'Пройдено пунктов: ' + score;
+  $('over').classList.remove('hidden');
+  $('touch').classList.add('hidden');
+}
+
+/* ================= карта: старт и финиш, как в такси ================= */
+const ROUTERS = [
+  'https://router.project-osrm.org/route/v1/driving/',
+  'https://routing.openstreetmap.de/routed-car/route/v1/driving/'
+];
+const MAX_ROUTE = 15000;
+let lmap = null, mA = null, mB = null, mLine = null, pickBusy = false;
+const pick = { a: null, b: null, route: null };
+function mapHint(s, warn) { const h = $('mapHint'); h.textContent = s; h.style.color = warn ? '#ffd27a' : '#fff'; }
+function pin(letter, color) {
+  return L.divIcon({ className: '', html: '<div class="pin" style="background:' + color + '">' + letter + '</div>', iconSize: [30, 30], iconAnchor: [15, 15] });
+}
+function clearPick() {
+  for (const m of [mA, mB, mLine]) if (m) m.remove();
+  mA = mB = mLine = null;
+  pick.a = pick.b = pick.route = null;
+  $('mapGo').disabled = true;
+  mapHint('Нажми на карту: откуда стартуем');
+}
+function openMap() {
+  if (!window.L) { setStatus('⚠ Карта не загрузилась. Обнови страницу.'); return; }
+  $('menu').classList.add('hidden');
+  $('mapScreen').classList.remove('hidden');
+  if (!lmap) {
+    let view = [55.7539, 37.6208, 15];
+    try { const v = JSON.parse(localStorage.getItem('osmracer-view')); if (v && v.length === 3) view = v; } catch (e) {}
+    if (lastPlace) view = [lastPlace.lat, lastPlace.lon, 15];
+    lmap = L.map('map', { zoomControl: false, attributionControl: false }).setView([view[0], view[1]], view[2]);
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(lmap);
+    lmap.on('click', e => mapClick(e.latlng));
+    lmap.on('moveend', () => {
+      try { const c = lmap.getCenter(); localStorage.setItem('osmracer-view', JSON.stringify([c.lat, c.lng, lmap.getZoom()])); } catch (e) {}
+    });
+    clearPick();
+  }
+  setTimeout(() => lmap.invalidateSize(), 60);
+}
+function closeMap() { $('mapScreen').classList.add('hidden'); }
+function mapClick(ll) {
+  if (pickBusy) return;
+  if (!pick.a || pick.b) {
+    clearPick();
+    pick.a = { lat: ll.lat, lon: ll.lng };
+    mA = L.marker(ll, { icon: pin('A', '#2fbf71') }).addTo(lmap);
+    mapHint('Теперь нажми, куда едем');
+  } else {
+    pick.b = { lat: ll.lat, lon: ll.lng };
+    mB = L.marker(ll, { icon: pin('B', '#ff4d4d') }).addTo(lmap);
+    findRoute();
+  }
+}
+function dropB(msg) {
+  if (mB) mB.remove();
+  mB = null; pick.b = null;
+  mapHint(msg, true);
+}
+async function findRoute() {
+  const a = pick.a, b = pick.b;
+  pickBusy = true;
+  mapHint('Строю маршрут…');
+  const path = a.lon.toFixed(6) + ',' + a.lat.toFixed(6) + ';' + b.lon.toFixed(6) + ',' + b.lat.toFixed(6) + '?overview=full&geometries=geojson';
+  let res = null, noRoad = false;
+  for (const u of ROUTERS) {
+    try {
+      const r = await fetchTimeout(u + path, {}, 15000);
+      const j = await r.json();
+      if (j.code === 'Ok' && j.routes && j.routes.length) { res = j.routes[0]; break; }
+      noRoad = true;
+    } catch (e) { console.warn('маршрут', e); }
+  }
+  pickBusy = false;
+  if (!res) return dropB(noRoad ? 'Между точками нет проезда. Нажми финиш в другом месте.' : 'Сервер маршрутов не ответил. Нажми точку финиша ещё раз.');
+  if (res.distance > MAX_ROUTE) return dropB('Вышло ' + (res.distance / 1000).toFixed(1) + ' км — такой город будет грузиться очень долго. Поставь финиш ближе, до 15 км.');
+  if (res.distance < 150) return dropB('Слишком близко — поставь финиш подальше.');
+  pick.route = { coords: res.geometry.coordinates, dist: res.distance };
+  mLine = L.polyline(pick.route.coords.map(c => [c[1], c[0]]), { color: '#1e88ff', weight: 5, opacity: 0.9 }).addTo(lmap);
+  lmap.fitBounds(mLine.getBounds(), { paddingTopLeft: [30, 80], paddingBottomRight: [30, 150] });
+  mapHint('Маршрут ' + (res.distance / 1000).toFixed(1) + ' км. Жми «Поехали» или нажми на карту, чтобы выбрать заново.');
+  $('mapGo').disabled = false;
+}
+async function mapSearch() {
+  const q = $('mapQ').value.trim();
+  if (!q || !lmap) return;
+  try { const p = await geocode(q); lmap.setView([p.lat, p.lon], 16); $('mapQ').blur(); }
+  catch (e) { mapHint(e.message || String(e), true); }
+}
+function mapLocate() {
+  if (!navigator.geolocation) { mapHint('Геолокация недоступна в этом браузере.', true); return; }
+  navigator.geolocation.getCurrentPosition(
+    p => lmap.setView([p.coords.latitude, p.coords.longitude], 16),
+    () => mapHint('Не удалось определить место. Найди адрес в строке сверху.', true),
+    { enableHighAccuracy: true, timeout: 10000 });
+}
+
+// дороги вдоль маршрута: коридор 220 м, кусками по ~2 км, чтобы сервер карты не захлёбывался
+async function loadRoadsAlong(coords) {
+  const kx = 111320 * Math.cos(coords[0][1] * Math.PI / 180), kz = 110574;
+  const chunks = [];
+  let cur = [coords[0]], last = coords[0], acc = 0;
+  for (let i = 1; i < coords.length; i++) {
+    const c = coords[i], d = Math.hypot((c[0] - last[0]) * kx, (c[1] - last[1]) * kz);
+    if (d < 60 && i < coords.length - 1) continue;
+    cur.push(c); acc += d; last = c;
+    if (acc > 2000) { chunks.push(cur); cur = [c]; acc = 0; }
+  }
+  if (cur.length > 1 || !chunks.length) chunks.push(cur);
+  const seen = new Set(), out = [];
+  for (let n = 0; n < chunks.length; n++) {
+    const line = chunks[n].map(c => c[1].toFixed(5) + ',' + c[0].toFixed(5)).join(',');
+    const els = await overpass(`[out:json][timeout:40];way["highway"~"^(${HW})$"](around:220,${line});out geom qt;`,
+      'Загружаю дороги… ' + (n + 1) + ' из ' + chunks.length, 45000);
+    for (const el of els) if (!seen.has(el.id)) { seen.add(el.id); out.push(el); }
+  }
+  return out;
+}
+// маршрут в метрах игры: пункты по пути, полоса-подсказка на асфальте, точка старта
+function setupRoute(coords) {
+  const c = city, pts = [];
+  for (const q of coords) {
+    const x = (q[0] - c.lon0) * c.kx, z = -(q[1] - c.lat0) * c.kz, l = pts[pts.length - 1];
+    if (!l || Math.hypot(x - l[0], z - l[1]) > 0.5) pts.push([x, z]);
+  }
+  const cum = [0];
+  for (let i = 1; i < pts.length; i++) cum.push(cum[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
+  const len = cum[cum.length - 1];
+  const at = d => {
+    let i = 1;
+    while (i < cum.length - 1 && cum[i] < d) i++;
+    const t = clamp((d - cum[i - 1]) / Math.max(cum[i] - cum[i - 1], 0.001), 0, 1);
+    return { x: pts[i - 1][0] + (pts[i][0] - pts[i - 1][0]) * t, z: pts[i - 1][1] + (pts[i][1] - pts[i - 1][1]) * t };
+  };
+  const n = Math.max(1, Math.round(len / 300)), cps = [];
+  for (let i = 1; i <= n; i++) cps.push(at(len * i / n));
+  const sp = [], si = [], w = 0.8;
+  for (let i = 0; i < pts.length - 1; i++) {
+    const x0 = pts[i][0], z0 = pts[i][1], x1 = pts[i + 1][0], z1 = pts[i + 1][1];
+    const dx = x1 - x0, dz = z1 - z0, l = Math.hypot(dx, dz), ux = dx / l, uz = dz / l, nx = -uz * w, nz = ux * w, e = Math.min(w, l / 2);
+    addQuad(sp, si, x0 - ux * e + nx, z0 - uz * e + nz, x0 - ux * e - nx, z0 - uz * e - nz, x1 + ux * e - nx, z1 + uz * e - nz, x1 + ux * e + nx, z1 + uz * e + nz);
+  }
+  const strip = new THREE.Mesh(mkGeo(sp, si), routeMat);
+  strip.frustumCulled = false;
+  c.group.add(strip);
+  const p0 = at(0), p1 = at(Math.min(len, 12));
+  c.spawn = { x: p0.x, z: p0.z, h: Math.atan2(p1.x - p0.x, p1.z - p0.z) };
+  const f = coords[0], t = coords[coords.length - 1];
+  c.route = { pts, len, cps, key: 'osmracer-best-' + [f[1], f[0], t[1], t[0]].map(v => v.toFixed(4)).join('_') };
+}
+async function startRoute() {
+  const rt = pick.route;
+  if (!rt || pickBusy) return;
+  pickBusy = true;
+  $('mapGo').disabled = true;
+  initAudio();
+  try {
+    const els = await loadRoadsAlong(rt.coords);
+    // сам маршрут тоже кладём дорогой — на случай проезда, которого нет среди загруженных типов
+    els.push({ type: 'way', id: -1, tags: { highway: 'unclassified' }, geometry: rt.coords.map(c => ({ lat: c[1], lon: c[0] })) });
+    mapHint('Строю город…');
+    await new Promise(r => setTimeout(r, 30));
+    disposeCity();
+    city = buildCity(els, rt.coords[0][1], rt.coords[0][0], 0);
+    setupRoute(rt.coords);
+    mapHint('Загружаю дома…');
+    tileFails = 0; tileWarned = false;
+    const sp = city.spawn;
+    await Promise.race([
+      loadBlock(Math.round(sp.x / TILE) - 1, Math.round(sp.z / TILE) - 1, 2, 2),
+      new Promise(r => setTimeout(r, 15000))
+    ]);
+    lastPlace = { lat: rt.coords[0][1], lon: rt.coords[0][0], name: 'маршрут' };
+    closeMap();
+    showPlay();
+    resetRun();
+    mapHint('Маршрут ' + (rt.dist / 1000).toFixed(1) + ' км. Жми «Поехали» или нажми на карту, чтобы выбрать заново.');
+  } catch (e) {
+    console.error(e);
+    mapHint('⚠ ' + (e.message || e), true);
+  } finally {
+    pickBusy = false;
+    $('mapGo').disabled = !pick.route;
+  }
+}
+const fmtTime = t => Math.floor(t / 60) + ':' + (t % 60).toFixed(1).padStart(4, '0');
+function setRouteCp() {
+  const rt = city.route, p = rt.cps[routeI], fin = routeI === rt.cps.length - 1;
+  cp = { x: p.x, z: p.z };
+  for (const m of [cpRing, cpBeam, cpBase]) m.material.color.setHex(fin ? 0xffc93c : 0x37e6ff);
+  cpGroup.position.set(cp.x, 0, cp.z);
+  cpGroup.visible = true;
+}
+function finishRoute() {
+  state = 'over';
+  for (const k in keys) keys[k] = false;
+  const rt = city.route, t = Math.max(runTime, 0.1);
+  let best = 0, rec = false;
+  try { best = parseFloat(localStorage.getItem(rt.key)) || 0; } catch (e) {}
+  if (!best || t < best) { rec = best > 0; try { localStorage.setItem(rt.key, t.toFixed(2)); } catch (e) {} }
+  $('overTitle').textContent = 'Финиш! 🏁';
+  $('overTxt').textContent = 'Время ' + fmtTime(t) + ' · ' + (rt.len / 1000).toFixed(1) + ' км · средняя ' + Math.round(rt.len / t * 3.6) + ' км/ч' +
+    (rec ? ' · новый рекорд!' : best && t >= best ? ' · рекорд ' + fmtTime(best) : '');
   $('over').classList.remove('hidden');
   $('touch').classList.add('hidden');
 }
@@ -804,14 +1046,25 @@ function step(dt) {
   else car.z = nz;
 
   // таймер
-  if (started && !freeMode) {
+  const rt = city.route;
+  if (rt) { if (started) runTime += dt; }
+  else if (started && !freeMode) {
     timeLeft -= dt;
     if (timeLeft <= 0) { timeLeft = 0; gameOver(); }
   }
 
   // чекпоинт
   cpDist = Math.hypot(cp.x - car.x, cp.z - car.z);
-  if (cpDist < 11) {
+  if (rt) {
+    // пункты идут по порядку; если срезал дорогу — засчитываем и следующий
+    let hit = -1;
+    for (let i = routeI; i < Math.min(rt.cps.length, routeI + 2); i++) if (Math.hypot(rt.cps[i].x - car.x, rt.cps[i].z - car.z) < 18) hit = i;
+    if (hit >= 0) {
+      routeI = hit + 1;
+      if (routeI >= rt.cps.length) finishRoute();
+      else { toast('Пункт ' + routeI + ' из ' + rt.cps.length, '#37e6ff'); setRouteCp(); }
+    }
+  } else if (cpDist < 11) {
     score++;
     const bonus = Math.round(clamp(legDist / 9.5, 18, 45));
     if (!freeMode) timeLeft += bonus;
@@ -849,12 +1102,19 @@ function drawMinimap() {
     for (const sg of l) { if (sg.f === frameNo) continue; sg.f = frameNo; mctx.moveTo(sg.x0, sg.z0); mctx.lineTo(sg.x1, sg.z1); }
   }
   mctx.stroke();
+  if (city.route) { // линия маршрута
+    const rp = city.route.pts;
+    mctx.strokeStyle = '#37e6ff'; mctx.lineWidth = 4; mctx.lineJoin = 'round';
+    mctx.beginPath(); mctx.moveTo(rp[0][0], rp[0][1]);
+    for (let i = 1; i < rp.length; i++) mctx.lineTo(rp[i][0], rp[i][1]);
+    mctx.stroke();
+  }
   // пункт назначения
   let dx = cp.x - car.x, dz = cp.z - car.z;
   const dd = Math.hypot(dx, dz), maxR = (W / 2 - 14) / S;
   let px = cp.x, pz = cp.z;
   if (dd > maxR) { px = car.x + dx / dd * maxR; pz = car.z + dz / dd * maxR; }
-  mctx.fillStyle = '#37e6ff';
+  mctx.fillStyle = city.route && routeI === city.route.cps.length - 1 ? '#ffc93c' : '#37e6ff';
   mctx.beginPath(); mctx.arc(px, pz, 11 / S, 0, Math.PI * 2); mctx.fill();
   mctx.setTransform(1, 0, 0, 1, 0, 0);
   // машина
@@ -893,8 +1153,8 @@ function render(dt, info) {
     if (state === 'play') {
       // HUD
       $('spd').textContent = Math.round(speed * 3.6);
-      $('tm').textContent = freeMode ? '∞' : Math.ceil(timeLeft);
-      $('sc').textContent = score;
+      $('tm').textContent = city.route ? Math.floor(runTime / 60) + ':' + String(Math.floor(runTime % 60)).padStart(2, '0') : freeMode ? '∞' : Math.ceil(timeLeft);
+      $('sc').textContent = city.route ? routeI + '/' + city.route.cps.length : score;
       $('nfill').style.width = nitro + '%';
       $('cd').textContent = Math.round(cpDist) + ' м';
       const fx = Math.sin(car.h), fz = Math.cos(car.h);
@@ -924,7 +1184,7 @@ requestAnimationFrame(frame);
 /* ================= ввод ================= */
 const KEYMAP = { ArrowLeft: 'left', KeyA: 'left', ArrowRight: 'right', KeyD: 'right', ArrowUp: 'up', KeyW: 'up', ArrowDown: 'down', KeyS: 'down', ShiftLeft: 'nitro', ShiftRight: 'nitro', Space: 'hb' };
 window.addEventListener('keydown', e => {
-  if (e.target && e.target.tagName === 'INPUT' && e.target.type === 'text') { if (e.key === 'Enter') startGame(); return; }
+  if (e.target && e.target.tagName === 'INPUT' && e.target.type === 'text') { if (e.key === 'Enter') { if (e.target.id === 'mapQ') mapSearch(); else startGame(); } return; }
   const k = KEYMAP[e.code];
   if (k) { keys[k] = true; if (state === 'play') e.preventDefault(); }
   if (e.code === 'Escape' && state === 'play') showMenu();
@@ -942,6 +1202,12 @@ document.querySelectorAll('.tb').forEach(el => {
 });
 
 $('go').addEventListener('click', startGame);
+$('routeBtn').addEventListener('click', openMap);
+$('mapBack').addEventListener('click', () => { if (pickBusy) return; closeMap(); $('menu').classList.remove('hidden'); });
+$('mapReset').addEventListener('click', () => { if (!pickBusy) clearPick(); });
+$('mapGo').addEventListener('click', startRoute);
+$('mapFind').addEventListener('click', mapSearch);
+$('mapGeo').addEventListener('click', mapLocate);
 $('resume').addEventListener('click', () => { showPlay(); state = 'play'; last = performance.now(); });
 $('menuBtn').addEventListener('click', showMenu);
 $('muteBtn').addEventListener('click', () => { muted = !muted; $('muteBtn').textContent = muted ? '🔇' : '🔊'; });
