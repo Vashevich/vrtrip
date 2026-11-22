@@ -525,6 +525,7 @@ function hitsBuilding(x, z, h) {
 /* ================= Overpass / геокодер ================= */
 const OVERPASS = [
   'https://overpass-api.de/api/interpreter',
+  'https://overpass.private.coffee/api/interpreter',
   'https://overpass.kumi.systems/api/interpreter',
   'https://maps.mail.ru/osm/tools/overpass/api/interpreter'
 ];
@@ -547,8 +548,11 @@ async function geocode(q) {
 let ovIdx = 0; // сервер, который ответил последним, — с него и начинаем
 async function overpass(q, label, ms) {
   let lastErr;
-  for (let k = 0; k < OVERPASS.length; k++) {
+  // при запуске (есть подпись) обходим серверы дважды с паузой; плитки домов повторяются сами
+  const tries = OVERPASS.length * (label ? 2 : 1);
+  for (let k = 0; k < tries; k++) {
     const idx = (ovIdx + k) % OVERPASS.length;
+    if (k === OVERPASS.length) await new Promise(r => setTimeout(r, 2500));
     try {
       if (label) setStatus(label);
       const r = await fetchTimeout(OVERPASS[idx], { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: 'data=' + encodeURIComponent(q) }, ms);
@@ -560,7 +564,7 @@ async function overpass(q, label, ms) {
       return j.elements;
     } catch (e) { lastErr = e; if (label) setStatus('Сервер занят, пробую другой…'); }
   }
-  throw new Error('Не удалось загрузить карту: ' + (lastErr && lastErr.message));
+  throw new Error('Серверы карты сейчас перегружены (' + (lastErr && lastErr.message) + '). Нажми «Поехали» ещё раз через минуту или выбери «Компактно».');
 }
 function loadRoads(lat, lon, R) {
   const hw = 'motorway|motorway_link|trunk|trunk_link|primary|primary_link|secondary|secondary_link|tertiary|tertiary_link|unclassified|residential|living_street|service';
