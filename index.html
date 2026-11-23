@@ -492,6 +492,15 @@ body:not(.gaming) #w-toy,body:not(.gaming) #w-hook{display:none!important}   /* 
 .sw{border:2px solid var(--line)}
 .sw[aria-pressed="true"]{border-color:var(--line);box-shadow:0 0 0 3px var(--accent)}
 .modebar{gap:0;padding:0}
+/* выбор масштаба AR (Сергей, 23.11.2026): ряд кнопок под кнопкой «AR телефон» */
+.arscale{position:fixed;z-index:60;display:flex;flex-wrap:wrap;gap:0;max-width:min(92vw,520px);background:var(--raise);border:2px solid var(--line);box-shadow:4px 4px 0 var(--line)}
+.arscale[hidden]{display:none}
+.arscale .arscale-h{flex:1 0 100%;padding:6px 10px 2px;font-size:12px;letter-spacing:.08em;text-transform:uppercase;opacity:.75}
+.arscale button{flex:1 0 25%;min-width:72px;display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 6px;border:0;border-top:2px solid var(--line);background:transparent;color:var(--fg);font:inherit;cursor:pointer}
+.arscale button+button{border-left:2px solid var(--line)}
+.arscale button b{font-size:16px}
+.arscale button small{font-size:11px;opacity:.75}
+.arscale button[aria-pressed=true]{background:var(--fg);color:var(--raise)}
 .modebar .mode{border:0;border-radius:0;background:transparent;color:var(--fg)}
 .modebar .mode+.mode{border-left:2px solid var(--line)}
 .modebar .mode svg{stroke:var(--fg)}
@@ -864,6 +873,7 @@ body:not(.gaming) #w-toy,body:not(.gaming) #w-hook{display:none!important}   /* 
     <button type="button" class="tb" id="tb-clear" title="Очистить разметку: метки, размеры, карандаш — по отдельности или всё"><svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V4.5h6V7M6.5 7l1 13h9l1-13M10 11v6M14 11v6"/></svg><span>Очистить</span></button>
   </div>
   <div class="dock">
+  <div class="arscale" id="arscale" hidden role="menu" aria-label="Масштаб AR"></div>
   <div class="modebar" id="modebar" role="toolbar" aria-label="Режим просмотра">
     <button class="mode" id="m-orbit" type="button" aria-pressed="true" title="Обзор модели мышью: вращать, двигать, приближать, летать на WASD">
       <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 5l10 5.5v11L16 27 6 21.5v-11z"/><path d="M6 10.5l10 5.5 10-5.5M16 16v11"/></svg>
@@ -6926,10 +6936,10 @@ reticle.add(new THREE.Mesh(new THREE.CircleGeometry(0.012, 20).rotateX(-Math.PI 
 reticle.matrixAutoUpdate = false; reticle.visible = false; scene.add(reticle);
 function arHint(t) { const el = $('#ar-hint'); if (el.textContent !== t) el.textContent = t; }
 function arScaleText() { $('#ar-scale').textContent = ar.placed ? (holder.scale.x > 0.995 ? '1:1' : `1:${Math.round(1 / holder.scale.x)}`) : ''; }
-async function enterPhoneAR() {
+async function enterPhoneAR(N = 1) {
   if (!arReady()) return;
   const kind = phoneARKind();
-  if (kind === 'quicklook') return openQuickLook();
+  if (kind === 'quicklook') return openQuickLook(N);
   if (kind !== 'webxr') return;
   if (state.view === 'walk') exitWalk();
   let session;
@@ -6942,7 +6952,7 @@ async function enterPhoneAR() {
   state.view = 'ar'; controls.enabled = false; cancelTool();
   camera.position.set(0, 0, 0); camera.quaternion.identity(); camera.near = 0.02; camera.far = 2000; camera.updateProjectionMatrix();
   rig.position.set(0, 0, 0); rig.rotation.set(0, 0, 0);
-  ar.placed = false; ar.scale = 0; ar.anchor = null; ar.overlay = !!session.domOverlayState; ar.mode = 'full'; paintArMode();
+  ar.placed = false; ar.anchor = null; ar.overlay = !!session.domOverlayState; ar.mode = N > 1 ? 'table' : 'full'; ar.scale = N > 1 ? 1 / N : 0; ar.pickN = N; paintArMode();
   holder.visible = false; resetHolder();
   $('#arui').hidden = false; arPre(true); arAsk(false); arHint('Медленно поводите телефоном, наводя на пол или стол, — модель будет искать, где встать'); arScaleText();
   applyEnv();
@@ -6978,9 +6988,6 @@ function arUpdate(xrFrame) {
   if (ar.asking) arAskFollow();
 }
 /* a round maquette scale 1:N so the whole model fits on screen at this distance */
-/* всё в AR — 1:1 (Сергей, 22.11.2026). Чтобы объект целиком попал в кадр телефона, он встаёт не ближе этого расстояния:
-   ширина кадра телефона в портрете ≈ 50°, с запасом 20 %. Стул встаёт рядом (~1,2 м), павильон — дальше (~22 м) */
-const arFitDist = z => 1.2 * Math.max(z.x, z.y, z.z) / (2 * Math.tan(THREE.MathUtils.degToRad(25)));
 function arFitScale(p, c) {
   const z = arSize(), maxDim = Math.max(z.x, z.y, z.z), fit = Math.max(0.15, c.distanceTo(p) * 0.55);
   const N = maxDim <= fit ? 1 : ([10, 20, 25, 50, 100, 200, 250, 500, 1000, 2000, 5000, 10000].find(n => maxDim / n <= fit) || 10000);
@@ -6989,10 +6996,9 @@ function arFitScale(p, c) {
 function arPose(p, c, mode, s) {
   const dir = new V3(c.x - p.x, 0, c.z - p.z); if (dir.lengthSq() < 1e-6) dir.set(0, 0, 1); dir.normalize();
   holder.rotation.set(0, Math.atan2(dir.x, dir.z), 0);
-  if (mode === 'full') {                          // 1:1 — the front edge lands on the point; too close to fit in the frame → it moves further away
+  if (mode === 'full') {                          // 1:1 — the front edge of the building lands on the point, the building extends away from you
     holder.scale.setScalar(1);
-    const z = arSize(), flat = Math.hypot(c.x - p.x, c.z - p.z), dist = Math.max(flat + z.z / 2, arFitDist(z));
-    holder.position.set(c.x, p.y, c.z).addScaledVector(dir, -dist);
+    holder.position.copy(p).addScaledVector(dir, -arSize().z / 2);
   } else { holder.scale.setScalar(s); holder.position.copy(p); }
 }
 /* see-through preview while the model is still looking for a place */
@@ -7067,7 +7073,7 @@ arTouch.addEventListener('touchend', e => {
 });
 
 /* iPhone / iPad: USDZ for AR Quick Look */
-async function openQuickLook() {
+async function openQuickLook(N = 1) {
   explodeReset(true);
   if (!arReady()) return;
   busy('Готовлю модель для AR на iPhone…'); await pause();
@@ -7092,21 +7098,41 @@ async function openQuickLook() {
         const mesh = new THREE.Mesh(m.geometry, mats.get(src)); mesh.applyMatrix4(toHolder.clone().multiply(m.matrixWorld)); root.add(mesh);
       });
     }
-    /* всё 1:1 (Сергей, 22.11.2026). Quick Look ставит начало координат файла перед телефоном, передом (+Z) к человеку.
-       Середину низа сцены ставим в начало; если сцена не помещается в кадр с близкого места, отодвигаем её по −Z дальше */
-    const bb = new THREE.Box3().setFromObject(root), z = bb.getSize(new V3()), cc = bb.getCenter(new V3());
-    const away = Math.max(0, arFitDist(z) - 1.5);
-    for (const m of root.children) m.position.add(new V3(-cc.x, -bb.min.y, -cc.z - away));
-    root.updateMatrixWorld(true);
+    /* масштаб выбирает человек в списке под кнопкой «AR телефон» (Сергей, 23.11.2026); середина низа сцены — в начале координат */
+    const bb = new THREE.Box3().setFromObject(root), cc = bb.getCenter(new V3());
+    for (const m of root.children) m.position.add(new V3(-cc.x, -bb.min.y, -cc.z));
+    root.scale.setScalar(1 / N); root.updateMatrixWorld(true);
     const data = await new USDZExporter().parse(root, { quickLookCompatible: true });
     const url = URL.createObjectURL(new Blob([data], { type: 'model/vnd.usdz+zip' }));
-    const a = document.createElement('a'); a.rel = 'ar'; a.href = url + '#allowsContentScaling=0'; a.appendChild(document.createElement('img'));
+    const a = document.createElement('a'); a.rel = 'ar'; a.href = url + '#allowsContentScaling=1'; a.appendChild(document.createElement('img'));
     document.body.append(a); a.click(); setTimeout(() => { a.remove(); URL.revokeObjectURL(url); }, 60000);
-    toast(away > 0 ? `Модель открывается в AR в натуральную величину и встаёт примерно в ${Math.round(away + 1.5)} м от вас, чтобы попасть в кадр. Наведите камеру на пол.` : 'Модель открывается в AR в натуральную величину. Наведите камеру на пол.', 'ok');
+    toast(N > 1 ? `Модель открывается в AR в масштабе 1:${N}. Щипком можно подправить размер.` : 'Модель открывается в AR в натуральную величину. Наведите камеру на пол.', 'ok');
   } catch (e) { console.error(e); toast('Не удалось подготовить модель для AR: ' + e.message, 'bad'); }
   finally { busy(false); }
 }
-$('#m-phone').addEventListener('click', enterPhoneAR);
+/* список масштабов под кнопкой «AR телефон»: 1:1 … 1:200, рядом — какой выйдет модель; масштабы, где она меньше 5 см, не показываем */
+const AR_SCALES = [1, 2, 5, 10, 20, 50, 100, 200];
+const fmtLen = m => m >= 1 ? `${(Math.round(m * 10) / 10).toLocaleString('ru-RU')} м` : `${Math.max(1, Math.round(m * 100))} см`;
+function arScaleMenu(open) {
+  const box = $('#arscale');
+  if (!open) { box.hidden = true; return; }
+  const z = arSize(), big = Math.max(z.x, z.y, z.z), last = +lsGet('vrtrip-arscale') || 1;
+  box.innerHTML = '<span class="arscale-h">Масштаб в AR</span>';
+  for (const N of AR_SCALES) {
+    if (N > 1 && big / N < 0.05) continue;
+    const b = document.createElement('button'); b.type = 'button'; b.setAttribute('role', 'menuitem'); b.setAttribute('aria-pressed', String(N === last));
+    b.innerHTML = `<b>1:${N}</b><small>${fmtLen(big / N)}</small>`;
+    b.title = N === 1 ? 'В натуральную величину' : `Макет 1:${N}: самая большая сторона — ${fmtLen(big / N)}`;
+    b.addEventListener('click', () => { lsSet('vrtrip-arscale', String(N)); arScaleMenu(false); enterPhoneAR(N); });
+    box.append(b);
+  }
+  box.hidden = false;
+  const r = $('#m-phone').getBoundingClientRect(), w = box.offsetWidth, h = box.offsetHeight;
+  box.style.left = Math.max(6, Math.min(innerWidth - w - 6, r.left + r.width / 2 - w / 2)) + 'px';
+  box.style.top = (r.bottom + 6 + h < innerHeight ? r.bottom + 6 : Math.max(6, r.top - h - 6)) + 'px';   // ниже кнопки, а если не влезает — над ней
+}
+$('#m-phone').addEventListener('click', e => { e.stopPropagation(); if (!arReady()) return; arScaleMenu($('#arscale').hidden); });
+document.addEventListener('pointerdown', e => { if (!$('#arscale').hidden && !e.target.closest('#arscale, #m-phone')) arScaleMenu(false); });
 
 /* Quest browser can keep an old copy of the page: compare with the published file and offer a reload */
 async function checkForUpdate() {
