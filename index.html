@@ -609,7 +609,7 @@ body:not(.gaming) #w-toy,body:not(.gaming) #w-hook{display:none!important}   /* 
     <label class="drop" id="drop" for="file">
       <input type="file" id="file" multiple class="sr">
       <span class="drop-title">Выбрать файлы</span>
-      <span class="drop-sub">OBJ, FBX, GLB/glTF, STL, 3DM (Rhino), DAE, 3DS, 3MF, PLY, USDZ, WRL, AMF — или ZIP-архив с моделью и текстурами. На компьютере можно просто перетащить файлы в окно.</span>
+      <span class="drop-sub">OBJ, FBX, GLB/glTF, STL, 3DM (Rhino), DAE, 3DS, 3MF, PLY, USDZ, WRL, AMF, чертежи DWG, DXF, SVG (ложатся на пол) — или ZIP-архив с моделью и текстурами. На компьютере можно просто перетащить файлы в окно.</span>
     </label>
     <form class="url" id="urlform">
       <input id="url" type="url" placeholder="или прямая ссылка на модель или .zip" autocomplete="off" aria-label="Ссылка на модель">
@@ -2291,13 +2291,49 @@ function makePavilion() {
 
 
 /* ================= other 3D formats (loaded on demand) ================= */
-const MODEL_RE = /\.(obj|glb|gltf|fbx|stl|ply|3mf|dae|3ds|wrl|vrml|amf|3dm|usdz)$/i;
-const FORMATS_TEXT = 'OBJ, FBX, GLB/glTF, STL, 3DM, DAE, 3DS, 3MF, PLY, USDZ, WRL, AMF';
+const MODEL_RE = /\.(obj|glb|gltf|fbx|stl|ply|3mf|dae|3ds|wrl|vrml|amf|3dm|usdz|dwg|dxf|svg)$/i;
+const FORMATS_TEXT = 'OBJ, FBX, GLB/glTF, STL, 3DM, DAE, 3DS, 3MF, PLY, USDZ, WRL, AMF, чертежи DWG, DXF, SVG';
 const extOf = n => (String(n).match(/\.([a-z0-9]+)$/i)?.[1] || '').toLowerCase();
 const RHINO_UNITS = { 2: 'mm', 3: 'cm', 4: 'm', 8: 'in', 9: 'ft', millimeters: 'mm', centimeters: 'cm', meters: 'm', inches: 'in', feet: 'ft' };
 const neutralMat = geo => new THREE.MeshStandardMaterial({ color: 0xdcd8d0, roughness: 0.85, vertexColors: !!(geo.attributes.color && geo.attributes.color.itemSize >= 3) });
+/* чертёж DWG / DXF / SVG (Сергей, 28.11.2026): линии ложатся на пол плоскими лентами, по сетке на слой —
+   так чертёж живёт как обычная модель: экспозиция, гамбол, сечение, шлем и AR. Текст и штриховки пока не показываются */
+const DRAWING_EXT = ['dwg', 'dxf', 'svg'];
+async function parseDrawingFile(ext, blob, fmt) {
+  busy(ext === 'dwg' ? 'Читаю DWG (модуль чтения ~8 МБ, грузится один раз)…' : 'Читаю чертёж…');
+  const { parseDrawing, DRAWING_UNITS } = await import('./drawing.js');
+  const sc = await parseDrawing(ext, blob, fmt.name || 'чертёж');
+  fmt.units = DRAWING_UNITS[sc.units] || null;
+  const b = sc.bounds, hw = Math.max(b.diag * 0.001, 1e-9), lift = hw * 0.4;     // полуширина ленты и подъём над полом — доля размера чертежа
+  const byLayer = new Map();
+  for (const it of sc.items) {
+    if (it.t !== 'p') continue;
+    let L = byLayer.get(it.layer); if (!L) byLayer.set(it.layer, L = { pos: [], color: it.color || sc.layers.get(it.layer)?.color });
+    const P = it.pts, n = it.closed ? P.length : P.length - 1;
+    for (let i = 0; i < n; i++) {
+      const a = P[i], c = P[(i + 1) % P.length], dx = c[0] - a[0], dy = c[1] - a[1], l = Math.hypot(dx, dy); if (l < 1e-12) continue;
+      const nx = -dy / l * hw, ny = dx / l * hw, ex = dx / l * hw, ey = dy / l * hw;   // лента чуть длиннее отрезка — углы без щелей
+      const x0 = a[0] - ex, y0 = a[1] - ey, x1 = c[0] + ex, y1 = c[1] + ey;
+      L.pos.push(x0 + nx, y0 + ny, lift, x0 - nx, y0 - ny, lift, x1 + nx, y1 + ny, lift, x1 + nx, y1 + ny, lift, x0 - nx, y0 - ny, lift, x1 - nx, y1 - ny, lift);
+    }
+  }
+  const g = new THREE.Group(); g.name = fmt.name || 'чертёж';
+  for (const [name, L] of byLayer) {
+    if (!L.pos.length) continue;
+    L.pos.push(b.minx, b.miny, 0, b.minx, b.miny, 0, b.minx, b.miny, 0);   // невидимый треугольник на уровне пола: чертёж стоит на полу, ленты чуть выше
+    const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.Float32BufferAttribute(L.pos, 3)); geo.computeVertexNormals();
+    let col = new THREE.Color(0x2a2a2a);
+    const m = /rgb\((\d+),\s*(\d+),\s*(\d+)\)/.exec(L.color || '');
+    if (m) { col = new THREE.Color(+m[1] / 255, +m[2] / 255, +m[3] / 255); const hsl = col.getHSL({}); if (hsl.l > 0.62) col.setHSL(hsl.h, hsl.s, 0.38); }   // светлые цвета CAD темнеют: фон у VRtrip светлый
+    const mesh = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color: col, roughness: 0.9, side: THREE.DoubleSide }));
+    mesh.name = name; g.add(mesh);
+  }
+  if (!g.children.length) throw new Error('В чертеже нет линий для показа. Поддерживаются линии, полилинии, окружности, дуги, эллипсы, сплайны и блоки.');
+  return g;
+}
 async function parseModelFile(ext, blob, manager, fmt) {
   const buf = () => blob.arrayBuffer(), txt = () => blob.text();
+  if (DRAWING_EXT.includes(ext)) return parseDrawingFile(ext, blob, fmt);
   if (ext === 'glb' || ext === 'gltf') {
     const [{ GLTFLoader }, { DRACOLoader }, { MeshoptDecoder }] = await Promise.all([import('three/addons/loaders/GLTFLoader.js'), import('three/addons/loaders/DRACOLoader.js'), import('three/addons/libs/meshopt_decoder.module.js')]);
     const l = new GLTFLoader(manager), draco = new DRACOLoader();
@@ -2338,12 +2374,13 @@ async function parseModelFile(ext, blob, manager, fmt) {
 /* starting units and up-axis per format; the scale panel lets you correct both */
 function defaultSettings(fmt, d, hasMtl) {
   const e = fmt.ext;
-  const zUp = ['3dm', 'stl', '3mf', 'amf', 'ply', '3ds'].includes(e);
+  const zUp = ['3dm', 'stl', '3mf', 'amf', 'ply', '3ds', 'dwg', 'dxf', 'svg'].includes(e);   // план чертежа лежит в XY — значит, на полу
   let units, auto = true;
   if (fmt.units) { units = fmt.units; auto = false; }
   else if (e === 'glb' || e === 'gltf') { units = d > 2000 ? 'mm' : 'm'; auto = d > 2000; }
   else if (['stl', '3mf', 'amf'].includes(e)) units = d > 100 ? 'mm' : 'm';
   else if (e === 'fbx') units = d > 2500 ? 'mm' : d > 250 ? 'cm' : 'm';
+  else if (DRAWING_EXT.includes(e)) units = d > 2500 ? 'mm' : d > 100 ? 'cm' : 'm';   // чертёж без единиц (SVG): угадываем по размеру, панель масштаба поправит
   else units = d > 2500 ? 'mm' : 'm';
   return { units, zUp, clay: e === 'obj' ? !hasMtl : false, autoUnits: auto, table: null };
 }
